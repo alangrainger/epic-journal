@@ -10,6 +10,7 @@ function createTables () {
   sql.prepare(
     'CREATE TABLE IF NOT EXISTS entries(' +
     'entry_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+    'date TEXT, ' +
     'created TEXT, ' +
     'modified TEXT, ' +
     'content TEXT);').run()
@@ -35,19 +36,35 @@ function Database () {
   this.table.entries = 'entries'
   this.table.tags = 'tags'
 
-  this.speak = function () {
-    return 'helo'
-  }
-
-  this.createNewEntry = function (content) {
+  this.createNewEntry = function (data) {
     var created = moment().format()
-    var id = sql.prepare('INSERT INTO entries (created, modified, content) VALUES (?, ?, ?)').run(created, created, content).lastInsertROWID
+    var id = sql.prepare('INSERT INTO entries (date, created, modified, content) VALUES (?, ?, ?, ?)').run(data.date, created, created, data.content).lastInsertROWID
 
     return id
   }
 
+  this.updateEntry = function (entryId, content) {
+    var modified = moment().format()
+    var result = sql.prepare('UPDATE entries SET modified = ?, content = ? WHERE entry_id = ?').run(modified, content, entryId).changes
+    return result
+  }
+
   this.getEntry = function (entryId) {
-    var entry = sql.prepare('SELECT * FROM entries WHERE entry_id = ' + entryId).get()
+    try {
+      var entry = sql.prepare('SELECT * FROM entries WHERE entry_id = ' + entryId).get()
+    } catch (e) {
+      console.log(e)
+    }
+    return entry
+  }
+
+  this.getEntryByDate = function (date = null) {
+    date = date || moment().format('YYYY-MM-DD')
+    try {
+      var entry = sql.prepare('SELECT * FROM entries WHERE date = "' + date + '"').get()
+    } catch (e) {
+      console.log(e)
+    }
     return entry
   }
 }

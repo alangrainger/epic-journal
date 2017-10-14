@@ -4,9 +4,10 @@
             <div class="left-side">
                 <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
                 <p>{{ date }}</p>
-                <button @click="insert">Save</button>
+                <button @click="save">Save</button>
                 <input v-model="entryId">
                 <button @click="get">Get</button>
+                <button @click="getByDate">Get Date</button>
             </div>
 
             <div class="right-side">
@@ -29,7 +30,7 @@
     },
     data () {
       return {
-        date: this.moment().format(),
+        date: this.moment().format('YYYY-MM-DD'),
         content: '',
         calConfig: {
           inline: true
@@ -37,14 +38,47 @@
         entryId: 1
       }
     },
+    watch: {
+      date: function () {
+        /*
+        Watch for when a new calendar date is picked, and then select the entry for that day.
+        If no entry, then create a new blank one.
+         */
+        var entry = this.$db.getEntryByDate(this.date)
+        console.log(entry)
+        if (entry) {
+          // There is an existing entry for that date
+          this.content = entry.content
+          this.entryId = entry.entry_id
+        } else {
+          this.content = ''
+          this.entryId = null
+        }
+      }
+    },
     methods: {
-      insert () {
-        var id = this.$db.createNewEntry(this.content)
-        this.entryId = id
+      save () {
+        if (this.entryId) {
+          // Entry ID already exists, update existing entry
+          var result = this.$db.updateEntry(this.entryId, this.content)
+          console.log(result)
+        } else {
+          // No existing entry, so create new entry
+          var id = this.$db.createNewEntry(this)
+          this.entryId = id
+        }
       },
       get () {
         var entry = this.$db.getEntry(this.entryId)
-        this.content = entry.content
+        if (entry) {
+          this.content = entry.content
+        } else {
+          console.log('No entry found')
+        }
+      },
+      getByDate () {
+        var entry = this.$db.getEntryByDate()
+        console.log(entry)
       },
       open (link) {
         this.$electron.shell.openExternal(link)
