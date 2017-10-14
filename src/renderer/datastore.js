@@ -1,6 +1,9 @@
 import { remote } from 'electron'
 import moment from 'moment'
 
+const DATE_SQL = 'YYYY-MM-DD hh:mm:ss'
+const DATE_DAY = 'YYYY-MM-DD'
+
 var filename = remote.app.getPath('userData') + '/datastore.db'
 var SQLite3 = require('better-sqlite3')
 var sql = new SQLite3(filename)
@@ -32,12 +35,15 @@ function Database () {
   // Set up the tables if not existing
   createTables()
 
+  this.DATE_DAY = DATE_DAY
+  this.DATE_SQL = DATE_SQL
+
   this.table = []
   this.table.entries = 'entries'
   this.table.tags = 'tags'
 
   this.createNewEntry = function (data) {
-    var created = moment().format()
+    var created = moment().format(DATE_SQL)
     var id = sql.prepare('INSERT INTO entries (date, created, modified, content) VALUES (?, ?, ?, ?)').run(data.date, created, created, data.content).lastInsertROWID
 
     return id
@@ -59,7 +65,7 @@ function Database () {
   }
 
   this.getEntryByDate = function (date = null) {
-    date = date || moment().format('YYYY-MM-DD')
+    date = date || moment().format(DATE_DAY)
     try {
       var entry = sql.prepare('SELECT * FROM entries WHERE date = "' + date + '"').get()
     } catch (e) {

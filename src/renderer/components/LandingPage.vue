@@ -5,9 +5,7 @@
                 <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
                 <p>{{ date }}</p>
                 <button @click="save">Save</button>
-                <input v-model="entryId">
-                <button @click="get">Get</button>
-                <button @click="getByDate">Get Date</button>
+                <p>ID: {{ entryId }}</p>
             </div>
 
             <div class="right-side">
@@ -30,7 +28,7 @@
     },
     data () {
       return {
-        date: this.moment().format('YYYY-MM-DD'),
+        date: this.moment().format(this.$db.DATE_DAY),
         content: '',
         calConfig: {
           inline: true
@@ -45,11 +43,11 @@
         If no entry, then create a new blank one.
          */
         var entry = this.$db.getEntryByDate(this.date)
-        console.log(entry)
         if (entry) {
           // There is an existing entry for that date
           this.content = entry.content
           this.entryId = entry.entry_id
+          console.log(entry)
         } else {
           this.content = ''
           this.entryId = null
@@ -67,18 +65,6 @@
           var id = this.$db.createNewEntry(this)
           this.entryId = id
         }
-      },
-      get () {
-        var entry = this.$db.getEntry(this.entryId)
-        if (entry) {
-          this.content = entry.content
-        } else {
-          console.log('No entry found')
-        }
-      },
-      getByDate () {
-        var entry = this.$db.getEntryByDate()
-        console.log(entry)
       },
       open (link) {
         this.$electron.shell.openExternal(link)
