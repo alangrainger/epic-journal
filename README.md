@@ -4,7 +4,13 @@
 
 #### Build Setup for Windows
 
-First, be sure that you have long paths enabled:
+My build environment:
+
+- Windows 10
+- Node 7.9.0
+- NPM 4.2.0
+
+Be sure that you have long paths enabled:
 
 Go to ```HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem```, find
 the key ```LongPathsEnabled ``` and change the value to 1. You may need to create 

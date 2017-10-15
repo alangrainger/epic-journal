@@ -5,9 +5,22 @@ const DATE_SQL = 'YYYY-MM-DD HH:mm:ss'
 const DATE_DAY = 'YYYY-MM-DD'
 
 var filename = remote.app.getPath('userData') + '/datastore.db'
+
 // var sqlite3 = require('win-sqlcipher').verbose()
 var sqlite3 = require('sqlite3').verbose()
-var sql = new sqlite3.Database(filename)
+var sql = new sqlite3.Database(filename, sqlite3.OPEN_READWRITE || sqlite3.OPEN_CREATE, function (err) {
+  if (err) {
+    errorMessage('Fatal error: Cannot create connection to database file, please restart the app.', err)
+  }
+})
+
+// Test DB read/write
+sql.serialize(function () {
+  sql.run('CREATE TABLE test (id INTEGER)', function (err) {
+    if (err) { errorMessage('Fatal error: Database not writeable, please check if your database file is locked and restart the app.', err) }
+  })
+  sql.run('DROP TABLE test')
+})
 
 function createTables () {
   // Entries
@@ -23,16 +36,16 @@ function createTables () {
     sql.run('CREATE INDEX IF NOT EXISTS index_date ON entries(date)')
 
     // Tags
-    sql.prepare(
+    sql.run(
       'CREATE TABLE IF NOT EXISTS tags(' +
       'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
       'name TEXT, ' +
-      'class TEXT);').run()
+      'class TEXT);')
 
-    sql.prepare(
+    sql.run(
       'CREATE TABLE IF NOT EXISTS entry_tags(' +
       'entry_id INTEGER, ' +
-      'tag_id INTEGER);').run()
+      'tag_id INTEGER);')
   })
 }
 
@@ -106,6 +119,11 @@ function Database () {
     })
     return tree
   }
+}
+
+function errorMessage (message, err) {
+  console.log(message)
+  console.log(err)
 }
 
 export default new Database()

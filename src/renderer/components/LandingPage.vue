@@ -139,8 +139,9 @@
         margin-bottom: 10px;
     }
 
-    .doc p {
+    #quill-container p {
         color: black;
+        font-size: 14pt;
         margin-bottom: 10px;
     }
 
