@@ -1,34 +1,39 @@
 import { remote } from 'electron'
 import moment from 'moment'
 
-const DATE_SQL = 'YYYY-MM-DD hh:mm:ss'
+const DATE_SQL = 'YYYY-MM-DD HH:mm:ss'
 const DATE_DAY = 'YYYY-MM-DD'
 
 var filename = remote.app.getPath('userData') + '/datastore.db'
-var SQLite3 = require('better-sqlite3')
-var sql = new SQLite3(filename)
+// var sqlite3 = require('win-sqlcipher').verbose()
+var sqlite3 = require('sqlite3').verbose()
+var sql = new sqlite3.Database(filename)
 
 function createTables () {
   // Entries
-  sql.prepare(
-    'CREATE TABLE IF NOT EXISTS entries(' +
-    'entry_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-    'date TEXT, ' +
-    'created TEXT, ' +
-    'modified TEXT, ' +
-    'content TEXT);').run()
+  sql.serialize(function () {
+    sql.run(
+      'CREATE TABLE IF NOT EXISTS entries(' +
+      'entry_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+      'date TEXT, ' + // yyyy-mm-dd
+      'created TEXT, ' +
+      'modified TEXT, ' +
+      'content TEXT);')
 
-  // Tags
-  sql.prepare(
-    'CREATE TABLE IF NOT EXISTS tags(' +
-    'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-    'name TEXT, ' +
-    'class TEXT);').run()
+    sql.run('CREATE INDEX IF NOT EXISTS index_date ON entries(date)')
 
-  sql.prepare(
-    'CREATE TABLE IF NOT EXISTS entry_tags(' +
-    'entry_id INTEGER, ' +
-    'tag_id INTEGER);').run()
+    // Tags
+    sql.prepare(
+      'CREATE TABLE IF NOT EXISTS tags(' +
+      'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+      'name TEXT, ' +
+      'class TEXT);').run()
+
+    sql.prepare(
+      'CREATE TABLE IF NOT EXISTS entry_tags(' +
+      'entry_id INTEGER, ' +
+      'tag_id INTEGER);').run()
+  })
 }
 
 function Database () {
@@ -44,34 +49,62 @@ function Database () {
 
   this.createNewEntry = function (data) {
     var created = moment().format(DATE_SQL)
-    var id = sql.prepare('INSERT INTO entries (date, created, modified, content) VALUES (?, ?, ?, ?)').run(data.date, created, created, data.content).lastInsertROWID
-
-    return id
+    sql.run('INSERT INTO entries (date, created, modified, content) VALUES (?, ?, ?, ?)', [data.date, created, created, data.content], function (err) {
+      if (err) {
+        console.log(err)
+      } else {
+        data.entryId = this.lastID
+      }
+    })
   }
 
-  this.updateEntry = function (entryId, content) {
-    var modified = moment().format()
-    var result = sql.prepare('UPDATE entries SET modified = ?, content = ? WHERE entry_id = ?').run(modified, content, entryId).changes
-    return result
+  this.updateEntry = function (data, callback) {
+    var modified = moment().format(DATE_SQL)
+    sql.run('UPDATE entries SET modified = ?, content = ? WHERE entry_id = ?', [modified, data.content, data.entryId], function (err) {
+      if (err) {
+        console.log(err)
+      } else {
+        callback(this.changes)
+      }
+    })
   }
 
-  this.getEntry = function (entryId) {
-    try {
-      var entry = sql.prepare('SELECT * FROM entries WHERE entry_id = ' + entryId).get()
-    } catch (e) {
-      console.log(e)
-    }
-    return entry
+  this.getEntryByDate = function (date, callback) {
+    if (!date) return false
+    sql.get('SELECT * FROM entries WHERE date = ?', date, function (err, row) {
+      if (err) {
+        console.log(err)
+      } else {
+        callback(row)
+      }
+    })
   }
 
-  this.getEntryByDate = function (date = null) {
-    date = date || moment().format(DATE_DAY)
-    try {
-      var entry = sql.prepare('SELECT * FROM entries WHERE date = "' + date + '"').get()
-    } catch (e) {
-      console.log(e)
-    }
-    return entry
+  var getEach = function (query, callback) {
+    sql.each(query, function (err, row) {
+      if (err) {
+        console.log(err)
+      } else {
+        callback(row)
+      }
+    })
+  }
+  this.getEach = getEach
+
+  this.getEntryTree = function () {
+    var tree = {}
+    getEach('SELECT distinct(strftime(\'%Y\', date)) AS year FROM entries ORDER BY date ASC', function (row) {
+      var year = row.year
+      tree[year] = {}
+      getEach('SELECT distinct(strftime(\'%m\', date)) AS month FROM entries WHERE strftime(\'%Y\', date) = \'' + year + '\' ORDER BY date ASC', function (row) {
+        var month = row.month
+        tree[year][month] = []
+        getEach('SELECT * FROM entries WHERE (strftime(\'%Y\', date)) =\'' + year + '\' AND strftime(\'%m\', date) = \'' + month + '\' ORDER BY date ASC', function (row) {
+          tree[year][month].push(row)
+        })
+      })
+    })
+    return tree
   }
 }
 

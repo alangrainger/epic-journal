@@ -6,6 +6,7 @@
                 <p>{{ date }}</p>
                 <button @click="save">Save</button>
                 <p>ID: {{ entryId }}</p>
+                <button @click="createTree">Tree</button>
             </div>
 
             <div class="right-side">
@@ -33,7 +34,7 @@
         calConfig: {
           inline: true
         },
-        entryId: 1
+        entryId: null
       }
     },
     watch: {
@@ -42,32 +43,41 @@
         Watch for when a new calendar date is picked, and then select the entry for that day.
         If no entry, then create a new blank one.
          */
-        var entry = this.$db.getEntryByDate(this.date)
-        if (entry) {
-          // There is an existing entry for that date
-          this.content = entry.content
-          this.entryId = entry.entry_id
-          console.log(entry)
-        } else {
-          this.content = ''
-          this.entryId = null
-        }
+        var vm = this
+        this.$db.getEntryByDate(this.date, function (row) {
+          if (row) {
+            // There is an existing entry for that date
+            vm.content = row.content
+            vm.entryId = row.entry_id
+          } else {
+            vm.content = ''
+            vm.entryId = null
+          }
+        })
       }
     },
     methods: {
       save () {
         if (this.entryId) {
           // Entry ID already exists, update existing entry
-          var result = this.$db.updateEntry(this.entryId, this.content)
-          console.log(result)
+          this.$db.updateEntry(this, function (result) {
+            if (result) {
+              console.log(result)
+            } else {
+              console.log('Update failed')
+            }
+          })
         } else {
           // No existing entry, so create new entry
-          var id = this.$db.createNewEntry(this)
-          this.entryId = id
+          this.$db.createNewEntry(this)
         }
       },
       open (link) {
         this.$electron.shell.openExternal(link)
+      },
+      createTree () {
+        var tree = this.$db.getEntryTree()
+        console.log(tree)
       }
     }
   }

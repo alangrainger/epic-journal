@@ -2,9 +2,18 @@
 
 > A daily journal app
 
-#### Build Setup
+#### Build Setup for Windows
+
+First, be sure that you have long paths enabled:
+
+Go to ```HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem```, find
+the key ```LongPathsEnabled ``` and change the value to 1. You may need to create 
+this key yourself. 
 
 ``` bash
+# install Windows build tools
+npm install -g windows-build-tools
+
 # install dependencies
 npm install
 
@@ -14,9 +23,8 @@ npm run dev
 # build electron application for production
 npm run build
 
-
-# lint all JS/Vue component files in `src/`
-npm run lint
+# rebuild Sqlite3 for Electron
+.\node_modules\.bin\electron-rebuild -w sqlite3 -p
 
 ```
 
