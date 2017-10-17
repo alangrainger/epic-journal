@@ -1,15 +1,16 @@
 <template>
-	<ul class="tree-year">
-		<li v-for="(months, year) in tree">
-			{{ year }}
-			<ul class="tree-month">
-				<li v-for="(entries, month) in months">
-					{{ month }}
-					<ul class="tree-entry">
+ 	<ul class="tree-year">
+		<li v-for="(year, name) in tree" >
+			<span @click="year.show = !year.show"><i v-if="year.show" class="fa fa-minus-square-o"></i><i v-if="!year.show" class="fa fa-plus-square-o"></i> {{ name }}</span>
+			<ul class="tree-month" v-show="year.show">
+				<li v-for="(month, name) in year.months">
+					<span @click="month.show = !month.show"><i v-if="month.show" class="fa fa-minus-square-o"></i><i v-if="!month.show" class="fa fa-plus-square-o"></i> {{ name }}</span>
+
+					<ul class="tree-entry" v-show="month.show">
 						<li
-								v-for="entry in entries"
+								v-for="entry in month.entries"
 								@click="$emit('update', entry.date)"
-						>{{ entry.value }}</li>
+						><span>{{ entry.value }}</span></li>
 					</ul>
 				</li>
 			</ul>
@@ -21,15 +22,17 @@
 	ul {
 		list-style: none;
 	}
+	ul span {
+		cursor: pointer;
+	}
+	ul i {
+		font-size: 14px !important;
+	}
 	.tree-year {
 		margin-left: 0px;
 	}
-	.tree-month {
-		margin-left: 20px;
-	}
-	.tree-entry {
-		margin-left: 20px;
-		cursor: pointer;
+	.tree-month, .tree-entry {
+		margin-left: 30px;
 	}
 </style>
 

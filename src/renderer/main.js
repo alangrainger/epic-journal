@@ -7,11 +7,13 @@ import store from './store'
 import db from './datastore'
 import moment from 'moment'
 
-Vue.prototype.moment = moment
+// Styles
+import './assets/font-awesome/css/font-awesome.css'
+
+Vue.prototype.$moment = moment
 Vue.prototype.$db = db
 
 const flatpickr = require('flatpickr')
-
 flatpickr('#calendar', {})
 
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
@@ -19,7 +21,7 @@ Vue.config.productionTip = false
 
 /* eslint-disable no-new */
 new Vue({
-  components: { App },
+  components: {App},
   router,
   store,
   template: '<App/>'
