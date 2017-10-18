@@ -1,6 +1,7 @@
 import Vue from 'vue'
 
 import App from './App'
+import Fail from './Fail'
 import router from './router'
 import store from './store'
 
@@ -35,7 +36,7 @@ function promptDatabase () {
         config.write()
         promptPassword(config.data.file)
       } else {
-        console.log('No password specified, exiting')
+        fail('Please restart and enter a database path.')
       }
     })
     .catch(console.error)
@@ -50,9 +51,9 @@ function promptPassword () {
   })
     .then((password) => {
       if (password) {
-        db.openDatabase(password, config.data.file, initApp)
+        db.openDatabase(password, config.data.file, initApp, fail)
       } else {
-        console.log('No password specified, exiting')
+        fail('No password specified. Please make sure you click the OK button.')
       }
     })
     .catch(console.error)
@@ -74,5 +75,13 @@ function initApp () {
     router,
     store,
     template: '<App/>'
+  }).$mount('#app')
+}
+
+function fail () {
+  Vue.prototype.failMessages = arguments
+  new Vue({
+    components: {Fail},
+    template: '<Fail/>'
   }).$mount('#app')
 }

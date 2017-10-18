@@ -13,7 +13,7 @@ function Database () {
 
   var db
 
-  this.openDatabase = function (password, filename, callback) {
+  this.openDatabase = function (password, filename, callback, failure) {
     var datastore = this
     var sqlite3 = require('win-sqlcipher').verbose()
 
@@ -27,7 +27,7 @@ function Database () {
       // Test DB read/write
       db.run('CREATE TABLE test (id INTEGER)', function (err) {
         if (err) {
-          errorMessage('Fatal error: Database not writeable, please check if your database file is locked and restart the app.', err)
+          failure('Fatal error: Database not writeable. Please check your password, check if your database file is locked, and restart the app.', err)
         } else {
           db.run('DROP TABLE test')
           datastore.createTables()
