@@ -2,7 +2,7 @@
     <div id="wrapper">
         <main>
             <div id="sidebar">
-                <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
+                <flat-pickr v-model="date" :config="calConfig" @click="console.log(this)"></flat-pickr>
                 <p>Entry date: {{ entry.date }}</p>
                 <p>Saved: {{ entry.saved }}</p>
                 <p>ID: {{ entry.id }}</p>
@@ -64,14 +64,14 @@
         if (!vm.entry.saved) {
           vm.save()
         }
-      }, 60000)
+      }, 30000)
     },
     data () {
       return {
         date: this.$moment().format(this.$db.DATE_DAY),
         entry: {
           id: null,
-          date: this.date,
+          date: this.$moment().format(this.$db.DATE_DAY),
           content: null,
           saved: true
         },
@@ -183,7 +183,7 @@
       setCSS () {
         // TODO: write a proper editor
         // stripping the HTML tags out for now, need to write a proper CSS editor page
-        var css = this.content.replace(/<\/?[^>]+(>|$)/g, '')
+        var css = this.entry.content.replace(/<\/?[^>]+(>|$)/g, '')
         this.customStyles = css
         this.$db.setOption('css', css)
       }

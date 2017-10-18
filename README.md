@@ -1,31 +1,41 @@
 # Epic Journal
 
-> A daily journal app
+> An encrypted daily journal app
+
+The app is in progress, but completely usable right now.
+
+Proper File > Open functions are yet to be built, but when you run it the first 
+time it will ask you for a database file. Put in the full path plus filename, e.g.
+
+> c:/users/alan/dropbox/journal.epic
+
+Next it will ask you for a password. Put that in, and you're done!
 
 #### Build Setup for Windows
 
 My build environment:
 
 - Windows 10
-- Node 7.9.0
-- NPM 4.2.0
+- Node 8.7.0
+- NPM 5.3.0
+
+**Note:** 
 
 ``` bash
-# install Windows build tools
+# install Windows build tools if you don't have a build environment
 npm install -g windows-build-tools
 
 # install dependencies
 npm install
 
+# rebuild Win-SQLcipher / Sqlite3 for Electron
+.\node_modules\.bin\electron-rebuild -w sqlite3 -p
+
 # serve with hot reload at localhost:9080
 npm run dev
 
-# build electron application for production
+# build app for production
 npm run build
-
-# rebuild Sqlite3 for Electron
-.\node_modules\.bin\electron-rebuild -w sqlite3 -p
-
 ```
 
 ---

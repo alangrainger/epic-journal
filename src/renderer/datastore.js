@@ -1,69 +1,73 @@
-import { remote } from 'electron'
 import moment from 'moment'
 
 const DATE_SQL = 'YYYY-MM-DD HH:mm:ss'
 const DATE_DAY = 'YYYY-MM-DD'
 
-var filename = remote.app.getPath('userData') + '/datastore.db'
-
-// var sqlite3 = require('win-sqlcipher').verbose()
-var sqlite3 = require('sqlite3').verbose()
-var db = new sqlite3.Database(filename, sqlite3.OPEN_READWRITE || sqlite3.OPEN_CREATE, function (err) {
-  if (err) {
-    errorMessage('Fatal error: Cannot create connection to database file, please restart the app.', err)
-  }
-})
-
-// Test DB read/write
-db.serialize(function () {
-  db.run('CREATE TABLE test (id INTEGER)', function (err) {
-    if (err) { errorMessage('Fatal error: Database not writeable, please check if your database file is locked and restart the app.', err) }
-  })
-  db.run('DROP TABLE test')
-})
-
-function createTables () {
-  // Entries
-  db.serialize(function () {
-    db.run(
-      'CREATE TABLE IF NOT EXISTS entries(' +
-      'entry_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-      'date TEXT, ' + // yyyy-mm-dd
-      'created TEXT, ' +
-      'modified TEXT, ' +
-      'content TEXT);')
-
-    db.run('CREATE INDEX IF NOT EXISTS index_date ON entries(date)')
-
-    // Tags
-    db.run(
-      'CREATE TABLE IF NOT EXISTS tags(' +
-      'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-      'name TEXT, ' +
-      'class TEXT);')
-    db.run(
-      'CREATE TABLE IF NOT EXISTS entry_tags(' +
-      'entry_id INTEGER, ' +
-      'tag_id INTEGER);')
-
-    // Options
-    db.run(
-      'CREATE TABLE IF NOT EXISTS options(' +
-      'name TEXT PRIMARY KEY, ' +
-      'value TEXT);')
-  })
-}
-
 function Database () {
-  // Set up the tables if not existing
-  createTables()
-
   this.DATE_DAY = DATE_DAY
   this.DATE_SQL = DATE_SQL
 
   this.table = []
   this.table.entries = 'entries'
   this.table.tags = 'tags'
+
+  var db
+
+  this.openDatabase = function (password, filename, callback) {
+    var datastore = this
+    var sqlite3 = require('win-sqlcipher').verbose()
+
+    db = new sqlite3.Database(filename)
+
+    db.serialize(function () {
+      password = password.replace(/'/g, '\'\'') // escape single quotes with two single quotes
+      db.run('PRAGMA KEY = \'' + password + '\'')
+      db.run('PRAGMA CIPHER = \'aes-256-cbc\'')
+
+      // Test DB read/write
+      db.run('CREATE TABLE test (id INTEGER)', function (err) {
+        if (err) {
+          errorMessage('Fatal error: Database not writeable, please check if your database file is locked and restart the app.', err)
+        } else {
+          db.run('DROP TABLE test')
+          datastore.createTables()
+          callback()
+        }
+      })
+    })
+  }
+
+  this.createTables = function () {
+    // Entries
+    db.serialize(function () {
+      db.run(
+        'CREATE TABLE IF NOT EXISTS entries(' +
+        'entry_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+        'date TEXT, ' + // yyyy-mm-dd
+        'created TEXT, ' +
+        'modified TEXT, ' +
+        'content TEXT);')
+
+      db.run('CREATE INDEX IF NOT EXISTS index_date ON entries(date)')
+
+      // Tags
+      db.run(
+        'CREATE TABLE IF NOT EXISTS tags(' +
+        'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+        'name TEXT, ' +
+        'class TEXT);')
+      db.run(
+        'CREATE TABLE IF NOT EXISTS entry_tags(' +
+        'entry_id INTEGER, ' +
+        'tag_id INTEGER);')
+
+      // Options
+      db.run(
+        'CREATE TABLE IF NOT EXISTS options(' +
+        'name TEXT PRIMARY KEY, ' +
+        'value TEXT);')
+    })
+  }
 
   this.createNewEntry = function (data, callback) {
     var created = moment().format(DATE_SQL)
@@ -136,7 +140,7 @@ function Database () {
 
   this.getEntryTree = function (callback) {
     var tree = {}
-    db.all('SELECT * FROM entries ORDER BY date ASC', function (err, rows) {
+    db.all('SELECT entry_id, date FROM entries ORDER BY date ASC', function (err, rows) {
       if (err) {
         errorMessage(err)
       } else {
