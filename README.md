@@ -1,6 +1,8 @@
 # Epic Journal
 
-> An encrypted daily journal app
+> An encrypted daily journal app, with full CSS styling
+
+![Screenshot](screenshot.png?raw=true)
 
 The app is in progress, but completely usable right now.
 
