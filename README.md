@@ -1,10 +1,27 @@
 # Epic Journal
 
-> An encrypted daily journal app, with full CSS styling
+An encrypted daily journal / diary app, with full CSS styling. It is built with Sqlite3 and 
+SQLcipher with AES 256 CBC encryption.
 
 ![Screenshot](screenshot.png?raw=true)
 
-The app is in progress, but completely usable right now.
+The app is in progress, but completely usable right now. New features are being added
+constantly, but you can safely start adding entries. The journal is a single file
+that you can store in your Dropbox, or wherever you like.
+
+I built it as an open-source replacement for [The Journal](http://www.davidrm.com/) by DavidRM, which I have used 
+for years. The main issues I wanted to solve were better styling, and the ability to know that my
+entries are safe, with an open and known database format.
+
+#### Upcoming features
+
+I'll be working towards feature parity with The Journal, but the next things I'm working on are:
+
+- Tagging of entries, both inline, and at the entry level.
+- A better CSS editing feature. The existing one DOES work though!
+- Search. Good fast search.
+
+#### Please note
 
 Proper File > Open functions are yet to be built, but when you run it the first 
 time it will ask you for a database file. Put in the full path plus filename, e.g.
@@ -13,7 +30,7 @@ time it will ask you for a database file. Put in the full path plus filename, e.
 
 Next it will ask you for a password. Put that in, and you're done!
 
-#### Build Setup for Windows
+### Build Setup for Windows
 
 My build environment:
 
