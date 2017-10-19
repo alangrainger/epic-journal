@@ -2,16 +2,21 @@
     <div id="wrapper">
         <main>
             <div id="sidebar">
-                <flat-pickr v-model="date" :config="calConfig" @click="console.log(this)"></flat-pickr>
-                <input id="calendar" v-model="date" type="text" title="Calendar">
-                <p>Saved: {{ entry.saved }}, AID: {{ autosaveEntryId }}, ID: {{entry.id}}</p>
-                <button @click="save">Save entry</button>
                 <button @click="getCSS">Get CSS into current editor</button>
                 <button @click="setCSS">Set CSS styles</button>
+                <template v-if="false">
+                <flat-pickr v-model="date" :config="calConfig" @click="console.log(this)"></flat-pickr>
+                <p>Saved: {{ entry.saved }}, AID: {{ autosaveEntryId }}, ID: {{entry.id}}</p>
+                <button @click="save">Save entry</button>
                 <Tree :tree="tree" @update="getEntryByDate"></Tree>
+                </template>
+                <div style="width:400px">{{entry.content}}</div>
             </div>
             <div id="content">
-                <vue-editor id="editor" v-model="entry.content"></vue-editor>
+                <Editor
+                        v-model="entry.content"
+                        @textChange="contentChanged"
+                ></Editor>
             </div>
         </main>
         <div v-html="'<style>' + calendarStyle + '</style>'"></div>
@@ -19,39 +24,26 @@
     </div>
 </template>
 <script>
-  import { VueEditor } from 'vue2-editor'
   import flatPickr from 'vue-flatpickr-component'
   import 'flatpickr/dist/flatpickr.css'
+  import Editor from './Editor.vue'
   import Tree from './Tree.vue'
-
-  const flatpickr = require('flatpickr')
+  // import Entry from './entry'
 
   let vm = ''
+  let buffer = []
 
   export default {
     name: 'landing-page',
     components: {
-      VueEditor,
       flatPickr,
+      Editor,
       Tree
     },
     created: function () {
       vm = this
     },
     mounted: function () {
-      // Create calendar
-      this.flatpickr = flatpickr('#calendar', {
-        locale: {
-          firstDayOfWeek: 1
-        },
-        inline: true,
-        onMonthChange: function (selectedDates, dateStr, instance) {
-          // Update calendar with new entry highlights
-          let month = vm.$moment(instance.currentMonth + 1, 'M').format('MMMM') // from 0-11 to MMMM
-          vm.updateCalendarEntries(month)
-        }
-      })
-
       // Listen for goto commands from main menu
       this.$electron.ipcRenderer.on('goto', (event, arg) => {
         switch (arg) {
@@ -79,9 +71,10 @@
       // Autosave entry
       setInterval(function () {
         if (!vm.entry.saved) {
+          buffer.push(vm.entry)
           vm.save()
         }
-      }, 15000) // every 15 seconds
+      }, 5000) // every 5 seconds
     },
     data () {
       return {
@@ -107,27 +100,16 @@
           }
         },
         customStyles: '',
-        tree: {}
+        tree: {},
+        editor: null
       }
     },
     watch: {
-      content: function () {
-        // Watch the editor for changes we need to save
-        if (this.autosaveEntryId === this.entry.id) {
-          this.entry.saved = false
-        } else {
-          // If we have changed entries through the calendar, don't save, just update the ID
-          this.autosaveEntryId = this.entry.id
-        }
-      },
       date: function () {
         /*
         Watch for when a new calendar date is picked, and then select the entry for that day.
         If no entry, then create a new blank one.
          */
-        // Set calendar to new date
-        this.flatpickr.setDate(this.date)
-
         // Update marked entries on calendar
         let month = this.$moment(this.date).format('MMMM')
         if (this.calendarMonth !== month) {
@@ -243,7 +225,7 @@
         }
         this.calendarStyle = style
       },
-      open (link) {
+      openLink (link) {
         this.$electron.shell.openExternal(link)
       },
       getCSS () {
@@ -259,14 +241,22 @@
         let css = this.entry.content.replace(/<\/?[^>]+(>|$)/g, '')
         this.customStyles = css
         this.$db.setOption('css', css)
+      },
+      contentChanged (newContent) {
+        this.entry.content = newContent
+        if (this.autosaveEntryId === this.entry.id) {
+          // Mark for autosave
+          this.entry.saved = false
+        } else {
+          // If we have changed entries through the calendar, don't save, just update the ID
+          this.autosaveEntryId = this.entry.id
+        }
       }
     }
   }
 </script>
 
 <style>
-    /* @import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro'); */
-
     * {
         box-sizing: border-box;
         margin: 0;
@@ -274,7 +264,7 @@
     }
 
     .flatpickr-input {
-        display: block;
+        display: none;
     }
 
     .flatpickr-calendar {
@@ -283,11 +273,12 @@
 
     body {
         font-family: sans-serif;
+        background: #fdfdfd;
     }
 
     #wrapper {
         height: 100vh;
-        padding: 60px 80px;
+        padding: 46px 60px;
         width: 100vw;
     }
 
@@ -305,47 +296,8 @@
 
     #content {
         display: flex;
-        flex-grow: 1;
-    }
-
-    .quillWrapper {
-        display: flex;
-        flex-grow: 1;
         flex-direction: column;
-    }
-
-    #editor {
-        display: flex;
         flex-grow: 1;
-        flex-direction: row;
-    }
-
-    .ql-editor {
-        width: 100%;
-    }
-
-    .welcome {
-        color: #555;
-        font-size: 23px;
-        margin-bottom: 10px;
-    }
-
-    .title {
-        color: #2c3e50;
-        font-size: 20px;
-        font-weight: bold;
-        margin-bottom: 6px;
-    }
-
-    .title.alt {
-        font-size: 18px;
-        margin-bottom: 10px;
-    }
-
-    #editor p {
-        color: black;
-        font-size: 14pt;
-        margin-bottom: 0.7em;
     }
 
     .doc button {

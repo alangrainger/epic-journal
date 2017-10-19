@@ -10,3 +10,5 @@ thumbs.db
 !.gitkeep
 /yarn-error.log
 .idea/
+yarn.lock
+testing.db
