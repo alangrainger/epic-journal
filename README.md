@@ -1,6 +1,6 @@
 # Epic Journal
 
-An encrypted daily journal / diary app, with full CSS styling. It is built with Sqlite3 and 
+A password-protected, encrypted daily journal / diary app for Windows, with full CSS styling. It is built with Sqlite3 and 
 SQLcipher with AES 256 CBC encryption.
 
 Download the [latest release here](https://github.com/alangrainger/epic-journal/releases).
