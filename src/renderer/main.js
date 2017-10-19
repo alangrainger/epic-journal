@@ -12,16 +12,24 @@ import moment from 'moment'
 // Styles
 import './assets/font-awesome/css/font-awesome.css'
 
-/*
-Startup prompts.
-
-This will be replaced with a proper system, but for now IT WORKS and that's all that matters!
- */
 const prompt = require('electron-prompt')
-if (!config.data.file) {
-  promptDatabase()
+
+if (process.env.NODE_ENV === 'development') {
+  // Dev mode, choose local no security DB
+  db.openDatabase('', 'testing.db')
+    .then(initApp)
+    .catch(fail)
 } else {
-  promptPassword()
+  /*
+   * Production mode startup prompts.
+   * This will be replaced with a proper system, but for now IT WORKS and that's all that matters!
+   */
+  // Check for existing database
+  if (!config.data.file) {
+    promptDatabase()
+  } else {
+    promptPassword()
+  }
 }
 
 function promptDatabase () {
@@ -51,7 +59,9 @@ function promptPassword () {
   })
     .then((password) => {
       if (password) {
-        db.openDatabase(password, config.data.file, initApp, fail)
+        db.openDatabase(password, config.data.file)
+          .then(initApp)
+          .catch(fail)
       } else {
         fail('No password specified. Please make sure you click the OK button.')
       }
@@ -62,9 +72,6 @@ function promptPassword () {
 function initApp () {
   Vue.prototype.$moment = moment
   Vue.prototype.$db = db
-
-  const flatpickr = require('flatpickr')
-  flatpickr('#calendar', {})
 
   if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
   Vue.config.productionTip = false

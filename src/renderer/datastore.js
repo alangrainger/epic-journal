@@ -3,7 +3,7 @@ import moment from 'moment'
 const DATE_SQL = 'YYYY-MM-DD HH:mm:ss'
 const DATE_DAY = 'YYYY-MM-DD'
 
-function Database () {
+function Datastore () {
   this.DATE_DAY = DATE_DAY
   this.DATE_SQL = DATE_SQL
 
@@ -11,33 +11,34 @@ function Database () {
   this.table.entries = 'entries'
   this.table.tags = 'tags'
 
-  var db
+  let db
 
-  this.openDatabase = function (password, filename, callback, failure) {
-    var datastore = this
-    var sqlite3 = require('win-sqlcipher').verbose()
+  this.openDatabase = function (password, filename) {
+    return new Promise(function (resolve, reject) {
+      let sqlite3 = require('win-sqlcipher').verbose()
 
-    db = new sqlite3.Database(filename)
+      db = new sqlite3.Database(filename)
 
-    db.serialize(function () {
-      password = password.replace(/'/g, '\'\'') // escape single quotes with two single quotes
-      db.run('PRAGMA KEY = \'' + password + '\'')
-      db.run('PRAGMA CIPHER = \'aes-256-cbc\'')
+      db.serialize(function () {
+        password = password.replace(/'/g, '\'\'') // escape single quotes with two single quotes
+        db.run('PRAGMA KEY = \'' + password + '\'')
+        db.run('PRAGMA CIPHER = \'aes-256-cbc\'')
 
-      // Test DB read/write
-      db.run('CREATE TABLE test (id INTEGER)', function (err) {
-        if (err) {
-          failure('Fatal error: Database not writeable. Please check your password, check if your database file is locked, and restart the app.', err)
-        } else {
-          db.run('DROP TABLE test')
-          datastore.createTables()
-          callback()
-        }
+        // Test DB read/write
+        db.run('CREATE TABLE test (id INTEGER)', function (err) {
+          if (err) {
+            reject(err, 'Fatal error: Database not writeable. Please check your password, check if your database file is locked, and restart the app.')
+          } else {
+            db.run('DROP TABLE test')
+            createTables() // Create tables IF NOT EXISTS
+            resolve()
+          }
+        })
       })
     })
   }
 
-  this.createTables = function () {
+  const createTables = function () {
     // Entries
     db.serialize(function () {
       db.run(
@@ -70,7 +71,7 @@ function Database () {
   }
 
   this.createNewEntry = function (data, callback) {
-    var created = moment().format(DATE_SQL)
+    let created = moment().format(DATE_SQL)
     db.run('INSERT INTO entries (date, created, modified, content) VALUES (?, ?, ?, ?)', [data.date, created, created, data.content], function (err) {
       if (err) {
         console.log(err)
@@ -81,7 +82,7 @@ function Database () {
   }
 
   this.updateEntry = function (entry, callback) {
-    var modified = moment().format(DATE_SQL)
+    let modified = moment().format(DATE_SQL)
     db.run('UPDATE entries SET modified = ?, content = ? WHERE entry_id = ?', [modified, entry.content, entry.id], function (err) {
       if (err) {
         console.log(err)
@@ -127,42 +128,33 @@ function Database () {
     })
   }
 
-  var getEach = function (query, callback, complete) {
-    db.each(query, function (err, row) {
-      if (err) {
-        console.log(err)
-      } else {
-        callback(row)
-      }
-    }, complete)
-  }
-  this.getEach = getEach
+  this.getEntryTree = function () {
+    return new Promise(function (resolve, reject) {
+      let tree = {}
+      db.all('SELECT entry_id, date FROM entries ORDER BY date ASC', function (err, rows) {
+        if (err) {
+          reject(err)
+        } else {
+          rows.forEach(function (row) {
+            /*
+            I feel that this section is a kludge, but I don't know a better way to do it :\
+             */
+            let year = row.date.substr(0, 4)
+            let month = moment(row.date, 'YYYY-MM-DD').format('MMMM')
+            let day = moment(row.date, 'YYYY-MM-DD').format('DD - dddd')
 
-  this.getEntryTree = function (callback) {
-    var tree = {}
-    db.all('SELECT entry_id, date FROM entries ORDER BY date ASC', function (err, rows) {
-      if (err) {
-        errorMessage(err)
-      } else {
-        rows.forEach(function (row) {
-          /*
-          I feel that this section is a kludge, but I don't know a better way to do it :\
-           */
-          var year = row.date.substr(0, 4)
-          var month = moment(row.date, 'YYYY-MM-DD').format('MMMM')
-          var day = moment(row.date, 'YYYY-MM-DD').format('DD - dddd')
+            if (!tree[year]) { tree[year] = {} }
+            if (!tree[year]['months']) { tree[year]['months'] = {} }
+            if (!tree[year]['months'][month]) { tree[year]['months'][month] = {} }
+            if (!tree[year]['months'][month]['entries']) { tree[year]['months'][month]['entries'] = [] }
 
-          if (!tree[year]) { tree[year] = {} }
-          if (!tree[year]['months']) { tree[year]['months'] = {} }
-          if (!tree[year]['months'][month]) { tree[year]['months'][month] = {} }
-          if (!tree[year]['months'][month]['entries']) { tree[year]['months'][month]['entries'] = [] }
-
-          tree[year]['show'] = true
-          tree[year]['months'][month]['show'] = true
-          tree[year]['months'][month]['entries'].push({date: row.date, value: day})
-        })
-        callback(tree)
-      }
+            tree[year]['show'] = true
+            tree[year]['months'][month]['show'] = true
+            tree[year]['months'][month]['entries'].push({date: row.date, value: day})
+          })
+          resolve(tree)
+        }
+      })
     })
   }
 
@@ -194,4 +186,4 @@ function errorMessage (message, err) {
   console.log(err)
 }
 
-export default new Database()
+export default new Datastore()
