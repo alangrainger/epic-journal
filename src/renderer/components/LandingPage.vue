@@ -2,15 +2,12 @@
     <div id="wrapper">
         <main>
             <div id="sidebar">
-                <button @click="getCSS">Get CSS into current editor</button>
-                <button @click="setCSS">Set CSS styles</button>
-                <template v-if="false">
                 <flat-pickr v-model="date" :config="calConfig" @click="console.log(this)"></flat-pickr>
                 <p>Saved: {{ entry.saved }}, AID: {{ autosaveEntryId }}, ID: {{entry.id}}</p>
+                <button @click="getCSS">Get CSS into current editor</button>
+                <button @click="setCSS">Set CSS styles</button>
                 <button @click="save">Save entry</button>
                 <Tree :tree="tree" @update="getEntryByDate"></Tree>
-                </template>
-                <div style="width:400px">{{entry.content}}</div>
             </div>
             <div id="content">
                 <Editor
