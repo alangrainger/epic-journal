@@ -13,10 +13,6 @@ let template = [
       {
         label: 'Open',
         click: () => { openFile() }
-      },
-      {
-        label: 'Save',
-        click: () => { saveFile() }
       }
     ]
   },
@@ -153,7 +149,7 @@ function openFile () {
   })
 }
 
-function saveFile () {
+/* function saveFile () {
   return new Promise(function (resolve, reject) {
     dialog.showSaveDialog({
       filters: [
@@ -168,7 +164,7 @@ function saveFile () {
       }
     })
   })
-}
+} */
 
 /**
  * Auto Updater
