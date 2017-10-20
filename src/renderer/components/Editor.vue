@@ -75,26 +75,8 @@
         background: white;
     }
 
-    #editor p {
-        color: black;
-        font-size: 14pt;
-        margin-bottom: 0.7em;
-    }
-
-    .alan {
-        font-size: 20px;
-    }
-
-    .bob {
-        text-decoration: underline;
-    }
-
-    .ql-apple {
-        text-decoration: underline
-    }
-
-    .ql-frog {
-        background-color: green
+    .ql-customStyles {
+        width: 7em;
     }
 </style>
 
@@ -116,39 +98,7 @@
         id: 'editor',
         contentElement: null,
         buffer: {},
-        customStyles: [
-          {
-            'name': 'Normal',
-            'class': 'default',
-            'element': 'p',
-            'style': '',
-            'INFO': 'DEFAULT CLASS - DO NOT MOVE THIS ARRAY ELEMENT'
-          },
-          {
-            'name': 'Heading 1',
-            'class': 'default',
-            'element': 'h1',
-            'style': ''
-          },
-          {
-            'name': 'Heading 2',
-            'class': 'default',
-            'element': 'p',
-            'style': ''
-          },
-          {
-            'name': 'Steve\'s Style',
-            'class': 'steve',
-            'element': 'p',
-            'style': 'font-family: "Comic Sans MS"; font-size:20pt; color: blue;'
-          },
-          {
-            'name': 'Fancy Quote',
-            'class': 'quote',
-            'element': 'p',
-            'style': 'margin: 1em; background-color: #fcfcfc; padding: 1em;'
-          }
-        ],
+        customStyles: this.$config.data.customStyles,
         editor: '',
         customCSS: '',
         selectedStyle: '',
@@ -186,15 +136,12 @@
         theme: 'snow'
       })
 
-      // Set default style
-      this.editor.format(this.stylePrefix + '0', true)
-
       // Add custom style dropdown
-      const placeholderPickerItems = Array.prototype.slice.call(document.querySelectorAll('.ql-customStyles .ql-picker-item'))
-      placeholderPickerItems.forEach(function (item) {
+      const dropdownPickerItems = Array.prototype.slice.call(document.querySelectorAll('.ql-customStyles .ql-picker-item'))
+      dropdownPickerItems.forEach(function (item) {
         item.textContent = vm.customStyles[item.dataset.value]['name']
       })
-      document.querySelector('.ql-customStyles .ql-picker-label').innerHTML = 'Custom Styles' + document.querySelector('.ql-customStyles .ql-picker-label').innerHTML
+      document.querySelector('.ql-customStyles .ql-picker-label').innerHTML = 'Styles' + document.querySelector('.ql-customStyles .ql-picker-label').innerHTML
 
       // Set editor content element
       this.contentElement = document.querySelector(`#${this.id} .ql-editor`)
@@ -216,28 +163,20 @@
         let Block = Quill.import('blots/block')
         let css = ''
 
-        // Register Normal style
-        /* class NormalBlot extends Block {}
-
-        NormalBlot.blogName = this.stylePrefix + '0'
-        NormalBlot.tagName = 'p'
-        Quill.register(NormalBlot) */
-
         // Register all custom styles
         for (let i = 0; i < this.customStyles.length; i++) {
           let className = this.customStyles[i]['class']
           let element = this.customStyles[i]['element']
           let style = this.customStyles[i]['style']
-          console.log(className)
 
           // Set up Quill Blot
           class Blot extends Block {
             static create () {
+              let node = super.create()
               if (className) {
-                let node = super.create()
                 node.setAttribute('class', className)
-                return node
               }
+              return node
             }
           }
 

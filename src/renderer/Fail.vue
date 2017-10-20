@@ -11,7 +11,7 @@
   }
 </script>
 
-<style>
+<style scoped>
     * {
         font-size: 16pt;
         font-family: sans-serif;

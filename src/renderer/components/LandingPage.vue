@@ -2,15 +2,8 @@
     <div id="wrapper">
         <main>
             <div id="sidebar">
-                <flat-pickr v-model="date" :config="calConfig" @click="console.log(this)"></flat-pickr>
-                <p>Saved: {{ entry.saved }}, AID: {{ autosaveEntryId }}, ID: {{entry.id}}</p>
-                <button @click="getCSS">Get CSS into current editor</button>
-                <button @click="setCSS">Set CSS styles</button>
-                <button @click="save">Save entry</button>
-                <template v-if="false">
+                <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
                 <Tree :tree="tree" @update="getEntryByDate"></Tree>
-                </template>
-                <p>{{entry.content}}</p>
             </div>
             <div id="content">
                 <Editor
@@ -28,10 +21,8 @@
   import 'flatpickr/dist/flatpickr.css'
   import Editor from './Editor.vue'
   import Tree from './Tree.vue'
-  // import Entry from './entry'
 
   let vm = ''
-  let buffer = []
 
   export default {
     name: 'landing-page',
@@ -71,7 +62,6 @@
       // Autosave entry
       setInterval(function () {
         if (!vm.entry.saved) {
-          buffer.push(vm.entry)
           vm.save()
         }
       }, 5000) // every 5 seconds
@@ -207,7 +197,9 @@
           .catch(console.error)
       },
       updateCalendarEntries (monthName) {
-        // Mark entry dates for this month on calendar
+        /*
+          Mark all dates with entries on the calendar
+         */
         let year = this.$moment(this.date).format('YYYY')
         let month = monthName || this.$moment(this.date).format('MMMM')
         if (!this.tree || !this.tree[year] || !this.tree[year]['months'][month]) {
@@ -227,20 +219,6 @@
       },
       openLink (link) {
         this.$electron.shell.openExternal(link)
-      },
-      getCSS () {
-        let vm = this
-        this.$db.getOption('css', function (result) {
-          vm.customStyles = result
-          vm.entry.content = result
-        })
-      },
-      setCSS () {
-        // TODO: write a proper editor
-        // stripping the HTML tags out for now, need to write a proper CSS editor page
-        let css = this.entry.content.replace(/<\/?[^>]+(>|$)/g, '')
-        this.customStyles = css
-        this.$db.setOption('css', css)
       },
       contentChanged (newContent) {
         this.entry.content = newContent
@@ -298,24 +276,5 @@
         display: flex;
         flex-direction: column;
         flex-grow: 1;
-    }
-
-    .doc button {
-        font-size: .8em;
-        cursor: pointer;
-        outline: none;
-        padding: 0.75em 2em;
-        border-radius: 2em;
-        display: inline-block;
-        color: #fff;
-        background-color: #4fc08d;
-        transition: all 0.15s ease;
-        box-sizing: border-box;
-        border: 1px solid #4fc08d;
-    }
-
-    .doc button.alt {
-        color: #42b983;
-        background-color: transparent;
     }
 </style>

@@ -1,6 +1,6 @@
 {
   "name": "epic-journal",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "author": "Alan Grainger",
   "description": "A daily journal app",
   "license": "GPL-3.0",
@@ -27,11 +27,7 @@
     "files": [
       "dist/electron/**/*"
     ],
-    "extraFiles": "build/lib/*.dll",
-    "fileAssociations": {
-      "ext": "epic",
-      "description": "Epic Journal file"
-    },
+    "extraFiles": "./*.dll",
     "dmg": {
       "contents": [
         {

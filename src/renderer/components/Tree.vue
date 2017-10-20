@@ -71,7 +71,6 @@
     .icon-year {
         color: #284971;
     }
-
 </style>
 
 <script>
