@@ -25,7 +25,7 @@
 
 <style scoped>
     #container {
-        padding: 15px 30px;
+        padding: 12px 30px;
     }
     ul {
         list-style: none;

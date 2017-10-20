@@ -3,7 +3,9 @@
         <main>
             <div id="sidebar">
                 <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
-                <Tree :tree="tree" @update="getEntryByDate"></Tree>
+                <div id="tree">
+                    <Tree :tree="tree" @update="getEntryByDate"></Tree>
+                </div>
             </div>
             <div id="content">
                 <Editor
@@ -270,6 +272,10 @@
         display: flex;
         flex-direction: column;
         margin-right: 40px;
+    }
+
+    #tree {
+        overflow-y: auto;
     }
 
     #content {

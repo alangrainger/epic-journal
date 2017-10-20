@@ -1,8 +1,25 @@
 'use strict'
 
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, BrowserWindow, Menu, dialog } from 'electron'
 
-const template = [
+import config from './config'
+
+global.config = config // make available for renderer
+
+let template = [
+  {
+    label: 'File',
+    submenu: [
+      {
+        label: 'Open',
+        click: () => { openFile() }
+      },
+      {
+        label: 'Save',
+        click: () => { saveFile() }
+      }
+    ]
+  },
   {
     label: 'Edit',
     submenu: [
@@ -92,7 +109,19 @@ function createWindow () {
   })
 }
 
-app.on('ready', createWindow)
+app.on('ready', function () {
+  if (!config.data.file) {
+    // No existing database file, ask them where to create it
+    openFile()
+      .then((file) => {
+        config.data.file = file
+        config.write()
+        createWindow()
+      })
+  } else {
+    createWindow()
+  }
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -105,6 +134,41 @@ app.on('activate', () => {
     createWindow()
   }
 })
+
+function openFile () {
+  return new Promise(function (resolve, reject) {
+    dialog.showOpenDialog({
+      filters: [
+        {name: 'Epic Journal', extensions: ['epic']}
+      ],
+      properties: ['openFile', 'promptToCreate', 'createDirecotry']
+    }, function (filenames) {
+      if (filenames === undefined || !filenames[0]) {
+        reject(new Error('No file specified'))
+      } else {
+        let filename = filenames[0]
+        resolve(filename)
+      }
+    })
+  })
+}
+
+function saveFile () {
+  return new Promise(function (resolve, reject) {
+    dialog.showSaveDialog({
+      filters: [
+        {name: 'Epic Journal', extensions: ['epic']}
+      ]
+    }, function (filenames) {
+      if (filenames === undefined || !filenames[0]) {
+        reject(new Error('No file specified'))
+      } else {
+        let filename = filenames[0]
+        resolve(filename)
+      }
+    })
+  })
+}
 
 /**
  * Auto Updater

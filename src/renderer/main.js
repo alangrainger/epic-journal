@@ -1,3 +1,4 @@
+import { remote } from 'electron'
 import Vue from 'vue'
 
 import App from './App'
@@ -5,7 +6,6 @@ import Fail from './Fail'
 import router from './router'
 import store from './store'
 
-import config from './config'
 import db from './datastore'
 import moment from 'moment'
 
@@ -13,8 +13,9 @@ import moment from 'moment'
 import './assets/font-awesome/css/font-awesome.css'
 
 const prompt = require('electron-prompt')
+let config = remote.getGlobal('config')
 
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === 'development-OFF') {
   // Dev mode, choose local no security DB
   db.openDatabase('', 'testing.db')
     .then(initApp)

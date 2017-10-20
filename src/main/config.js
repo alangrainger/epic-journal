@@ -1,6 +1,6 @@
-import { remote } from 'electron'
+import { app } from 'electron'
 
-const fs = require('fs')
+var fs = require('fs')
 
 let defaultStyles = [
   {
@@ -40,7 +40,7 @@ let Config = function () {
   this.data = {}
 
   // Set INI file location
-  this.iniFile = remote.app.getPath('userData') + '/epic-config.ini'
+  this.iniFile = app.getPath('userData') + '/epic-config.ini'
 
   // Read existing data
   if (fs.existsSync(this.iniFile)) {
