@@ -2,7 +2,7 @@ import { remote } from 'electron'
 import Vue from 'vue'
 
 import App from './App'
-import Fail from './Fail'
+// import Fail from './Fail'
 import router from './router'
 import store from './store'
 
@@ -12,19 +12,19 @@ import moment from 'moment'
 // Styles
 import './assets/font-awesome/css/font-awesome.css'
 
-const prompt = require('electron-prompt')
+// const prompt = require('electron-prompt')
 let config = remote.getGlobal('config')
 
-if (process.env.NODE_ENV === 'development-OFF') {
+/* if (process.env.NODE_ENV === 'development-OFF') {
   // Dev mode, choose local no security DB
   db.openDatabase('', 'testing.db')
     .then(initApp)
     .catch(fail)
 } else {
-  /*
+  *
    * Production mode startup prompts.
    * This will be replaced with a proper system, but for now IT WORKS and that's all that matters!
-   */
+   *
   // Check for existing database
   if (!config.data.file) {
     promptDatabase()
@@ -69,6 +69,8 @@ function promptPassword () {
     })
     .catch(console.error)
 }
+*/
+initApp()
 
 function initApp () {
   Vue.prototype.$moment = moment
@@ -85,8 +87,10 @@ function initApp () {
     store,
     template: '<App/>'
   }).$mount('#app')
-}
 
+  router.push('password') // send them to the login screen
+}
+/*
 function fail () {
   Vue.prototype.failMessages = arguments
   new Vue({
@@ -94,3 +98,4 @@ function fail () {
     template: '<Fail/>'
   }).$mount('#app')
 }
+*/

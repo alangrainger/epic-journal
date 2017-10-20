@@ -113,9 +113,7 @@ app.on('ready', function () {
   if (!config.data.file) {
     // No existing database file, ask them where to create it
     openFile()
-      .then((file) => {
-        config.data.file = file
-        config.write()
+      .then(() => {
         createWindow()
       })
   } else {
@@ -147,7 +145,9 @@ function openFile () {
         reject(new Error('No file specified'))
       } else {
         let filename = filenames[0]
-        resolve(filename)
+        config.data.file = filename
+        config.write()
+        resolve()
       }
     })
   })

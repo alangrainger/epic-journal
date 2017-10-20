@@ -1,4 +1,7 @@
+import { remote } from 'electron'
 import moment from 'moment'
+
+let config = remote.getGlobal('config')
 
 const SCHEMA_VERSION = 2
 
@@ -16,17 +19,25 @@ function Datastore () {
   let db
   let datastore = this
 
-  this.openDatabase = function (password, filename) {
+  this.openDatabase = function (password) {
     return new Promise(function (resolve, reject) {
+      let errorHandler = function (err) {
+        if (err) {
+          reject(err)
+        }
+      }
+
       let sqlite3 = require('win-sqlcipher').verbose()
 
-      db = new sqlite3.Database(filename)
+      // Get filename from config always at point of open
+      let filename = config.data.file
+      db = new sqlite3.Database(filename, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, errorHandler)
 
       db.serialize(function () {
         password = password.replace(/'/g, '\'\'') // escape single quotes with two single quotes
-        db.run('PRAGMA KEY = \'' + password + '\'')
-        db.run('PRAGMA CIPHER = \'aes-256-cbc\'')
-        db.run('PRAGMA user_version = ' + SCHEMA_VERSION)
+        db.run('PRAGMA KEY = \'' + password + '\'', errorHandler)
+        db.run('PRAGMA CIPHER = \'aes-256-cbc\'', errorHandler)
+        db.run('PRAGMA user_version = ' + SCHEMA_VERSION, errorHandler)
 
         // Test DB read/write
         db.run('CREATE TABLE test (id INTEGER)', function (err) {
