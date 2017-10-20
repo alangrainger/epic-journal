@@ -33,9 +33,9 @@ Next it will ask you for a password. Put that in, and you're done!
 
 ## Configuration
 
-All settings are stored in ``
+All settings are stored in `%appdata%\epic-journal\epic-config.ini`
 
-To configure custom styles, open up your epic-config.ini file, and edit the `customStyles` section. It is an array of objects
+To configure custom styles, open up your `epic-config.ini` file, and edit the `customStyles` section. It is an array of objects
 in this format:
 
 ```
