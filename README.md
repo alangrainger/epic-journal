@@ -20,7 +20,6 @@ entries are safe, with an open and known database format.
 I'll be working towards feature parity with The Journal, but the next things I'm working on are:
 
 - Tagging of entries, both inline, and at the entry level.
-- A better CSS editing feature. The existing one DOES work though!
 - Search. Good fast search.
 
 ### Please note
@@ -31,6 +30,74 @@ time it will ask you for a database file. Put in the full path plus filename, e.
 > c:/users/alan/dropbox/journal.epic
 
 Next it will ask you for a password. Put that in, and you're done!
+
+## Configuration
+
+All settings are stored in ``
+
+To configure custom styles, open up your epic-config.ini file, and edit the `customStyles` section. It is an array of objects
+in this format:
+
+```
+[
+  {
+    'name': 'Normal',
+    'class': false,
+    'element': 'p',
+    'style': 'font-size: 14pt; margin-bottom: 0.7em;'
+  },
+  {
+    'name': 'Heading 1',
+    'class': false,
+    'element': 'h1',
+    'style': 'font-size: 20pt; margin-bottom: 0.7em;'
+  },
+  {
+    'name': 'Quote',
+    'class': 'quote',
+    'element': 'p',
+    'style': 'font-style: italic; margin: 1em; background-color: #fcfcfc; padding: 0.9em 1.1em; border: solid 1px #cccccc;'
+  }
+]
+```
+
+- **name** - the friendly name that appears in the dropdown list in the editor
+- **class** - your custom class name
+- **element** - the HTML element it applies to
+- **style** - the style configuration
+
+The 'Quote' style from the list above becomes `p.quote { style }` in the final CSS.
+ 
+To create a new class, simply add a new section at the end, like this:
+
+```
+[
+  {
+    'name': 'Normal',
+    'class': false,
+    'element': 'p',
+    'style': 'font-size: 14pt; margin-bottom: 0.7em;'
+  },
+  {
+    'name': 'Heading 1',
+    'class': false,
+    'element': 'h1',
+    'style': 'font-size: 20pt; margin-bottom: 0.7em;'
+  },
+  {
+    'name': 'Quote',
+    'class': 'quote',
+    'element': 'p',
+    'style': 'font-style: italic; margin: 1em; background-color: #fcfcfc; padding: 0.9em 1.1em; border: solid 1px #cccccc;'
+  },
+  {
+    'name': 'Fancy New Style',
+    'class': 'fancy',
+    'element': 'p',
+    'style': 'font-family "Comic Sans MS"; font-size: 26pt; color: blue;'
+  }
+]
+```
 
 ## Build Setup for Windows
 
@@ -46,19 +113,15 @@ My build environment:
 # install Windows build tools if you don't have a build environment
 npm install -g windows-build-tools
 
-# install dependencies
-npm install
+# install yarn
+npm install -g yarn
 
-# rebuild Win-SQLcipher / Sqlite3 for Electron
-.\node_modules\.bin\electron-rebuild -w sqlite3 -p
+# install dependencies
+yarn install
 
 # serve with hot reload at localhost:9080
-npm run dev
+yarn run dev
 
 # build app for production
-npm run build
+yarn run build
 ```
-
----
-
-This project was generated with [electron-vue](https://github.com/SimulatedGREG/electron-vue) using [vue-cli](https://github.com/vuejs/vue-cli). Documentation about the original structure can be found [here](https://simulatedgreg.gitbooks.io/electron-vue/content/index.html).
