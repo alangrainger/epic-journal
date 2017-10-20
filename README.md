@@ -15,21 +15,17 @@ I built it as an open-source replacement for [The Journal](http://www.davidrm.co
 for years. The main issues I wanted to solve were better styling, and the ability to know that my
 entries are safe, with an open and known database format.
 
+### Usage
+
+When you launch the app for the first time, it will ask you for a journal location. Choose a folder, and then type in
+the name you would like for the journal, and it will create it for you.
+
 ### Upcoming features
 
 I'll be working towards feature parity with The Journal, but the next things I'm working on are:
 
 - Tagging of entries, both inline, and at the entry level.
 - Search. Good fast search.
-
-### Please note
-
-Proper File > Open functions are yet to be built, but when you run it the first 
-time it will ask you for a database file. Put in the full path plus filename, e.g.
-
-> c:/users/alan/dropbox/journal.epic
-
-Next it will ask you for a password. Put that in, and you're done!
 
 ## Configuration
 
