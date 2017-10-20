@@ -1,13 +1,13 @@
 <template>
     <div id="quill">
         <div v-html="'<style>' + customCSS + '</style>'" class="display:none"></div>
-        <div id="toolbar">
-            <select id="style-dropdown" v-model="selectedStyle" style="width:100px">
-                <option value="test">Test</option>
-                <option value="quote">Quote</option>
-            </select>
+        <!-- <div id="toolbar">
             <div class="toolbar">
                 <span class="ql-formats">
+                    <select class="ql-formats" style="width:100px">
+                        <option class="ql-test" value="ql-test">Test</option>
+                        <option class="ql-quote" value="ql-quote">Quote</option>
+                    </select>
                     <select class="ql-header">
                         <option value="1">Heading</option>
                         <option value="2">Subheading</option>
@@ -50,7 +50,7 @@
                     <button class="ql-clean"></button>
                 </span>
             </div>
-        </div>
+        </div>-->
         <div :id="id"></div>
     </div>
 </template>
@@ -116,46 +116,85 @@
         id: 'editor',
         contentElement: null,
         buffer: {},
-        customStyles: {
-          test: {
-            name: 'Test',
-            element: 'p',
-            style: 'color: blue;'
+        customStyles: [
+          {
+            'name': 'Normal',
+            'class': 'default',
+            'element': 'p',
+            'style': '',
+            'INFO': 'DEFAULT CLASS - DO NOT MOVE THIS ARRAY ELEMENT'
           },
-          quote: {
-            name: 'Nice quote',
-            element: 'p',
-            style: 'margin: 1em; background-color: #fcfcfc; padding: 1em;'
+          {
+            'name': 'Heading 1',
+            'class': 'default',
+            'element': 'h1',
+            'style': ''
+          },
+          {
+            'name': 'Heading 2',
+            'class': 'default',
+            'element': 'p',
+            'style': ''
+          },
+          {
+            'name': 'Steve\'s Style',
+            'class': 'steve',
+            'element': 'p',
+            'style': 'font-family: "Comic Sans MS"; font-size:20pt; color: blue;'
+          },
+          {
+            'name': 'Fancy Quote',
+            'class': 'quote',
+            'element': 'p',
+            'style': 'margin: 1em; background-color: #fcfcfc; padding: 1em;'
           }
-        },
+        ],
         editor: '',
         customCSS: '',
-        selectedStyle: ''
+        selectedStyle: '',
+        styleList: [],
+        stylePrefix: 'epic'
       }
     },
     mounted: function () {
+      let vm = this
+
+      // Set up styles - Quill toolbar, Quill Blots, and this.customCSS
       this.injectStyles()
-      this.customCSS = this.createCSS()
 
       // Create editor
       this.editor = new Quill('#' + this.id, {
         modules: {
-          toolbar: '#toolbar'
-          /* [
-          [{'header': [1, 2, 3, 4, 5, 6, false]}],
-          ['alan'],
-          ['bob'],
-          [{'align': []}],
-          ['bold', 'italic', 'underline', 'strike'],
-          [{'list': 'ordered'}, {'list': 'bullet'}],
-          [{'color': []}, {'background': []}],
-          ['blockquote', 'code-block'],
-          [{'indent': '-1'}, {'indent': '+1'}],
-          ['clean']
-          ] */
+          toolbar: {
+            container: [
+              [{'customStyles': this.styleList}],
+              [{'align': []}],
+              ['bold', 'italic', 'underline', 'strike'],
+              [{'list': 'ordered'}, {'list': 'bullet'}],
+              [{'color': []}, {'background': []}],
+              ['blockquote', 'code-block'],
+              [{'indent': '-1'}, {'indent': '+1'}],
+              ['clean']
+            ],
+            handlers: {
+              'customStyles': function (index) {
+                vm.applyCustomStyle(index)
+              }
+            }
+          }
         },
         theme: 'snow'
       })
+
+      // Set default style
+      this.editor.format(this.stylePrefix + '0', true)
+
+      // Add custom style dropdown
+      const placeholderPickerItems = Array.prototype.slice.call(document.querySelectorAll('.ql-customStyles .ql-picker-item'))
+      placeholderPickerItems.forEach(function (item) {
+        item.textContent = vm.customStyles[item.dataset.value]['name']
+      })
+      document.querySelector('.ql-customStyles .ql-picker-label').innerHTML = 'Custom Styles' + document.querySelector('.ql-customStyles .ql-picker-label').innerHTML
 
       // Set editor content element
       this.contentElement = document.querySelector(`#${this.id} .ql-editor`)
@@ -170,37 +209,59 @@
         if (content !== this.contentElement.innerHTML) {
           this.contentElement.innerHTML = content
         }
-      },
-      selectedStyle: function () {
-        this.editor.format('color', 'red')
       }
     },
     methods: {
       injectStyles () {
         let Block = Quill.import('blots/block')
+        let css = ''
 
-        for (let key in this.customStyles) {
+        // Register Normal style
+        /* class NormalBlot extends Block {}
+
+        NormalBlot.blogName = this.stylePrefix + '0'
+        NormalBlot.tagName = 'p'
+        Quill.register(NormalBlot) */
+
+        // Register all custom styles
+        for (let i = 0; i < this.customStyles.length; i++) {
+          let className = this.customStyles[i]['class']
+          let element = this.customStyles[i]['element']
+          let style = this.customStyles[i]['style']
+          console.log(className)
+
+          // Set up Quill Blot
           class Blot extends Block {
             static create () {
-              let node = super.create()
-              node.setAttribute('class', key)
-              return node
+              if (className) {
+                let node = super.create()
+                node.setAttribute('class', className)
+                return node
+              }
             }
           }
 
-          Blot.blotName = key
-          Blot.tagName = this.customStyles[key]['element']
+          Blot.blotName = this.stylePrefix + i
+          Blot.tagName = element
           Quill.register(Blot)
-        }
+
+          // Create style list for dropdown
+          this.styleList.push(i)
+
+          // Create CSS
+          let name = (className) ? element + '.' + className : element
+          css += '#' + this.id + ' ' + name + '{' + style + '}\n'
+        } // Next i
+
+        // Set master CSS
+        this.customCSS = css
       },
-      createCSS () {
-        let css = ''
-        for (let key in this.customStyles) {
-          let element = this.customStyles[key]['element']
-          let style = this.customStyles[key]['style']
-          css += '#' + this.id + ' ' + element + '.' + key + '{' + style + '}\n'
-        }
-        return css
+      applyCustomStyle (index) {
+        if (!index) { index = '0' }
+        this.editor.format(this.stylePrefix + index, true)
+        // const cursorPosition = this.quill.getSelection().index
+        // this.quill.insertText(cursorPosition, value)
+        // this.quill.setSelection(cursorPosition + value.length)
       }
     }
   }

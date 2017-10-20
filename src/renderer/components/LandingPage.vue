@@ -7,7 +7,10 @@
                 <button @click="getCSS">Get CSS into current editor</button>
                 <button @click="setCSS">Set CSS styles</button>
                 <button @click="save">Save entry</button>
+                <template v-if="false">
                 <Tree :tree="tree" @update="getEntryByDate"></Tree>
+                </template>
+                <p>{{entry.content}}</p>
             </div>
             <div id="content">
                 <Editor
