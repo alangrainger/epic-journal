@@ -82,7 +82,7 @@
         display: block;
         background: #fff;
         padding: 16px 24px 16px 46px;
-        margin: 1.2em 0;
+        margin: 1.5em 0;
         position: relative;
 
         /*Font*/
