@@ -63,8 +63,7 @@
         height: 100%;
     }
 
-    #toolbar {
-        display: flex;
+    .ql-toolbar {
         background: white;
     }
 
@@ -77,6 +76,50 @@
 
     .ql-customStyles {
         width: 7em;
+    }
+
+    #editor blockquote {
+        display: block;
+        background: #fff;
+        padding: 16px 24px 16px 46px;
+        margin: 1.2em 0;
+        position: relative;
+
+        /*Font*/
+        font-family: Georgia, serif;
+        font-size: 14pt;
+        line-height: 1.4;
+        color: #666;
+        text-align: justify;
+
+        /*Borders - (Optional)*/
+        border-left: 15px solid #c76c0c;
+        border-right: 2px solid #c76c0c;
+
+        /*Box Shadow - (Optional)*/
+        -moz-box-shadow: 2px 2px 15px #e6e6e6;
+        -webkit-box-shadow: 2px 2px 15px #e6e6e6;
+        box-shadow: 2px 2px 15px #e6e6e6;
+    }
+
+    #editor blockquote::before {
+        content: "\201C"; /*Unicode for Left Double Quote*/
+
+        /*Font*/
+        font-family: Georgia, serif;
+        font-size: 60px;
+        font-weight: bold;
+        color: #999;
+
+        /*Positioning*/
+        position: absolute;
+        left: 10px;
+        top: 5px;
+    }
+
+    #editor blockquote::after {
+        /*Reset to make sure*/
+        content: "";
     }
 </style>
 

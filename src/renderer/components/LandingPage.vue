@@ -258,7 +258,7 @@
 
     body {
         font-family: sans-serif;
-        background: #fdfdfd;
+        background: #FDFDFD;
     }
 
     #wrapper {
