@@ -257,7 +257,7 @@
     }
 
     body {
-        font-family: sans-serif;
+        font-family: 'Segoe UI', sans-serif;
         background: #FDFDFD;
     }
 

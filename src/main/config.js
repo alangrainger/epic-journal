@@ -19,13 +19,13 @@ let defaultStyles = [
     'name': 'Heading 2',
     'class': false,
     'element': 'h2',
-    'style': 'font-size: 18pt; margin-bottom: 0.7em;'
+    'style': 'font-size: 18pt; margin-bottom: 0.7em; margin-top: 1em;'
   },
   {
     'name': 'Heading 3',
     'class': false,
     'element': 'h3',
-    'style': 'font-size: 16pt; margin-bottom: 0.7em;'
+    'style': 'font-size: 16pt; margin-bottom: 0.7em; margin-top: 1em;'
   },
   {
     'name': 'Quote',
