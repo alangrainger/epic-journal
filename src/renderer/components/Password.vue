@@ -71,6 +71,8 @@
     methods: {
       submit: function (event) {
         let password = this.password
+        this.password = ''
+        this.message = 'loading...'
         db.openDatabase(password)
           .then(() => {
             router.push('main')
@@ -78,10 +80,9 @@
           .catch((error) => {
             let vm = this
             vm.message = 'Incorrect password. Please try again.'
-            vm.password = ''
             setTimeout(function () {
               vm.message = ''
-            }, 3000)
+            }, 3500)
             console.log(error)
           })
       }

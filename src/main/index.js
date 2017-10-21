@@ -93,9 +93,15 @@ function createWindow () {
    * Initial window options
    */
   mainWindow = new BrowserWindow({
-    height: 760,
-    useContentSize: true,
-    width: 1400
+    width: config.data.windowX || 1100,
+    height: config.data.windowY || 680,
+    useContentSize: true
+  })
+
+  mainWindow.on('resize', function () {
+    // Store the window dimensions in the config
+    config.data.windowX = mainWindow.getSize()[0]
+    config.data.windowY = mainWindow.getSize()[1]
   })
 
   mainWindow.loadURL(winURL)
@@ -118,6 +124,8 @@ app.on('ready', function () {
 })
 
 app.on('window-all-closed', () => {
+  // Main exit process
+  config.write() // write out the config file in case we haven't
   if (process.platform !== 'darwin') {
     app.quit()
   }

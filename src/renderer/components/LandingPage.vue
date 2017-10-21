@@ -67,6 +67,9 @@
           vm.save()
         }
       }, 5000) // every 5 seconds
+
+      // Set focus to editor
+      document.getElementById('editor').getElementsByClassName('ql-editor')[0].focus()
     },
     data () {
       return {
