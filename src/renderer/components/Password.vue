@@ -50,7 +50,7 @@
         color: white;
         border-bottom: 1px solid white;
         margin: 0 0 0.5em 0;
-        width: 300px;
+        width: 260px;
     }
 </style>
 

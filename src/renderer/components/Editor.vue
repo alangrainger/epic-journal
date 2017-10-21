@@ -1,56 +1,6 @@
 <template>
     <div id="quill">
         <div v-html="'<style>' + customCSS + '</style>'" class="display:none"></div>
-        <!-- <div id="toolbar">
-            <div class="toolbar">
-                <span class="ql-formats">
-                    <select class="ql-formats" style="width:100px">
-                        <option class="ql-test" value="ql-test">Test</option>
-                        <option class="ql-quote" value="ql-quote">Quote</option>
-                    </select>
-                    <select class="ql-header">
-                        <option value="1">Heading</option>
-                        <option value="2">Subheading</option>
-                        <option selected>Normal</option>
-                    </select>
-                    <select class="ql-font">
-                        <option selected>Sailec Light</option>
-                        <option value="sofia">Sofia Pro</option>
-                        <option value="slabo">Slabo 27px</option>
-                        <option value="roboto">Roboto Slab</option>
-                        <option value="inconsolata">Inconsolata</option>
-                        <option value="ubuntu">Ubuntu Mono</option>
-                    </select>
-                </span>
-                <span class="ql-formats">
-                    <button class="ql-bold"></button>
-                    <button class="ql-italic"></button>
-                    <button class="ql-underline"></button>
-                </span>
-                <span class="ql-formats">
-                    <button class="ql-list" value="ordered"></button>
-                    <button class="ql-list" value="bullet"></button>
-                    <select class="ql-align">
-                        <option selected></option>
-                        <option value="center"></option>
-                        <option value="right"></option>
-                        <option value="justify"></option>
-                    </select>
-                </span>
-                <span class="ql-formats">
-                    <button class="ql-link"></button>
-                    <button class="ql-image"></button>
-                    <button class="ql-video"></button>
-                </span>
-                <span class="ql-formats">
-                    <button class="ql-formula"></button>
-                    <button class="ql-code-block"></button>
-                </span>
-                <span class="ql-formats">
-                    <button class="ql-clean"></button>
-                </span>
-            </div>
-        </div>-->
         <div :id="id"></div>
     </div>
 </template>
@@ -125,8 +75,9 @@
 
 <script>
   import Quill from 'quill'
-  import 'quill/dist/quill.core.css'
-  import 'quill/dist/quill.snow.css'
+  import './editor/quill.core.css'
+  import './editor/quill.snow.css'
+  import { SpellCheckHandler, ContextMenuListener, ContextMenuBuilder } from 'electron-spellchecker'
 
   export default {
     name: 'quill',
@@ -193,6 +144,25 @@
       this.editor.on('text-change', () => {
         this.$emit('textChange', this.contentElement.innerHTML)
       })
+
+      // Set up spell checker
+      const osLocale = require('os-locale')
+      window.spellCheckHandler = new SpellCheckHandler()
+      window.spellCheckHandler.attachToInput()
+      osLocale()
+        .then(locale => {
+          window.spellCheckHandler.switchLanguage(locale)
+            .catch((err) => { console.log(err) })
+        })
+        .catch(() => {
+          window.spellCheckHandler.switchLanguage('en_US')
+            .catch((err) => { console.log(err) })
+        })
+      let contextMenuBuilder = new ContextMenuBuilder(window.spellCheckHandler)
+      let contextMenuListener = new ContextMenuListener((info) => {
+        contextMenuBuilder.showPopupMenu(info)
+      })
+      console.log(contextMenuListener)
     },
     watch: {
       value (content) {

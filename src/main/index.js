@@ -4,6 +4,10 @@ import { app, BrowserWindow, Menu, dialog } from 'electron'
 
 import config from './config'
 
+const osLocale = require('os-locale')
+osLocale().then(locale => {
+  global['locale'] = locale
+})
 global.config = config // make available for renderer
 
 let template = [

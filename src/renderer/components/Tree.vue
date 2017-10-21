@@ -25,6 +25,7 @@
 
 <style scoped>
     #container {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         padding: 12px 30px;
     }
     ul {
