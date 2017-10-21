@@ -1,22 +1,11 @@
 <template>
-    <div id="quill">
+    <div id="editorContainer">
         <div v-html="'<style>' + customCSS + '</style>'" class="display:none"></div>
         <div :id="id"></div>
     </div>
 </template>
 
 <style>
-    #quill {
-        display: flex;
-        flex-direction: column;
-        flex-grow: 1;
-        height: 100%;
-    }
-
-    .ql-toolbar {
-        background: white;
-    }
-
     #editor {
         display: flex;
         flex-direction: column;
@@ -24,8 +13,41 @@
         background: white;
     }
 
-    .ql-customStyles {
-        width: 7em;
+    .tinycme-full .mce-edit-area {
+        display: flex;
+        flex-flow: column;
+    }
+
+    .tinycme-full .mce-edit-area iframe {
+        flex: 1 1 auto;
+    }
+
+    .tinycme-full {
+        height: 100%;
+    }
+
+    .tinycme-full .mce-tinymce.mce-container {
+        width: 100%;
+        height: 100%;
+        border: 0;
+    }
+
+    .tinycme-full .mce-panel {
+        border: 0
+    }
+
+    .tinycme-full .mce-container-body.mce-stack-layout {
+        display: flex;
+        flex-flow: column;
+        height: 100%;
+    }
+
+    .tinycme-full .mce-stack-layout-item {
+        flex: 0 0 auto;
+    }
+
+    .tinycme-full .mce-edit-area {
+        flex: 1 1 auto;
     }
 
     #editor blockquote {
@@ -74,13 +96,10 @@
 </style>
 
 <script>
-  import Quill from 'quill'
-  import './editor/quill.core.css'
-  import './editor/quill.snow.css'
-  import { SpellCheckHandler, ContextMenuListener, ContextMenuBuilder } from 'electron-spellchecker'
+  let tinymce = require('tinymce')
+  tinymce.baseURL = 'node_modules/tinymce'
 
   export default {
-    name: 'quill',
     props: {
       value: String,
       entry: {
@@ -101,68 +120,19 @@
       }
     },
     mounted: function () {
-      let vm = this
-
-      // Set up styles - Quill toolbar, Quill Blots, and this.customCSS
-      this.injectStyles()
-
       // Create editor
-      this.editor = new Quill('#' + this.id, {
-        modules: {
-          toolbar: {
-            container: [
-              [{'customStyles': this.styleList}],
-              [{'align': []}],
-              ['bold', 'italic', 'underline', 'strike'],
-              [{'list': 'ordered'}, {'list': 'bullet'}],
-              [{'color': []}, {'background': []}],
-              ['blockquote', 'code-block'],
-              [{'indent': '-1'}, {'indent': '+1'}],
-              ['clean']
-            ],
-            handlers: {
-              'customStyles': function (index) {
-                vm.applyCustomStyle(index)
-              }
-            }
-          }
-        },
-        theme: 'snow'
+      tinymce.init({
+        plugins: 'image imagetools',
+        selector: '#' + this.id,
+        statusbar: false,
+        branding: false,
+        browser_spellcheck: true,
+        contextmenu: true
       })
-
-      // Add custom style dropdown
-      const dropdownPickerItems = Array.prototype.slice.call(document.querySelectorAll('.ql-customStyles .ql-picker-item'))
-      dropdownPickerItems.forEach(function (item) {
-        item.textContent = vm.customStyles[item.dataset.value]['name']
-      })
-      document.querySelector('.ql-customStyles .ql-picker-label').innerHTML = 'Styles' + document.querySelector('.ql-customStyles .ql-picker-label').innerHTML
+      console.log(tinymce)
 
       // Set editor content element
-      this.contentElement = document.querySelector(`#${this.id} .ql-editor`)
-
-      // Watch text changes
-      this.editor.on('text-change', () => {
-        this.$emit('textChange', this.contentElement.innerHTML)
-      })
-
-      // Set up spell checker
-      const osLocale = require('os-locale')
-      window.spellCheckHandler = new SpellCheckHandler()
-      window.spellCheckHandler.attachToInput()
-      osLocale()
-        .then(locale => {
-          window.spellCheckHandler.switchLanguage(locale)
-            .catch((err) => { console.log(err) })
-        })
-        .catch(() => {
-          window.spellCheckHandler.switchLanguage('en_US')
-            .catch((err) => { console.log(err) })
-        })
-      let contextMenuBuilder = new ContextMenuBuilder(window.spellCheckHandler)
-      let contextMenuListener = new ContextMenuListener((info) => {
-        contextMenuBuilder.showPopupMenu(info)
-      })
-      console.log(contextMenuListener)
+      this.contentElement = document.getElementById(this.id)
     },
     watch: {
       value (content) {
@@ -173,7 +143,6 @@
     },
     methods: {
       injectStyles () {
-        let Block = Quill.import('blots/block')
         let css = ''
 
         // Register all custom styles
@@ -181,21 +150,6 @@
           let className = this.customStyles[i]['class']
           let element = this.customStyles[i]['element']
           let style = this.customStyles[i]['style']
-
-          // Set up Quill Blot
-          class Blot extends Block {
-            static create () {
-              let node = super.create()
-              if (className) {
-                node.setAttribute('class', className)
-              }
-              return node
-            }
-          }
-
-          Blot.blotName = this.stylePrefix + i
-          Blot.tagName = element
-          Quill.register(Blot)
 
           // Create style list for dropdown
           this.styleList.push(i)
@@ -207,13 +161,6 @@
 
         // Set master CSS
         this.customCSS = css
-      },
-      applyCustomStyle (index) {
-        if (!index) { index = '0' }
-        this.editor.format(this.stylePrefix + index, true)
-        // const cursorPosition = this.quill.getSelection().index
-        // this.quill.insertText(cursorPosition, value)
-        // this.quill.setSelection(cursorPosition + value.length)
       }
     }
   }

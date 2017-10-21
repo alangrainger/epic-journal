@@ -3,9 +3,10 @@
         <main>
             <div id="sidebar">
                 <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
-                <div id="tree">
+                <div v-if="false" id="tree">
                     <Tree :tree="tree" @update="getEntryByDate"></Tree>
                 </div>
+                <div style="width:300px;">{{ entry.content }}</div>
             </div>
             <div id="content">
                 <Editor
@@ -114,7 +115,7 @@
     },
     methods: {
       focusOnEditor () {
-        document.getElementById('editor').getElementsByClassName('ql-editor')[0].focus()
+        document.getElementById('editor').focus()
       },
       clearEntry () {
         this.entry.id = null
