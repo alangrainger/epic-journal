@@ -16,94 +16,152 @@ function Datastore () {
   this.table.entries = 'entries'
   this.table.tags = 'tags'
 
-  let db
-  let datastore = this
+  let sql = false
+  let db = this
 
   this.openDatabase = function (password) {
     return new Promise(function (resolve, reject) {
-      let errorHandler = function (err) {
-        if (err) {
-          reject(err)
-        }
-      }
-
-      let sqlite3 = require('win-sqlcipher').verbose()
+      let sqlite3 = require('win-sqlcipher')
 
       // Get filename from config always at point of open
       let filename = config.data.file
-      db = new sqlite3.Database(filename, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, errorHandler)
+      sql = new sqlite3.Database(filename, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, function (err) {
+        if (err) {
+          reject(err)
+        }
+      })
 
-      db.serialize(function () {
+      sql.serialize(function () {
         password = password.replace(/'/g, '\'\'') // escape single quotes with two single quotes
-        db.run('PRAGMA KEY = \'' + password + '\'', errorHandler)
-        db.run('PRAGMA CIPHER = \'aes-256-cbc\'', errorHandler)
-        db.run('PRAGMA user_version = ' + SCHEMA_VERSION, errorHandler)
+        db.run('PRAGMA KEY = \'' + password + '\'')
+          .catch((err) => { reject(err) })
+        db.run('PRAGMA CIPHER = \'aes-256-cbc\'')
+          .catch((err) => { reject(err) })
+        db.run('PRAGMA user_version = ' + SCHEMA_VERSION)
+          .catch((err) => { reject(err) })
 
         // Test DB read/write
-        db.run('CREATE TABLE test (id INTEGER)', function (err) {
-          if (err) {
-            reject(err, 'Fatal error: Database not writeable. Please check your password, check if your database file is locked, and restart the app.')
-          } else {
+        db.run('CREATE TABLE test (id INTEGER)')
+          .then(() => {
             db.run('DROP TABLE test')
             createTables() // Create tables IF NOT EXISTS
             createDefaultData()
-            resolve()
-          }
-        })
+            resolve() // back to main execution
+          })
+          .catch((err) => {
+            reject(err, 'Fatal error: Database not writeable. Please check your password, check if your database file is locked, and restart the app.')
+          })
       })
     })
   }
 
+  /*
+   *
+   * Promise wrappers for built-in Sqlite3 functions
+   *
+   */
+  this.run = function (query, parameters = []) {
+    return new Promise(function (resolve, reject) {
+      if (!sql) { reject(new Error('run: Database object not created')) }
+      sql.run(query, parameters, function (error) {
+        if (error) {
+          reject(error)
+        } else {
+          resolve(this)
+        }
+      })
+    })
+  }
+  this.get = function (query, parameters) {
+    return new Promise(function (resolve, reject) {
+      if (!sql) { reject(new Error('get: Database object not created')) }
+      sql.get(query, parameters, function (err, row) {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(row)
+        }
+      })
+    })
+  }
+  this.all = function (query) {
+    return new Promise(function (resolve, reject) {
+      if (!sql) { reject(new Error('all: Database object not created')) }
+      sql.all(query, function (err, rows) {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(rows)
+        }
+      })
+    })
+  }
+  /*
+   * END PROMISE WRAPPERS
+   */
+
   const createTables = function () {
-    db.serialize(function () {
-      // Folders
-      db.run(
-        'CREATE TABLE IF NOT EXISTS folders(' +
-        'folder_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-        'name TEXT, ' +
-        'type TEXT);')
-
-      // Entries
-      db.run(
-        'CREATE TABLE IF NOT EXISTS entries(' +
-        'entry_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-        'folder_id INTEGER, ' +
-        'date TEXT, ' + // YYYY-MM-DD
-        'created TEXT, ' +
-        'modified TEXT, ' +
-        'content TEXT, ' +
-        'FOREIGN KEY (folder_id) REFERENCES folders (folder_id));')
-      db.run('CREATE INDEX IF NOT EXISTS index_date ON entries(date)')
-
-      // Tags
-      db.run(
-        'CREATE TABLE IF NOT EXISTS tags(' +
-        'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-        'name TEXT, ' +
-        'class TEXT);')
-      db.run(
-        'CREATE TABLE IF NOT EXISTS entry_tags(' +
-        'entry_id INTEGER, ' +
-        'tag_id INTEGER, ' +
-        'FOREIGN KEY (entry_id) REFERENCES entries (entry_id), ' +
-        'FOREIGN KEY (tag_id) REFERENCES tags (tag_id));')
-
-      // Options
-      db.run(
-        'CREATE TABLE IF NOT EXISTS options(' +
-        'name TEXT PRIMARY KEY, ' +
-        'value TEXT);')
+    return new Promise(function (resolve, reject) {
+      sql.serialize(function () {
+        // Folders
+        db.run(
+          'CREATE TABLE IF NOT EXISTS folders(' +
+          'folder_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+          'name TEXT, ' +
+          'type TEXT);')
+          .then(
+            // Entries
+            db.run(
+              'CREATE TABLE IF NOT EXISTS entries(' +
+              'entry_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+              'folder_id INTEGER, ' +
+              'date TEXT, ' + // YYYY-MM-DD
+              'created TEXT, ' +
+              'modified TEXT, ' +
+              'content TEXT, ' +
+              'FOREIGN KEY (folder_id) REFERENCES folders (folder_id));')
+          )
+          .then(
+            db.run('CREATE INDEX IF NOT EXISTS index_date ON entries(date)')
+          )
+          .then(
+            // Tags
+            db.run(
+              'CREATE TABLE IF NOT EXISTS tags(' +
+              'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+              'name TEXT, ' +
+              'class TEXT);')
+          )
+          .then(
+            db.run(
+              'CREATE TABLE IF NOT EXISTS entry_tags(' +
+              'entry_id INTEGER, ' +
+              'tag_id INTEGER, ' +
+              'FOREIGN KEY (entry_id) REFERENCES entries (entry_id), ' +
+              'FOREIGN KEY (tag_id) REFERENCES tags (tag_id));')
+          )
+          .then(
+            // Options
+            db.run(
+              'CREATE TABLE IF NOT EXISTS options(' +
+              'name TEXT PRIMARY KEY, ' +
+              'value TEXT);')
+          )
+          .catch((err) => {
+            reject(err)
+          })
+      })
     })
   }
 
   const createDefaultData = function () {
-    datastore.getRow('SELECT * FROM folders')
+    db.get('SELECT * FROM folders')
       .then((result) => {
         if (result) {
           // Table exists, do nothing
         } else {
           // Create default data
-          datastore.insert('folders', ['name', 'type'], ['Journal', 'journal'])
+          db.run('INSERT INTO folders (name, type) VALUES (?, ?)', ['Journal', 'journal'])
             .catch((err) => {
               console.log('Error inserting default data', err)
             })
@@ -114,100 +172,98 @@ function Datastore () {
       })
   }
 
-  this.insert = function (table, columns, values) {
+  this.createNewEntry = function (data) {
     return new Promise(function (resolve, reject) {
-      let columnNames = columns.join(', ')
-      let blanks = '?'
-      for (let i = 1; i < columns.length; i++) {
-        blanks += ', ?'
-      }
-      let query = 'INSERT INTO ' + table + ' (' + columnNames + ') VALUES (' + blanks + ')'
-      db.run(query, values, function (err, row) {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(this.lastID)
-        }
-      })
+      let created = moment().format(DATE_SQL)
+      db.run('INSERT INTO entries (folder_id, date, created, modified, content) VALUES (?, ?, ?, ?, ?)', ['1', data.date, created, created, data.content])
+        .then((ret) => {
+          if (ret.lastID) {
+            resolve(ret.lastID)
+          } else {
+            reject(new Error('Entry was not created'))
+          }
+        })
+        .catch((error) => {
+          reject(error)
+        })
     })
   }
 
-  this.createNewEntry = function (data, callback) {
-    let created = moment().format(DATE_SQL)
-    db.run('INSERT INTO entries (folder_id, date, created, modified, content) VALUES (?, ?, ?, ?, ?)', ['1', data.date, created, created, data.content], function (err) {
-      if (err) {
-        console.log(err)
-      } else {
-        callback(this.lastID)
-      }
-    })
-  }
-
-  this.updateEntry = function (entry, callback) {
-    let modified = moment().format(DATE_SQL)
-    db.run('UPDATE entries SET modified = ?, content = ? WHERE entry_id = ?', [modified, entry.content, entry.id], function (err) {
-      if (err) {
-        console.log(err)
-      } else {
-        callback(this.changes)
-      }
-    })
-  }
-
-  this.getRow = function (query, parameters) {
+  this.updateEntry = function (entry) {
     return new Promise(function (resolve, reject) {
-      db.get(query, parameters, function (err, row) {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(row)
-        }
-      })
+      let modified = moment().format(DATE_SQL)
+      db.run('UPDATE entries SET modified = ?, content = ? WHERE entry_id = ?', [modified, entry.content, entry.id])
+        .then((ret) => {
+          if (ret.changes) {
+            resolve(ret.changes)
+          } else {
+            reject(new Error('Entry was not updated'))
+          }
+        })
+        .catch((error) => {
+          reject(error)
+        })
     })
   }
 
-  this.deleteEntry = function (entry, callback) {
-    // Delete from the database if the entry is blank
-    if (entry.id && Number.isInteger(entry.id)) {
-      db.run('DELETE FROM entries WHERE entry_id = ?', entry.id, function (err) {
-        if (err) {
-          console.log(err)
-        } else {
-          callback(this.changes)
-        }
-      })
-    }
-  }
-
-  this.getEntryByDate = function (date, callback) {
-    if (!date) return false
-    db.get('SELECT * FROM entries WHERE date = ?', date, function (err, row) {
-      if (err) {
-        console.log(err)
-      } else {
-        callback(row)
+  this.deleteEntry = function (entry) {
+    return new Promise(function (resolve, reject) {
+      // Delete from the database if the entry is blank
+      if (entry.id && Number.isInteger(entry.id)) {
+        db.run('DELETE FROM entries WHERE entry_id = ?', [entry.id])
+          .then((ret) => {
+            if (ret.changes) {
+              resolve(ret.changes)
+            } else {
+              reject(new Error('Entry was not deleted'))
+            }
+          })
+          .catch((error) => {
+            reject(error)
+          })
       }
     })
   }
 
-  this.getEntryById = function (entryId, callback) {
-    if (!entryId) return false
-    db.get('SELECT * FROM entries WHERE entry_id = ?', entryId, function (err, row) {
-      if (err) {
-        console.log(err)
-      } else {
-        callback(row)
-      }
+  this.getEntryByDate = function (date) {
+    return new Promise(function (resolve, reject) {
+      if (!date) reject(new Error('No date specified'))
+      db.get('SELECT * FROM entries WHERE date = ?', [date])
+        .then((row) => {
+          if (row) {
+            resolve(row)
+          } else {
+            reject(new Error('No entry found with date ' + date))
+          }
+        })
+        .catch((error) => {
+          reject(error)
+        })
+    })
+  }
+
+  this.getEntryById = function (entryId) {
+    return new Promise(function (resolve, reject) {
+      if (!entryId) reject(new Error('Not a valid ID'))
+      db.get('SELECT * FROM entries WHERE entry_id = ?', [entryId])
+        .then((row) => {
+          if (row) {
+            resolve(row)
+          } else {
+            reject(new Error('No row found for ID ' + entryId))
+          }
+        })
+        .catch((error) => {
+          console.log(error)
+        })
     })
   }
 
   this.getEntryTree = function () {
     return new Promise(function (resolve, reject) {
       let tree = {}
-      db.all('SELECT entry_id, date FROM entries ORDER BY date ASC', function (err, rows) {
-        if (err) {
-          reject(err)
-        } else {
+      db.all('SELECT entry_id, date FROM entries ORDER BY date ASC')
+        .then((rows) => {
           rows.forEach(function (row) {
             /*
             I feel that this section is a kludge, but I don't know a better way to do it :\
@@ -226,29 +282,30 @@ function Datastore () {
             tree[year]['months'][month]['entries'].push({date: row.date, value: day})
           })
           resolve(tree)
-        }
-      })
+        })
+        .catch((err) => {
+          console.log(err)
+        })
     })
   }
 
   this.getOption = function (name, callback) {
     if (name) {
-      db.get('SELECT * FROM options WHERE name = ?', name, function (err, row) {
-        if (err) {
-          console.log(err)
-        } else {
+      db.get('SELECT * FROM options WHERE name = ?', [name])
+        .then((row) => {
           callback((row && row.value) ? row.value : null)
-        }
-      })
+        })
+        .catch((error) => {
+          console.log(error)
+        })
     }
   }
 
   this.setOption = function (name, value) {
-    db.run('INSERT OR REPLACE INTO options VALUES (?, ?)', [name, value], function (err) {
-      if (err) {
-        console.log(err)
-      }
-    })
+    db.run('INSERT OR REPLACE INTO options VALUES (?, ?)', [name, value])
+      .catch((error) => {
+        console.log(error)
+      })
   }
 }
 

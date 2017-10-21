@@ -2,7 +2,7 @@
     <div id="container">
         <div id="inner">
             <div id="title">password</div>
-            <input id="password" type="password" v-model="password" v-on:keyup.enter="submit">
+            <input id="password" type="password" v-model="password" v-on:keydown.enter="submit">
             <div id="message">{{ message }}</div>
         </div>
     </div>

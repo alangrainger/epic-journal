@@ -52,11 +52,7 @@
       })
 
       // Load existing entry if there is one
-      this.$db.getEntryByDate(this.entry.date, function (row) {
-        if (row) {
-          vm.setEntryFromRow(row)
-        }
-      })
+      this.getEntryByDate(this.entry.date)
 
       // Get entry tree
       this.updateTree()
@@ -69,7 +65,7 @@
       }, 5000) // every 5 seconds
 
       // Set focus to editor
-      document.getElementById('editor').getElementsByClassName('ql-editor')[0].focus()
+      this.focusOnEditor()
     },
     data () {
       return {
@@ -117,6 +113,9 @@
       }
     },
     methods: {
+      focusOnEditor () {
+        document.getElementById('editor').getElementsByClassName('ql-editor')[0].focus()
+      },
       clearEntry () {
         this.entry.id = null
         this.entry.date = this.date
@@ -144,14 +143,15 @@
         let vm = this
         this.date = date
         this.entry.date = date
-        this.$db.getEntryByDate(date, function (row) {
-          if (row) {
-            // There is an existing entry for that date
-            vm.setEntryFromRow(row)
-          } else {
-            vm.clearEntry()
-          }
-        })
+        this.$db.getEntryByDate(date)
+          .then((row) => {
+            this.setEntryFromRow(row)
+          })
+          .catch((err) => {
+            if (err === 'dont output these') console.log(err)
+            this.clearEntry()
+          })
+        vm.focusOnEditor()
       },
       save () {
         let vm = this
@@ -160,36 +160,38 @@
              If it exists, then prune it from DB
              '<p><br></p>' is the minimum content for an empty Quill editor */
           if (this.entry.id) {
-            this.$db.deleteEntry(this.entry, function (result) {
-              if (result) {
+            this.$db.deleteEntry(this.entry)
+              .then(() => {
                 console.log('Empty entry ' + vm.entry.id + ' has been pruned')
                 vm.clearEntry()
                 vm.updateTree()
-              }
-            })
+              })
+              .catch((error) => {
+                console.log(error)
+              })
           }
         } else if (this.entry.id) {
           // Entry ID already exists, update existing entry
-          this.$db.updateEntry(this.entry, function (result) {
-            if (result) {
-              console.log(vm.$moment().format('HH:mm:ss') + ' saved entry', 'ID: ' + vm.entry.id)
-              vm.entry.saved = true
-            } else {
-              console.log('FAILED TO SAVE ENTRY!')
-            }
-          })
+          this.$db.updateEntry(this.entry)
+            .then(() => {
+              console.log(this.$moment().format('HH:mm:ss') + ' saved entry', 'ID: ' + this.entry.id)
+              this.entry.saved = true
+            })
+            .catch(() => {
+              console.log('FAILED TO SAVE ENTRY')
+            })
         } else {
           // No existing entry, so create new entry
-          this.$db.createNewEntry(vm.entry, function (entryId) {
-            if (entryId) {
-              vm.entry.id = entryId
-              console.log(vm.$moment().format('HH:mm:ss') + ' created new entry', 'ID: ' + vm.entry.id)
-              vm.entry.saved = true
-              vm.updateTree()
-            } else {
-              console.log('FAILED TO CREATE NEW ENTRY!')
-            }
-          })
+          this.$db.createNewEntry(vm.entry)
+            .then((entryId) => {
+              this.entry.id = entryId
+              console.log(this.$moment().format('HH:mm:ss') + ' created new entry', 'ID: ' + vm.entry.id)
+              this.entry.saved = true
+              this.updateTree()
+            })
+            .catch((err) => {
+              console.log(err)
+            })
         }
       },
       updateTree () {
