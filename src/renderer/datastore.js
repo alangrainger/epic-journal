@@ -45,6 +45,7 @@ function Datastore () {
           .then(() => {
             db.run('DROP TABLE test')
             createTables() // Create tables IF NOT EXISTS
+              .catch((err) => { reject(err) })
             createDefaultData()
             resolve() // back to main execution
           })
@@ -146,6 +147,15 @@ function Datastore () {
               'CREATE TABLE IF NOT EXISTS options(' +
               'name TEXT PRIMARY KEY, ' +
               'value TEXT);')
+          )
+          .then(
+            // Attachments
+            db.run(
+              'CREATE TABLE IF NOT EXISTS attachments(' +
+              'attachment_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+              'created TEXT, ' +
+              'mime_type TEXT, ' +
+              'data BLOB);')
           )
           .catch((err) => {
             reject(err)

@@ -6,6 +6,10 @@
 </template>
 
 <style>
+    body {
+        background: #FDFDFD;
+    }
+
     #editorContainer {
         display: flex;
         flex-direction: column;
@@ -13,54 +17,15 @@
         background: white;
     }
 
-    #mceu_12, #mceu_12-body, #mceu_28, #editor_ifr {
+    /* Styles to force TinyMCE to flex */
+
+    .mce-tinymce,
+    .mce-tinymce > .mce-stack-layout,
+    .mce-tinymce > .mce-stack-layout > .mce-edit-area,
+    #editor_ifr {
         display: flex !important;
         flex-direction: column;
         flex-grow: 1;
-    }
-
-    #editor blockquote {
-        display: block;
-        background: #fff;
-        padding: 16px 24px 16px 46px;
-        margin: 1.5em 0;
-        position: relative;
-
-        /*Font*/
-        font-family: Georgia, serif;
-        font-size: 14pt;
-        line-height: 1.4;
-        color: #666;
-        text-align: justify;
-
-        /*Borders - (Optional)*/
-        border-left: 15px solid #c76c0c;
-        border-right: 2px solid #c76c0c;
-
-        /*Box Shadow - (Optional)*/
-        -moz-box-shadow: 2px 2px 15px #e6e6e6;
-        -webkit-box-shadow: 2px 2px 15px #e6e6e6;
-        box-shadow: 2px 2px 15px #e6e6e6;
-    }
-
-    #editor blockquote::before {
-        content: "\201C"; /*Unicode for Left Double Quote*/
-
-        /*Font*/
-        font-family: Georgia, serif;
-        font-size: 60px;
-        font-weight: bold;
-        color: #999;
-
-        /*Positioning*/
-        position: absolute;
-        left: 10px;
-        top: 5px;
-    }
-
-    #editor blockquote::after {
-        /*Reset to make sure*/
-        content: "";
     }
 </style>
 
@@ -90,63 +55,86 @@
       }
     },
     mounted: function () {
-      let customStyles = this.injectStyles()
+      this.generateCustomStyles()
 
       // Create editor
-      let vm = this
       tinymce.init({
-        init_instance_callback: function (editor) {
-          vm.editor = editor // set the editor instance
-          vm.editor.focus() // Set focus
-          vm.setContent(vm.entry.content) // Get initial text
+        init_instance_callback: (editor) => {
+          this.editor = editor // set the editor instance
+          this.setContent(this.entry.content) // Get initial text
+          this.editor.focus() // Set focus
         },
-        content_style: customStyles,
+        content_css: '/static/editor.css',
+        content_style: this.customCSS,
         plugins: 'image imagetools',
         selector: '#' + this.id,
         statusbar: false,
         branding: false,
         browser_spellcheck: true,
         contextmenu: true,
-        style_formats: [
-          {title: 'Bold text', inline: 'strong'},
-          {title: 'Red text', inline: 'span', styles: {color: '#ff0000'}},
-          {title: 'Red header', block: 'p', classes: 'quote'},
-          {
-            title: 'Badge',
-            inline: 'span',
-            styles: {
-              display: 'inline-block',
-              border: '1px solid #2276d2',
-              'border-radius': '5px',
-              padding: '2px 5px',
-              margin: '0 2px',
-              color: '#2276d2'
+        menubar: false,
+        toolbar: ['styleselect | undo redo | bold italic | blockquote | alignleft aligncenter alignright | indent outdent | link image'],
+        style_formats: this.styleList,
+        style_formats_merge: true,
+        file_picker_types: 'image',
+        // and here's our custom image picker
+        file_picker_callback: function (cb, value, meta) {
+          var input = document.createElement('input')
+          input.setAttribute('type', 'file')
+          input.setAttribute('accept', 'image/*')
+
+          // Note: In modern browsers input[type="file"] is functional without
+          // even adding it to the DOM, but that might not be the case in some older
+          // or quirky browsers like IE, so you might want to add it to the DOM
+          // just in case, and visually hide it. And do not forget do remove it
+          // once you do not need it anymore.
+
+          input.onchange = function () {
+            var file = this.files[0]
+
+            var reader = new FileReader()
+            reader.onload = function () {
+              // Note: Now we need to register the blob in TinyMCEs image blob
+              // registry. In the next release this part hopefully won't be
+              // necessary, as we are looking to handle it internally.
+              var id = 'blobid' + (new Date()).getTime()
+              var blobCache = tinymce.activeEditor.editorUpload.blobCache
+              var base64 = reader.result.split(',')[1]
+              var blobInfo = blobCache.create(id, file, base64)
+              blobCache.add(blobInfo)
+
+              // call the callback and populate the Title field with the file name
+              cb(blobInfo.blobUri(), {title: file.name})
             }
-          },
-          {title: 'Table row 1', selector: 'tr', classes: 'tablerow1'}
-        ],
-        formats: {
-          alignleft: {selector: 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes: 'left'},
-          aligncenter: {selector: 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes: 'center'},
-          alignright: {selector: 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes: 'right'},
-          alignfull: {selector: 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes: 'full'},
-          bold: {inline: 'span', 'classes': 'bold'},
-          italic: {inline: 'span', 'classes': 'italic'},
-          underline: {inline: 'span', 'classes': 'underline', exact: true},
-          strikethrough: {inline: 'del'},
-          customformat: {
-            inline: 'span',
-            styles: {color: '#00ff00', fontSize: '20px'},
-            attributes: {title: 'My custom format'},
-            classes: 'example1'
+            reader.readAsDataURL(file)
           }
+
+          input.click()
         }
+        /* setup: function (editor) {
+          console.log(editor)
+          editor.addButton('mybutton', {
+            type: 'menubutton',
+            text: 'My button',
+            icon: false,
+            menu: [{
+              text: 'Menu item 1',
+              onclick: function () {
+                tinymce.activeEditor.formatter.apply('bold')
+              }
+            }, {
+              text: 'Menu item 2',
+              onclick: function () {
+                editor.insertContent('&nbsp;<em>Menu item 2 here!</em>&nbsp;')
+              }
+            }]
+          })
+        } */
       })
     },
     methods: {
       getContent () {
         if (this.editor) {
-          console.log(this.editor.getContent())
           return this.editor.getContent()
         }
       },
@@ -157,26 +145,28 @@
           this.editor.focus() // set focus back to editor
         }
       },
-      injectStyles () {
-        console.log('i:', this.customStyles)
+      generateCustomStyles () {
         let css = ''
 
-        // Register all custom styles
         for (let i = 0; i < this.customStyles.length; i++) {
           let className = this.customStyles[i]['class']
           let element = this.customStyles[i]['element']
           let style = this.customStyles[i]['style']
+          let name = this.customStyles[i]['name']
 
           // Create style list for dropdown
-          this.styleList.push(i)
+          this.styleList.push({
+            title: name,
+            block: element,
+            classes: className
+          })
 
           // Create CSS
-          let name = (className) ? element + '.' + className : element
-          css += name + '{' + style + '}\n'
-        } // Next i
+          let fullName = (className) ? element + '.' + className : element
+          css += fullName + '{' + style + '}\n'
+        }
 
-        // Set master CSS
-        return css
+        this.customCSS = css
       }
     }
   }

@@ -263,11 +263,6 @@
         margin-bottom: 20px;
     }
 
-    body {
-        font-family: 'Segoe UI', sans-serif;
-        background: #FDFDFD;
-    }
-
     #wrapper {
         height: 100vh;
         padding: 46px 60px;
