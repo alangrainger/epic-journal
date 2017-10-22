@@ -6,48 +6,17 @@
 </template>
 
 <style>
-    #editor {
+    #editorContainer {
         display: flex;
         flex-direction: column;
         flex-grow: 1;
         background: white;
     }
 
-    .tinycme-full .mce-edit-area {
-        display: flex;
-        flex-flow: column;
-    }
-
-    .tinycme-full .mce-edit-area iframe {
-        flex: 1 1 auto;
-    }
-
-    .tinycme-full {
-        height: 100%;
-    }
-
-    .tinycme-full .mce-tinymce.mce-container {
-        width: 100%;
-        height: 100%;
-        border: 0;
-    }
-
-    .tinycme-full .mce-panel {
-        border: 0
-    }
-
-    .tinycme-full .mce-container-body.mce-stack-layout {
-        display: flex;
-        flex-flow: column;
-        height: 100%;
-    }
-
-    .tinycme-full .mce-stack-layout-item {
-        flex: 0 0 auto;
-    }
-
-    .tinycme-full .mce-edit-area {
-        flex: 1 1 auto;
+    #mceu_12, #mceu_12-body, #mceu_28, #editor_ifr {
+        display: flex !important;
+        flex-direction: column;
+        flex-grow: 1;
     }
 
     #editor blockquote {
@@ -112,16 +81,29 @@
         contentElement: null,
         buffer: {},
         customStyles: this.$config.data.customStyles,
-        editor: '',
+        editor: null,
         customCSS: '',
         selectedStyle: '',
         styleList: [],
-        stylePrefix: 'epic'
+        stylePrefix: 'epic',
+        bufferTimeout: 0
       }
     },
     mounted: function () {
       // Create editor
+      let vm = this
       tinymce.init({
+        init_instance_callback: function (editor) {
+          vm.editor = editor // set the editor instance
+          vm.editor.focus() // Set focus
+          vm.setContent(vm.entry.content) // Get initial text
+        },
+        ui: {
+          Layout: {
+            direction: 'column',
+            flex: 1
+          }
+        },
         plugins: 'image imagetools',
         selector: '#' + this.id,
         statusbar: false,
@@ -129,19 +111,20 @@
         browser_spellcheck: true,
         contextmenu: true
       })
-      console.log(tinymce)
-
-      // Set editor content element
-      this.contentElement = document.getElementById(this.id)
-    },
-    watch: {
-      value (content) {
-        if (content !== this.contentElement.innerHTML) {
-          this.contentElement.innerHTML = content
-        }
-      }
     },
     methods: {
+      getContent () {
+        if (this.editor) {
+          return this.editor.getContent()
+        }
+      },
+      setContent (content) {
+        if (this.editor) {
+          if (!content) content = '' // if empty, set to a string, TinyMCE expects this
+          this.editor.setContent(content)
+          this.editor.focus() // set focus back to editor
+        }
+      },
       injectStyles () {
         let css = ''
 

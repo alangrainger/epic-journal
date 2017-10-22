@@ -3,16 +3,12 @@
         <main>
             <div id="sidebar">
                 <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
-                <div v-if="false" id="tree">
+                <div id="tree">
                     <Tree :tree="tree" @update="getEntryByDate"></Tree>
                 </div>
-                <div style="width:300px;">{{ entry.content }}</div>
             </div>
             <div id="content">
-                <Editor
-                        v-model="entry.content"
-                        @textChange="contentChanged"
-                ></Editor>
+                <Editor ref="editor" :entry="entry"></Editor>
             </div>
         </main>
         <div v-html="'<style>' + calendarStyle + '</style>'"></div>
@@ -60,9 +56,7 @@
 
       // Autosave entry
       setInterval(function () {
-        if (!vm.entry.saved) {
-          vm.save()
-        }
+        vm.save()
       }, 5000) // every 5 seconds
 
       // Set focus to editor
@@ -114,21 +108,28 @@
       }
     },
     methods: {
+      getContent () {
+        return this.$refs.editor.getContent()
+      },
+      setContent (content) {
+        this.entry.content = content
+        this.$refs.editor.setContent(content)
+      },
       focusOnEditor () {
         document.getElementById('editor').focus()
       },
       clearEntry () {
         this.entry.id = null
         this.entry.date = this.date
-        this.entry.content = null
         this.entry.saved = true
+        this.setContent(null)
       },
       setEntryFromRow (row) {
         if (row && 'entry_id' in row && 'date' in row && 'content' in row) {
           this.entry.id = row.entry_id
           this.entry.date = row.date
-          this.entry.content = row.content
           this.entry.saved = true
+          this.setContent(row.content)
         }
       },
       getEntryByDate (date) {
@@ -137,9 +138,7 @@
         }
 
         // Check if we need to save the current entry
-        if (!this.entry.saved) {
-          this.save()
-        }
+        this.save()
 
         let vm = this
         this.date = date
@@ -156,6 +155,13 @@
       },
       save () {
         let vm = this
+        if (this.getContent() === this.entry.content) {
+          return // entry has not changed
+        }
+
+        // Get latest content from TinyMCE
+        this.entry.content = this.getContent()
+
         if (!this.entry.content || this.entry.content === '<p><br></p>') {
           /* Entry is empty
              If it exists, then prune it from DB
