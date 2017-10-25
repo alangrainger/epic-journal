@@ -1,6 +1,5 @@
 <template>
     <div id="editorContainer">
-        <input type="file" @change="image">
         <div v-html="'<style>' + customCSS + '</style>'" class="display:block"></div>
         <div :id="id"></div>
     </div>
@@ -57,6 +56,7 @@
       }
     },
     mounted: function () {
+      let vm = this
       this.generateCustomStyles()
 
       // Create editor
@@ -75,80 +75,44 @@
         browser_spellcheck: true,
         contextmenu: true,
         menubar: false,
-        toolbar: ['styleselect | undo redo | bold italic | blockquote | alignleft aligncenter alignright | indent outdent | spellchecker | link image'],
+        toolbar: ['styleselect | undo redo | bold italic | blockquote | alignleft aligncenter alignright | indent outdent | spellchecker | addimage'],
         style_formats: this.styleList,
         style_formats_merge: true,
-        file_picker_types: 'image',
-        // and here's our custom image picker
-        file_picker_callback: function (cb, value, meta) {
-          var input = document.createElement('input')
-          input.setAttribute('type', 'file')
-          input.setAttribute('accept', 'image/*')
-
-          // Note: In modern browsers input[type="file"] is functional without
-          // even adding it to the DOM, but that might not be the case in some older
-          // or quirky browsers like IE, so you might want to add it to the DOM
-          // just in case, and visually hide it. And do not forget do remove it
-          // once you do not need it anymore.
-
-          input.onchange = function () {
-            var file = this.files[0]
-
-            console.log(file)
-            cb(file.path, {title: file.name})
-
-            /* var reader = new FileReader()
-            reader.onload = function () {
-              // Note: Now we need to register the blob in TinyMCEs image blob
-              // registry. In the next release this part hopefully won't be
-              // necessary, as we are looking to handle it internally.
-              var id = 'blobid' + (new Date()).getTime()
-              var blobCache = tinymce.activeEditor.editorUpload.blobCache
-              var base64 = reader.result.split(',')[1]
-              var blobInfo = blobCache.create(id, file, base64)
-              blobCache.add(blobInfo)
-
-              // call the callback and populate the Title field with the file name
-              cb(blobInfo.blobUri(), {title: file.name})
+        setup: function (editor) {
+          editor.addButton('addimage', {
+            text: 'Add image',
+            onclick: function () {
+              let input = document.createElement('input') // set up a temporary file input field
+              input.setAttribute('type', 'file')
+              input.setAttribute('accept', 'image/*')
+              input.onchange = function (event) {
+                // Get the file
+                let filename = event.path[0].files[0].path
+                let mimeType = event.path[0].files[0].type
+                fs.readFile(filename, (err, data) => {
+                  if (err) {
+                    console.log(err)
+                  } else {
+                    // Add file to database
+                    vm.$db.addAttachment(mimeType, data)
+                      .then((rowId) => {
+                        console.log('New attachment added with ID ' + rowId)
+                        // Link file into the content
+                        editor.insertContent('<img src="attach://' + rowId + '" data-mime="' + mimeType + '">')
+                      })
+                      .catch((err) => {
+                        console.log(err)
+                      })
+                  }
+                })
+              }
+              input.click() // click the input to launch the process
             }
-            reader.readAsDataURL(file) */
-          }
-
-          input.click()
-        }
-        /* setup: function (editor) {
-          console.log(editor)
-          editor.addButton('mybutton', {
-            type: 'menubutton',
-            text: 'My button',
-            icon: false,
-            menu: [{
-              text: 'Menu item 1',
-              onclick: function () {
-                tinymce.activeEditor.formatter.apply('bold')
-              }
-            }, {
-              text: 'Menu item 2',
-              onclick: function () {
-                editor.insertContent('&nbsp;<em>Menu item 2 here!</em>&nbsp;')
-              }
-            }]
           })
-        } */
+        }
       })
     },
     methods: {
-      image (event) {
-        let filename = event.target.files[0].path
-        let mimetype = event.target.files[0].type
-        fs.readFile(filename, (err, data) => {
-          if (err) {
-            console.log(err)
-          } else {
-            this.$db.addAttachment(mimetype, data)
-          }
-        })
-      },
       getContent () {
         if (this.editor) {
           return this.editor.getContent()
@@ -162,25 +126,7 @@
         }
       },
       generateCustomStyles () {
-        let css = 'span.stoicism { border-bottom: 1px dotted green; }'
-        css += 'span.stoicism3 { border-bottom: 1px dotted blue; }'
-        css += 'p.stoicism2 { margin-left: -5px; border-left: 2px solid blue; padding-left: 5px; }'
-        this.styleList.push({
-          title: 'Stoicism Inline',
-          inline: 'span',
-          classes: 'stoicism'
-        })
-        this.styleList.push({
-          title: 'Stoicism Inline 2',
-          inline: 'span',
-          classes: 'stoicism3'
-        })
-        this.styleList.push({
-          title: 'Stoicism Block',
-          block: 'p',
-          classes: 'stoicism2'
-        })
-
+        let css = ''
         for (let i = 0; i < this.customStyles.length; i++) {
           let className = this.customStyles[i]['class']
           let element = this.customStyles[i]['element']

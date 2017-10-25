@@ -55,8 +55,10 @@
 </style>
 
 <script>
+  import { remote } from 'electron'
   import router from '../router'
-  import db from '../datastore'
+
+  let db = remote.getGlobal('db')
 
   export default {
     data () {

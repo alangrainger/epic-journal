@@ -1,13 +1,15 @@
 'use strict'
 
-import { app, protocol, BrowserWindow, Menu, dialog, remote } from 'electron'
+import { app, protocol, BrowserWindow, Menu, dialog } from 'electron'
 import config from './config'
+import db from './datastore'
 
 const osLocale = require('os-locale')
 osLocale().then(locale => {
   global['locale'] = locale
 })
 global.config = config // make available for renderer
+global.db = db // make available for renderer
 
 let template = [
   {
@@ -115,22 +117,18 @@ function createWindow () {
 }
 
 app.on('ready', function () {
-  protocol.registerBufferProtocol('attachment', (request, callback) => {
+  protocol.registerBufferProtocol('attach', (request, callback) => {
     let url = require('url')
-    let id = url.parse(request.url, true).query['id']
-    console.log(id)
+    let id = url.parse(request.url, true).hostname
     if (id) {
-      let db = remote.getGlobal('db')
       db.getAttachment(id)
         .then((row) => {
-          console.log('trd')
-          console.log(row)
           // eslint-disable-next-line
-          // callback(row.data)
+          callback({mimeType: row.mime_type, data: Buffer.from(row.data)})
         })
     }
   }, (error) => {
-    if (error) console.log(error)
+    if (error) console.log('This: ', error)
   })
 
   if (!config.data.file) {

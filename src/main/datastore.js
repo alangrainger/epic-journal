@@ -1,9 +1,7 @@
-import { remote } from 'electron'
 import moment from 'moment'
+import config from './config'
 
-let config = remote.getGlobal('config')
-
-const SCHEMA_VERSION = 2
+const SCHEMA_VERSION = 3
 
 const DATE_SQL = 'YYYY-MM-DD HH:mm:ss'
 const DATE_DAY = 'YYYY-MM-DD'
@@ -338,7 +336,7 @@ function Datastore () {
 
   this.getAttachment = function (id) {
     return new Promise(function (resolve, reject) {
-      if (!id) reject(new Error('No attachment ID specified'))
+      if (!isNaN(id) && id === parseInt(id, 10)) reject(new Error('No attachment ID specified'))
       db.get('SELECT * FROM attachments WHERE attachment_id = ?', [id])
         .then((row) => {
           if (row) {

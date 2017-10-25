@@ -4,21 +4,14 @@ import Vue from 'vue'
 import App from './App'
 import router from './router'
 import store from './store'
-
-import db from './datastore'
 import moment from 'moment'
 
 // Styles
 import './assets/font-awesome/css/font-awesome.css'
 
-require('./attachments')
-
-let config = remote.getGlobal('config')
-
+Vue.prototype.$db = remote.getGlobal('db')
+Vue.prototype.$config = remote.getGlobal('config')
 Vue.prototype.$moment = moment
-Vue.prototype.$db = db
-global.db = db // make available for main process
-Vue.prototype.$config = config
 
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
 Vue.config.productionTip = false

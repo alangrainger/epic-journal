@@ -2,8 +2,6 @@
     <div id="wrapper">
         <main>
             <div id="sidebar">
-                <!--<img src="http://localhost:2528/bunny.jpg?id=2" >-->
-                <img src="attachment://test?id=1">
                 <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
                 <div id="tree">
                     <Tree :tree="tree" @update="getEntryByDate"></Tree>
