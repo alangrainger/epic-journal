@@ -11,10 +11,13 @@ import moment from 'moment'
 // Styles
 import './assets/font-awesome/css/font-awesome.css'
 
+require('./attachments')
+
 let config = remote.getGlobal('config')
 
 Vue.prototype.$moment = moment
 Vue.prototype.$db = db
+global.db = db // make available for main process
 Vue.prototype.$config = config
 
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'))

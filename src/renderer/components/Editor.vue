@@ -1,5 +1,6 @@
 <template>
     <div id="editorContainer">
+        <input type="file" @change="image">
         <div v-html="'<style>' + customCSS + '</style>'" class="display:block"></div>
         <div :id="id"></div>
     </div>
@@ -30,6 +31,7 @@
 </style>
 
 <script>
+  let fs = require('fs')
   let tinymce = require('tinymce')
   tinymce.baseURL = 'node_modules/tinymce'
 
@@ -66,14 +68,14 @@
         },
         content_css: '/static/editor.css',
         content_style: this.customCSS,
-        plugins: 'image imagetools',
+        plugins: 'image imagetools spellchecker',
         selector: '#' + this.id,
         statusbar: false,
         branding: false,
         browser_spellcheck: true,
         contextmenu: true,
         menubar: false,
-        toolbar: ['styleselect | undo redo | bold italic | blockquote | alignleft aligncenter alignright | indent outdent | link image'],
+        toolbar: ['styleselect | undo redo | bold italic | blockquote | alignleft aligncenter alignright | indent outdent | spellchecker | link image'],
         style_formats: this.styleList,
         style_formats_merge: true,
         file_picker_types: 'image',
@@ -92,7 +94,10 @@
           input.onchange = function () {
             var file = this.files[0]
 
-            var reader = new FileReader()
+            console.log(file)
+            cb(file.path, {title: file.name})
+
+            /* var reader = new FileReader()
             reader.onload = function () {
               // Note: Now we need to register the blob in TinyMCEs image blob
               // registry. In the next release this part hopefully won't be
@@ -106,7 +111,7 @@
               // call the callback and populate the Title field with the file name
               cb(blobInfo.blobUri(), {title: file.name})
             }
-            reader.readAsDataURL(file)
+            reader.readAsDataURL(file) */
           }
 
           input.click()
@@ -133,6 +138,17 @@
       })
     },
     methods: {
+      image (event) {
+        let filename = event.target.files[0].path
+        let mimetype = event.target.files[0].type
+        fs.readFile(filename, (err, data) => {
+          if (err) {
+            console.log(err)
+          } else {
+            this.$db.addAttachment(mimetype, data)
+          }
+        })
+      },
       getContent () {
         if (this.editor) {
           return this.editor.getContent()
@@ -146,7 +162,24 @@
         }
       },
       generateCustomStyles () {
-        let css = ''
+        let css = 'span.stoicism { border-bottom: 1px dotted green; }'
+        css += 'span.stoicism3 { border-bottom: 1px dotted blue; }'
+        css += 'p.stoicism2 { margin-left: -5px; border-left: 2px solid blue; padding-left: 5px; }'
+        this.styleList.push({
+          title: 'Stoicism Inline',
+          inline: 'span',
+          classes: 'stoicism'
+        })
+        this.styleList.push({
+          title: 'Stoicism Inline 2',
+          inline: 'span',
+          classes: 'stoicism3'
+        })
+        this.styleList.push({
+          title: 'Stoicism Block',
+          block: 'p',
+          classes: 'stoicism2'
+        })
 
         for (let i = 0; i < this.customStyles.length; i++) {
           let className = this.customStyles[i]['class']

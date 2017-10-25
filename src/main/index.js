@@ -1,7 +1,6 @@
 'use strict'
 
-import { app, BrowserWindow, Menu, dialog } from 'electron'
-
+import { app, protocol, BrowserWindow, Menu, dialog, remote } from 'electron'
 import config from './config'
 
 const osLocale = require('os-locale')
@@ -116,6 +115,24 @@ function createWindow () {
 }
 
 app.on('ready', function () {
+  protocol.registerBufferProtocol('attachment', (request, callback) => {
+    let url = require('url')
+    let id = url.parse(request.url, true).query['id']
+    console.log(id)
+    if (id) {
+      let db = remote.getGlobal('db')
+      db.getAttachment(id)
+        .then((row) => {
+          console.log('trd')
+          console.log(row)
+          // eslint-disable-next-line
+          // callback(row.data)
+        })
+    }
+  }, (error) => {
+    if (error) console.log(error)
+  })
+
   if (!config.data.file) {
     // No existing database file, ask them where to create it
     openFile()
@@ -152,8 +169,7 @@ function openFile () {
       if (filenames === undefined || !filenames[0]) {
         reject(new Error('No file specified'))
       } else {
-        let filename = filenames[0]
-        config.data.file = filename
+        config.data.file = filenames[0]
         config.write()
         resolve()
       }

@@ -41,7 +41,7 @@ function Datastore () {
           .catch((err) => { reject(err) })
 
         // Test DB read/write
-        db.run('CREATE TABLE test (id INTEGER)')
+        db.run('CREATE TABLE IF NOT EXISTS test (id INTEGER)')
           .then(() => {
             db.run('DROP TABLE test')
             createTables() // Create tables IF NOT EXISTS
@@ -50,7 +50,8 @@ function Datastore () {
             resolve() // back to main execution
           })
           .catch((err) => {
-            reject(err, 'Fatal error: Database not writeable. Please check your password, check if your database file is locked, and restart the app.')
+            console.log('Fatal error: Database not writeable. Please check your password, check if your database file is locked, and restart the app.')
+            reject(err)
           })
       })
     })
@@ -316,6 +317,40 @@ function Datastore () {
       .catch((error) => {
         console.log(error)
       })
+  }
+
+  this.addAttachment = function (mimetype, data) {
+    return new Promise(function (resolve, reject) {
+      let created = moment().format(DATE_SQL)
+      db.run('INSERT INTO attachments (created, mime_type, data) VALUES (?, ?, ?)', [created, mimetype, data])
+        .then((ret) => {
+          if (ret.lastID) {
+            resolve(ret.lastID)
+          } else {
+            reject(new Error('Attachment was not added'))
+          }
+        })
+        .catch((error) => {
+          reject(error)
+        })
+    })
+  }
+
+  this.getAttachment = function (id) {
+    return new Promise(function (resolve, reject) {
+      if (!id) reject(new Error('No attachment ID specified'))
+      db.get('SELECT * FROM attachments WHERE attachment_id = ?', [id])
+        .then((row) => {
+          if (row) {
+            resolve(row)
+          } else {
+            reject(new Error('No entry found with ID ' + id))
+          }
+        })
+        .catch((error) => {
+          reject(error)
+        })
+    })
   }
 }
 
