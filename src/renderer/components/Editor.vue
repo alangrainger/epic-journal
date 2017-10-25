@@ -32,6 +32,7 @@
 <script>
   let fs = require('fs')
   let tinymce = require('tinymce')
+  let vm = ''
   tinymce.baseURL = 'node_modules/tinymce'
 
   export default {
@@ -55,8 +56,10 @@
         bufferTimeout: 0
       }
     },
+    created: function () {
+      vm = this
+    },
     mounted: function () {
-      let vm = this
       this.generateCustomStyles()
 
       // Create editor
@@ -82,31 +85,7 @@
           editor.addButton('addimage', {
             text: 'Add image',
             onclick: function () {
-              let input = document.createElement('input') // set up a temporary file input field
-              input.setAttribute('type', 'file')
-              input.setAttribute('accept', 'image/*')
-              input.onchange = function (event) {
-                // Get the file
-                let filename = event.path[0].files[0].path
-                let mimeType = event.path[0].files[0].type
-                fs.readFile(filename, (err, data) => {
-                  if (err) {
-                    console.log(err)
-                  } else {
-                    // Add file to database
-                    vm.$db.addAttachment(mimeType, data)
-                      .then((rowId) => {
-                        console.log('New attachment added with ID ' + rowId)
-                        // Link file into the content
-                        editor.insertContent('<img src="attach://' + rowId + '" data-mime="' + mimeType + '">')
-                      })
-                      .catch((err) => {
-                        console.log(err)
-                      })
-                  }
-                })
-              }
-              input.click() // click the input to launch the process
+              vm.insertImage(editor)
             }
           })
         }
@@ -124,6 +103,59 @@
           this.editor.setContent(content)
           this.editor.focus() // set focus back to editor
         }
+      },
+      insertImage (editor) {
+        let input = document.createElement('input') // set up a temporary file input field
+        input.setAttribute('type', 'file')
+        input.setAttribute('accept', 'image/*')
+        input.onchange = function (event) {
+          // Get the file
+          let filename = event.path[0].files[0].path
+          let mimeType = event.path[0].files[0].type
+          fs.readFile(filename, (err, data) => {
+            if (err) {
+              console.log(err)
+            } else {
+              if (mimeType === 'image/jpg' || mimeType === 'image/jpeg' || mimeType === 'image/png') {
+                // Resize if JPG or PNG
+                let maxWidth = vm.$config.data.imageWidth || 400
+                let maxHeight = vm.$config.data.imageHeight || 400
+
+                const nativeImage = require('electron').nativeImage
+                let image = nativeImage.createFromBuffer(data)
+                let width = 0
+                let resize = false
+                if (maxWidth / maxHeight < image.getAspectRatio()) {
+                  width = Math.round(maxWidth)
+                  if (image.getSize().width > width) resize = true
+                } else {
+                  width = Math.round(maxHeight * image.getAspectRatio())
+                  if (image.getSize().width > width) resize = true
+                }
+
+                if (mimeType === 'image/jpg' || mimeType === 'image/jpeg') {
+                  // JPG
+                  mimeType = 'image/jpeg' // standardise
+                  if (resize) data = image.resize({width: width}).toJPEG(65)
+                } else if (mimeType === 'image/png') {
+                  // PNG
+                  if (resize) data = image.resize({width: width}).toPNG()
+                }
+              }
+              // Add file to database
+              vm.$db.addAttachment(mimeType, data)
+                .then((rowId) => {
+                  console.log('New attachment added with ID ' + rowId)
+                  // Link file into the content
+                  editor.insertContent('<img src="attach://' + rowId + '" data-mime="' + mimeType + '">')
+                })
+                .catch((err) => {
+                  console.log(err)
+                })
+            }
+          })
+        }
+        input.click() // click the input to launch the process
       },
       generateCustomStyles () {
         let css = ''

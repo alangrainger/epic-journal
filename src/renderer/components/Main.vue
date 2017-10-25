@@ -162,8 +162,6 @@
         // Get latest content from TinyMCE
         this.entry.content = this.getContent()
 
-        console.log(this.entry.content)
-
         if (!this.entry.content || this.entry.content === '<p><br></p>') {
           /* Entry is empty
              If it exists, then prune it from DB
