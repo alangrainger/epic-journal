@@ -62,12 +62,13 @@
         init_instance_callback: (editor) => {
           // this.toggleMenubar() // hide menu bar by default
           this.editor = editor // set the editor instance
+          tinymce.ScriptLoader.load('prism.js') // syntax highlighting
           this.setContent(this.entry.content) // Get initial text
           this.editor.focus() // Set focus
         },
-        content_css: 'static/editor.css',
+        content_css: ['static/editor.css', 'static/prism.css'],
         content_style: this.customCSS,
-        plugins: 'image fullscreen link hr',
+        plugins: 'image fullscreen link hr codesample',
         browser_spellcheck: true,
         contextmenu: false,
         default_link_target: '_blank',
@@ -79,7 +80,7 @@
         statusbar: false,
         branding: false,
         menubar: false,
-        toolbar: ['styleselect | undo redo | bold italic | blockquote hr | alignleft aligncenter alignright | indent outdent | link image | showmenu'],
+        toolbar: ['styleselect | undo redo | bold italic | blockquote codesample hr | alignleft aligncenter alignright | indent outdent | link image | showmenu'],
         style_formats: this.styleList,
         style_formats_merge: true,
         setup: function (editor) {

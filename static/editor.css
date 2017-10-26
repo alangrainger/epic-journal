@@ -1,10 +1,12 @@
+/* Styles for inside the TinyMCE iframe */
+
 body {
     font-family: 'Segoe UI', sans-serif;
     padding: 0 10px 0 10px;
 }
 
 p {
-    font-size: 14pt;
+    font-size: 13pt;
     margin-bottom: 0.7em;
 }
 
@@ -34,7 +36,7 @@ blockquote {
 
     /*Font*/
     font-family: Georgia, serif;
-    font-size: 14pt;
+    font-size: 13pt;
     line-height: 1.4;
     color: #666;
     text-align: justify;
