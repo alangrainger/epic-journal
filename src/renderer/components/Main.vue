@@ -233,9 +233,6 @@
         }
         this.calendarStyle = style
       },
-      openLink (link) {
-        this.$electron.shell.openExternal(link)
-      },
       contentChanged (newContent) {
         this.entry.content = newContent
         if (this.autosaveEntryId === this.entry.id) {

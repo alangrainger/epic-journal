@@ -1,6 +1,6 @@
 'use strict'
 
-import { app, protocol, BrowserWindow, Menu, dialog } from 'electron'
+import { app, protocol, BrowserWindow, Menu, dialog, shell } from 'electron'
 import config from './config'
 import db from './datastore'
 
@@ -107,6 +107,12 @@ function createWindow () {
     // Store the window dimensions in the config
     config.data.windowX = mainWindow.getSize()[0]
     config.data.windowY = mainWindow.getSize()[1]
+  })
+
+  // Open all target="_blank" links in the external browser
+  mainWindow.webContents.on('new-window', function (event, url) {
+    event.preventDefault()
+    shell.openExternal(url)
   })
 
   mainWindow.loadURL(winURL)

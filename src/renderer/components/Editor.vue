@@ -45,15 +45,10 @@
     data () {
       return {
         id: 'editor',
-        contentElement: null,
-        buffer: {},
         customStyles: this.$config.data.customStyles,
         editor: null,
         customCSS: '',
-        selectedStyle: '',
-        styleList: [],
-        stylePrefix: 'epic',
-        bufferTimeout: 0
+        styleList: []
       }
     },
     created: function () {
@@ -65,20 +60,26 @@
       // Create editor
       tinymce.init({
         init_instance_callback: (editor) => {
+          // this.toggleMenubar() // hide menu bar by default
           this.editor = editor // set the editor instance
           this.setContent(this.entry.content) // Get initial text
           this.editor.focus() // Set focus
         },
         content_css: 'static/editor.css',
         content_style: this.customCSS,
-        plugins: 'image imagetools spellchecker',
+        plugins: 'image fullscreen link hr',
+        browser_spellcheck: true,
+        contextmenu: false,
+        default_link_target: '_blank',
+        image_caption: true,
+        image_description: false,
+        image_title: true,
+        image_dimensions: false,
         selector: '#' + this.id,
         statusbar: false,
         branding: false,
-        browser_spellcheck: true,
-        contextmenu: true,
         menubar: false,
-        toolbar: ['styleselect | undo redo | bold italic | blockquote | alignleft aligncenter alignright | indent outdent | spellchecker | addimage'],
+        toolbar: ['styleselect | undo redo | bold italic | blockquote hr | alignleft aligncenter alignright | indent outdent | link image | showmenu'],
         style_formats: this.styleList,
         style_formats_merge: true,
         setup: function (editor) {
@@ -88,6 +89,10 @@
               vm.insertImage(editor)
             }
           })
+        },
+        file_picker_types: 'image',
+        file_picker_callback: function (cb, value, meta) {
+          vm.insertImage(cb, value, meta)
         }
       })
     },
@@ -104,7 +109,18 @@
           this.editor.focus() // set focus back to editor
         }
       },
-      insertImage (editor) {
+      toggleMenubar () {
+        let menubar = document.getElementsByClassName('mce-menubar')
+        for (let i = 0; i < menubar.length; i++) {
+          if (!this.menubar) {
+            menubar[i].style.display = 'block'
+          } else {
+            menubar[i].removeAttribute('style')
+          }
+          this.menubar = !this.menubar
+        }
+      },
+      insertImage (cb, value, meta) {
         let input = document.createElement('input') // set up a temporary file input field
         input.setAttribute('type', 'file')
         input.setAttribute('accept', 'image/*')
@@ -147,7 +163,9 @@
                 .then((rowId) => {
                   console.log('New attachment added with ID ' + rowId)
                   // Link file into the content
-                  editor.insertContent('<img src="attach://' + rowId + '" data-mime="' + mimeType + '">')
+                  // editor.insertContent('<img src="attach://' + rowId + '" data-mime="' + mimeType + '">')
+                  // eslint-disable-next-line
+                  cb('attach://' + rowId)
                 })
                 .catch((err) => {
                   console.log(err)
