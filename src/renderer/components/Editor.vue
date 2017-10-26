@@ -33,7 +33,7 @@
   let fs = require('fs')
   let tinymce = require('tinymce')
   let vm = ''
-  tinymce.baseURL = 'node_modules/tinymce'
+  tinymce.baseURL = 'static/tinymce'
 
   export default {
     props: {
@@ -69,7 +69,7 @@
           this.setContent(this.entry.content) // Get initial text
           this.editor.focus() // Set focus
         },
-        content_css: '/static/editor.css',
+        content_css: 'static/editor.css',
         content_style: this.customCSS,
         plugins: 'image imagetools spellchecker',
         selector: '#' + this.id,
@@ -83,7 +83,7 @@
         style_formats_merge: true,
         setup: function (editor) {
           editor.addButton('addimage', {
-            text: 'Add image',
+            icon: 'image',
             onclick: function () {
               vm.insertImage(editor)
             }

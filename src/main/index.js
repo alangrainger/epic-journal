@@ -117,6 +117,7 @@ function createWindow () {
 }
 
 app.on('ready', function () {
+  // Register custom attachment protocol for serving images from the database
   protocol.registerBufferProtocol('attach', (request, callback) => {
     let url = require('url')
     let id = url.parse(request.url, true).hostname
@@ -124,11 +125,11 @@ app.on('ready', function () {
       db.getAttachment(id)
         .then((row) => {
           // eslint-disable-next-line
-          callback({mimeType: row.mime_type, data: Buffer.from(row.data)})
+          callback({mimeType: row.mime_type, data: row.data})
         })
     }
   }, (error) => {
-    if (error) console.log('This: ', error)
+    if (error) console.log(error)
   })
 
   if (!config.data.file) {

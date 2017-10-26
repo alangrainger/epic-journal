@@ -57,7 +57,7 @@
       // Autosave entry
       setInterval(function () {
         vm.save()
-      }, 5000) // every 5 seconds
+      }, 3000) // every 3 seconds
 
       // Set focus to editor
       this.focusOnEditor()
@@ -154,10 +154,12 @@
         vm.focusOnEditor()
       },
       save () {
-        let vm = this
+        if (!this.$refs.editor.editor) return // editor hasn't loaded
         if (this.getContent() === this.entry.content) {
           return // entry has not changed
         }
+
+        let vm = this
 
         // Get latest content from TinyMCE
         this.entry.content = this.getContent()
