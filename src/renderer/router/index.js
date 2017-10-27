@@ -16,6 +16,11 @@ export default new Router({
       component: require('@/components/Main').default
     },
     {
+      path: '/tags',
+      name: 'tags',
+      component: require('@/components/Tags').default
+    },
+    {
       path: '*',
       redirect: '/'
     }

@@ -56,6 +56,10 @@ let template = [
         label: 'Go to Today\'s entry',
         accelerator: 'F5',
         click: () => { mainWindow.webContents.send('goto', 'today') }
+      },
+      {
+        label: 'Edit tags',
+        click: () => { mainWindow.webContents.send('route', 'tags') }
       }
     ]
   },

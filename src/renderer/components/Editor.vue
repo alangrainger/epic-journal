@@ -1,6 +1,6 @@
 <template>
     <div id="editorContainer">
-        <div v-html="'<style>' + customCSS + '</style>'" class="display:block"></div>
+        <div v-html="'<style>' + customCSS + '</style>'" class="display:none"></div>
         <div :id="id"></div>
     </div>
 </template>
@@ -30,11 +30,6 @@
 </style>
 
 <script>
-  let fs = require('fs')
-  let tinymce = require('tinymce')
-  let vm = ''
-  tinymce.baseURL = 'static/tinymce'
-
   export default {
     props: {
       value: String,
@@ -46,29 +41,28 @@
       return {
         id: 'editor',
         customStyles: this.$config.data.customStyles,
-        editor: null,
+        editor: '',
         customCSS: '',
-        styleList: []
+        styleList: [],
+        tinymce: ''
       }
-    },
-    created: function () {
-      vm = this
     },
     mounted: function () {
       this.generateCustomStyles()
 
       // Create editor
-      tinymce.init({
+      this.tinymce = require('tinymce')
+      this.tinymce.baseURL = 'static/tinymce'
+      this.tinymce.init({
         init_instance_callback: (editor) => {
           // this.toggleMenubar() // hide menu bar by default
           this.editor = editor // set the editor instance
-          tinymce.ScriptLoader.load('prism.js') // syntax highlighting
           this.setContent(this.entry.content) // Get initial text
           this.editor.focus() // Set focus
         },
-        content_css: ['static/editor.css', 'static/prism.css'],
+        content_css: ['static/editor.css'],
         content_style: this.customCSS,
-        plugins: 'image fullscreen link hr codesample',
+        plugins: 'image fullscreen link hr codesample lists',
         browser_spellcheck: true,
         contextmenu: false,
         default_link_target: '_blank',
@@ -80,20 +74,20 @@
         statusbar: false,
         branding: false,
         menubar: false,
-        toolbar: ['styleselect | undo redo | bold italic | blockquote codesample hr | alignleft aligncenter alignright | indent outdent | link image | showmenu'],
+        toolbar: ['styleselect | undo redo | bold italic | blockquote codesample hr | bullist numlist | alignleft aligncenter alignright | indent outdent | link image | showmenu'],
         style_formats: this.styleList,
         style_formats_merge: true,
         setup: function (editor) {
           editor.addButton('addimage', {
             icon: 'image',
-            onclick: function () {
-              vm.insertImage(editor)
+            onclick: () => {
+              this.insertImage(editor)
             }
           })
         },
         file_picker_types: 'image',
-        file_picker_callback: function (cb, value, meta) {
-          vm.insertImage(cb, value, meta)
+        file_picker_callback: (cb, value, meta) => {
+          this.insertImage(cb, value, meta)
         }
       })
     },
@@ -122,13 +116,15 @@
         }
       },
       insertImage (cb, value, meta) {
+        let vm = this
+        let fs = require('fs')
         let input = document.createElement('input') // set up a temporary file input field
         input.setAttribute('type', 'file')
         input.setAttribute('accept', 'image/*')
-        input.onchange = function (event) {
+        input.onchange = function () {
           // Get the file
-          let filename = event.path[0].files[0].path
-          let mimeType = event.path[0].files[0].type
+          let filename = this.files[0].path
+          let mimeType = this.files[0].type
           fs.readFile(filename, (err, data) => {
             if (err) {
               console.log(err)
@@ -198,6 +194,9 @@
 
         this.customCSS = css
       }
+    },
+    beforeDestroy: function () {
+      this.tinymce.remove()
     }
   }
 </script>

@@ -11,17 +11,60 @@
                 <Editor ref="editor" :entry="entry"></Editor>
             </div>
         </main>
-        <div v-html="'<style>' + calendarStyle + '</style>'"></div>
-        <div v-html="'<style>' + customStyles + '</style>'"></div>
+        <div v-html="'<style>' + calendarStyle + '</style>'" style="display:none"></div>
+        <div v-html="'<style>' + customStyles + '</style>'" style="display:none"></div>
     </div>
 </template>
+
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    .flatpickr-input {
+        display: none;
+    }
+
+    .flatpickr-calendar {
+        margin-bottom: 20px;
+    }
+
+    #wrapper {
+        height: 100vh;
+        padding: 46px 60px;
+        width: 100vw;
+    }
+
+    main {
+        display: flex;
+        height: 100%;
+        justify-content: stretch;
+    }
+
+    #sidebar {
+        display: flex;
+        flex-direction: column;
+        margin-right: 40px;
+    }
+
+    #tree {
+        overflow-y: auto;
+    }
+
+    #content {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+</style>
+
 <script>
   import flatPickr from 'vue-flatpickr-component'
   import 'flatpickr/dist/flatpickr.css'
   import Editor from './Editor.vue'
   import Tree from './Tree.vue'
-
-  let vm = ''
 
   export default {
     name: 'landing-page',
@@ -29,38 +72,6 @@
       flatPickr,
       Editor,
       Tree
-    },
-    created: function () {
-      vm = this
-    },
-    mounted: function () {
-      // Listen for goto commands from main menu
-      this.$electron.ipcRenderer.on('goto', (event, arg) => {
-        switch (arg) {
-          case 'today':
-            vm.date = this.$moment().format(this.$db.DATE_DAY)
-            break
-        }
-      })
-
-      // Load CSS
-      this.$db.getOption('css', function (result) {
-        if (result) { vm.customStyles = result }
-      })
-
-      // Load existing entry if there is one
-      this.getEntryByDate(this.entry.date)
-
-      // Get entry tree
-      this.updateTree()
-
-      // Autosave entry
-      setInterval(function () {
-        vm.save()
-      }, 3000) // every 3 seconds
-
-      // Set focus to editor
-      this.focusOnEditor()
     },
     data () {
       return {
@@ -71,7 +82,7 @@
           content: null,
           saved: true
         },
-        autosaveEntryId: null,
+        autosaveTimer: '',
         calendarMonth: null,
         calendarStyle: '',
         calConfig: {
@@ -79,16 +90,43 @@
             firstDayOfWeek: 1
           },
           inline: true,
-          onMonthChange: function (selectedDates, dateStr, instance) {
+          onMonthChange: (selectedDates, dateStr, instance) => {
             // Update calendar with new entry highlights
-            let month = vm.$moment(instance.currentMonth + 1, 'M').format('MMMM') // from 0-11 to MMMM
-            vm.updateCalendarEntries(month)
+            let month = this.$moment(instance.currentMonth + 1, 'M').format('MMMM') // from 0-11 to MMMM
+            this.updateCalendarEntries(month)
           }
         },
         customStyles: '',
         tree: {},
         editor: null
       }
+    },
+    mounted: function () {
+      // Listen for goto commands from main menu
+      this.$electron.ipcRenderer.on('goto', (event, arg) => {
+        switch (arg) {
+          case 'today':
+            this.date = this.$moment().format(this.$db.DATE_DAY)
+            break
+        }
+      })
+
+      // Load existing entry if there is one
+      this.getEntryByDate(this.entry.date)
+
+      // Get entry tree
+      this.updateTree()
+
+      // Autosave entry
+      this.autosaveTimer = setInterval(() => {
+        this.save()
+      }, 5000) // every 5 seconds
+
+      // Save entry on close
+      window.addEventListener('unload', this.save)
+
+      // Set focus to editor
+      this.focusOnEditor()
     },
     watch: {
       date: function () {
@@ -140,7 +178,6 @@
         // Check if we need to save the current entry
         this.save()
 
-        let vm = this
         this.date = date
         this.entry.date = date
         this.$db.getEntryByDate(date)
@@ -151,15 +188,13 @@
             if (err === 'dont output these') console.log(err)
             this.clearEntry()
           })
-        vm.focusOnEditor()
+        this.focusOnEditor()
       },
       save () {
         if (!this.$refs.editor.editor) return // editor hasn't loaded
         if (this.getContent() === this.entry.content) {
           return // entry has not changed
         }
-
-        let vm = this
 
         // Get latest content from TinyMCE
         this.entry.content = this.getContent()
@@ -171,9 +206,9 @@
           if (this.entry.id) {
             this.$db.deleteEntry(this.entry)
               .then(() => {
-                console.log('Empty entry ' + vm.entry.id + ' has been pruned')
-                vm.clearEntry()
-                vm.updateTree()
+                console.log('Empty entry ' + this.entry.id + ' has been pruned')
+                this.clearEntry()
+                this.updateTree()
               })
               .catch((error) => {
                 console.log(error)
@@ -191,10 +226,10 @@
             })
         } else {
           // No existing entry, so create new entry
-          this.$db.createNewEntry(vm.entry)
+          this.$db.createNewEntry(this.entry)
             .then((entryId) => {
               this.entry.id = entryId
-              console.log(this.$moment().format('HH:mm:ss') + ' created new entry', 'ID: ' + vm.entry.id)
+              console.log(this.$moment().format('HH:mm:ss') + ' created new entry', 'ID: ' + this.entry.id)
               this.entry.saved = true
               this.updateTree()
             })
@@ -232,61 +267,12 @@
           style = styles.join(', ') + ' { background-color: #D0E4F8; }'
         }
         this.calendarStyle = style
-      },
-      contentChanged (newContent) {
-        this.entry.content = newContent
-        if (this.autosaveEntryId === this.entry.id) {
-          // Mark for autosave
-          this.entry.saved = false
-        } else {
-          // If we have changed entries through the calendar, don't save, just update the ID
-          this.autosaveEntryId = this.entry.id
-        }
       }
+    },
+    beforeDestroy: function () {
+      this.save()
+      window.removeEventListener('unload', this.save)
+      clearInterval(this.autosaveTimer)
     }
   }
 </script>
-
-<style>
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-    }
-
-    .flatpickr-input {
-        display: none;
-    }
-
-    .flatpickr-calendar {
-        margin-bottom: 20px;
-    }
-
-    #wrapper {
-        height: 100vh;
-        padding: 46px 60px;
-        width: 100vw;
-    }
-
-    main {
-        display: flex;
-        height: 100%;
-        justify-content: stretch;
-    }
-
-    #sidebar {
-        display: flex;
-        flex-direction: column;
-        margin-right: 40px;
-    }
-
-    #tree {
-        overflow-y: auto;
-    }
-
-    #content {
-        display: flex;
-        flex-direction: column;
-        flex-grow: 1;
-    }
-</style>

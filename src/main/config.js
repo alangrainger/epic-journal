@@ -1,6 +1,6 @@
 import { app } from 'electron'
 
-var fs = require('fs')
+let fs = require('fs')
 
 let defaultStyles = [
   {
@@ -34,7 +34,9 @@ let Config = function () {
   this.write = function () {
     let output = JSON.stringify(this.data, null, 2)
     output = output.replace(/\r?\n/g, '\r\n') // Windows line feeds
-    fs.writeFileSync(this.iniFile, output, 'utf8')
+    fs.writeFile(this.iniFile, output, 'utf8', (err) => {
+      if (err) console.log(err)
+    })
   }
 
   // Check to see if the custom style section exists
