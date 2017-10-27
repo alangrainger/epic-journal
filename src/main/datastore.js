@@ -1,7 +1,7 @@
 import moment from 'moment'
 import config from './config'
 
-const SCHEMA_VERSION = 3
+const SCHEMA_VERSION = 5
 
 const DATE_SQL = 'YYYY-MM-DD HH:mm:ss'
 const DATE_DAY = 'YYYY-MM-DD'
@@ -35,14 +35,13 @@ function Datastore () {
           .catch((err) => { reject(err) })
         db.run('PRAGMA CIPHER = \'aes-256-cbc\'')
           .catch((err) => { reject(err) })
-        db.run('PRAGMA user_version = ' + SCHEMA_VERSION)
-          .catch((err) => { reject(err) })
 
         // Test DB read/write
         db.run('CREATE TABLE IF NOT EXISTS test (id INTEGER)')
           .then(() => {
             db.run('DROP TABLE test')
             createTables() // Create tables IF NOT EXISTS
+              .then(updateTables())
               .catch((err) => { reject(err) })
             createDefaultData()
             resolve() // back to main execution
@@ -96,6 +95,20 @@ function Datastore () {
       })
     })
   }
+  this.insert = function (query, parameters) {
+    return new Promise(function (resolve, reject) {
+      if (!sql) { reject(new Error('run: Database object not created')) }
+      sql.run(query, parameters, function (error) {
+        if (error) {
+          reject(error)
+        } else if (this.lastID) {
+          resolve(this.lastID)
+        } else {
+          reject(new Error('insert: Row not inserted'))
+        }
+      })
+    })
+  }
   /*
    * END PROMISE WRAPPERS
    */
@@ -130,7 +143,8 @@ function Datastore () {
               'CREATE TABLE IF NOT EXISTS tags(' +
               'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
               'name TEXT, ' +
-              'class TEXT);')
+              'type TEXT, ' +
+              'style TEXT);')
           )
           .then(
             db.run(
@@ -161,6 +175,28 @@ function Datastore () {
           })
       })
     })
+  }
+  const updateTables = function () {
+    // Get DB version
+    db.get('PRAGMA user_version;')
+      .then((row) => {
+        let version = row.user_version
+        if (version < SCHEMA_VERSION) console.log('Outdated database schema, updating...')
+
+        if (version < 5) {
+          /*
+          Tag table was updated to include style and a style-type of inline or block
+           */
+          db.run('DROP TABLE tags')
+          db.run(
+            'CREATE TABLE IF NOT EXISTS tags(' +
+            'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+            'name TEXT, ' +
+            'type TEXT, ' +
+            'style TEXT);')
+          db.run('PRAGMA user_version = ' + SCHEMA_VERSION)
+        }
+      })
   }
 
   const createDefaultData = function () {

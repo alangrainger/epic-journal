@@ -44,52 +44,53 @@
         editor: '',
         customCSS: '',
         styleList: [],
+        tagList: [],
         tinymce: ''
       }
     },
     mounted: function () {
-      this.generateCustomStyles()
+      // Set up custom styles
+      for (let i = 0; i < this.customStyles.length; i++) {
+        let className = this.customStyles[i]['class']
+        let element = this.customStyles[i]['element']
+        let style = this.customStyles[i]['style']
+        let name = this.customStyles[i]['name']
 
-      // Create editor
-      this.tinymce = require('tinymce')
-      this.tinymce.baseURL = 'static/tinymce'
-      this.tinymce.init({
-        init_instance_callback: (editor) => {
-          // this.toggleMenubar() // hide menu bar by default
-          this.editor = editor // set the editor instance
-          this.setContent(this.entry.content) // Get initial text
-          this.editor.focus() // Set focus
-        },
-        content_css: ['static/editor.css'],
-        content_style: this.customCSS,
-        plugins: 'image fullscreen link hr codesample lists',
-        browser_spellcheck: true,
-        contextmenu: false,
-        default_link_target: '_blank',
-        image_caption: true,
-        image_description: false,
-        image_title: true,
-        image_dimensions: false,
-        selector: '#' + this.id,
-        statusbar: false,
-        branding: false,
-        menubar: false,
-        toolbar: ['styleselect | undo redo | bold italic | blockquote codesample hr | bullist numlist | alignleft aligncenter alignright | indent outdent | link image | showmenu'],
-        style_formats: this.styleList,
-        style_formats_merge: true,
-        setup: function (editor) {
-          editor.addButton('addimage', {
-            icon: 'image',
-            onclick: () => {
-              this.insertImage(editor)
-            }
+        // Create style list for dropdown
+        this.styleList.push({
+          title: name,
+          block: element,
+          classes: className
+        })
+
+        // Create CSS
+        let fullName = (className) ? element + '.' + className : element
+        this.customCSS += fullName + '{' + style + '}\n'
+      }
+
+      // Set up tags
+      this.$db.all('SELECT * FROM tags ORDER BY name ASC')
+        .then((rows) => {
+          rows.forEach((tag) => {
+            let tagClass = 'tag' + tag.tag_id + '-' + tag.name.replace(/[^\w\s]/g, '').replace(/\s+/g, '-').toLowerCase()
+            let type = (tag.type === 'block') ? 'block' : 'inline'
+            let element = (tag.type === 'block') ? 'p' : 'span'
+
+            // Set up tag list for dropdown
+            this.tagList.push({
+              'title': tag.name,
+              [type]: element,
+              'classes': tagClass
+            })
+
+            // Add to CSS
+            let style = element + '.' + tagClass + '{' + tag.style + '}\n'
+            this.customCSS += style
           })
-        },
-        file_picker_types: 'image',
-        file_picker_callback: (cb, value, meta) => {
-          this.insertImage(cb, value, meta)
-        }
-      })
+
+          // Once all done, set up the editor
+          this.createEditor()
+        })
     },
     methods: {
       getContent () {
@@ -103,6 +104,55 @@
           this.editor.setContent(content)
           this.editor.focus() // set focus back to editor
         }
+      },
+      createEditor () {
+        this.tinymce = require('tinymce')
+        this.tinymce.baseURL = 'static/tinymce'
+        this.tinymce.init({
+          init_instance_callback: (editor) => {
+            // this.toggleMenubar() // hide menu bar by default
+            this.editor = editor // set the editor instance
+            this.setContent(this.entry.content) // Get initial text
+            this.editor.focus() // Set focus
+          },
+          content_css: ['static/editor.css'],
+          content_style: this.customCSS,
+          plugins: 'image fullscreen link hr codesample lists',
+          browser_spellcheck: true,
+          contextmenu: false,
+          default_link_target: '_blank',
+          image_caption: true,
+          image_description: false,
+          image_title: true,
+          image_dimensions: false,
+          selector: '#' + this.id,
+          statusbar: false,
+          branding: false,
+          menubar: false,
+          toolbar: ['styleselect | undo redo | bold italic | blockquote codesample hr | bullist numlist | alignleft aligncenter alignright | indent outdent | link image | showmenu'],
+          style_formats: [
+            {title: 'My Styles', items: this.styleList},
+            {title: 'Tags', items: this.tagList}
+          ],
+          style_formats_merge: true,
+          /* setup: function (editor) {
+            editor.addButton('tags', {
+              type: 'menubutton',
+              text: 'Tags',
+              icon: false,
+              onselect: function (e) {
+                console.log(vm.tinymce.activeEditor.formatter.get())
+              },
+              menu: [
+                {text: 'test', value: 'blah'}
+              ]
+            })
+          }, */
+          file_picker_types: 'image',
+          file_picker_callback: (cb, value, meta) => {
+            this.insertImage(cb, value, meta)
+          }
+        })
       },
       toggleMenubar () {
         let menubar = document.getElementsByClassName('mce-menubar')
@@ -171,28 +221,6 @@
           })
         }
         input.click() // click the input to launch the process
-      },
-      generateCustomStyles () {
-        let css = ''
-        for (let i = 0; i < this.customStyles.length; i++) {
-          let className = this.customStyles[i]['class']
-          let element = this.customStyles[i]['element']
-          let style = this.customStyles[i]['style']
-          let name = this.customStyles[i]['name']
-
-          // Create style list for dropdown
-          this.styleList.push({
-            title: name,
-            block: element,
-            classes: className
-          })
-
-          // Create CSS
-          let fullName = (className) ? element + '.' + className : element
-          css += fullName + '{' + style + '}\n'
-        }
-
-        this.customCSS = css
       }
     },
     beforeDestroy: function () {
