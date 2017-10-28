@@ -3,16 +3,11 @@
         <table>
             <tr>
                 <th>Name</th>
-                <th>Type</th>
                 <th>Style</th>
                 <th></th>
             </tr>
             <tr v-for="(tag, i) in tags">
                 <td><input type="text" v-model="tag.name"></td>
-                <td>
-                    <input type="radio" id="inline" value="inline" v-model="tag.type"><label for="inline">Inline</label><br>
-                    <input type="radio" id="block" value="block" v-model="tag.type"><label for="block">Block</label>
-                </td>
                 <td><textarea v-model="tag.style"></textarea></td>
                 <td>
                     <button @click="saveTag(tag)">Save</button>
@@ -76,7 +71,8 @@
             this.tags.push({
               tag_id: id,
               name: '',
-              class: '',
+              type: 'inline',
+              style: '',
               message: ''
             })
           })

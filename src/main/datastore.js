@@ -83,10 +83,10 @@ function Datastore () {
       })
     })
   }
-  this.all = function (query) {
+  this.all = function (query, parameters) {
     return new Promise(function (resolve, reject) {
       if (!sql) { reject(new Error('all: Database object not created')) }
-      sql.all(query, function (err, rows) {
+      sql.all(query, parameters, function (err, rows) {
         if (err) {
           reject(err)
         } else {

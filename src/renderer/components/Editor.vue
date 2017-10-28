@@ -72,7 +72,7 @@
       this.$db.all('SELECT * FROM tags ORDER BY name ASC')
         .then((rows) => {
           rows.forEach((tag) => {
-            let tagClass = 'tag' + tag.tag_id + '-' + tag.name.replace(/[^\w\s]/g, '').replace(/\s+/g, '-').toLowerCase()
+            let tagClass = 'tag' + tag.tag_id
             let type = (tag.type === 'block') ? 'block' : 'inline'
             let element = (tag.type === 'block') ? 'p' : 'span'
 
@@ -80,12 +80,12 @@
             this.tagList.push({
               'title': tag.name,
               [type]: element,
-              'classes': tagClass
+              'classes': tagClass,
+              attributes: { title: tag.name }
             })
 
             // Add to CSS
-            let style = element + '.' + tagClass + '{' + tag.style + '}\n'
-            this.customCSS += style
+            this.customCSS += element + '.' + tagClass + '{' + tag.style + '}\n'
           })
 
           // Once all done, set up the editor
@@ -224,7 +224,11 @@
       }
     },
     beforeDestroy: function () {
-      this.tinymce.remove()
+      try {
+        this.tinymce.remove()
+      } catch (err) {
+        // TinyMCE throws an error each time, but the function works as expected. Not sure what the problem is.
+      }
     }
   }
 </script>

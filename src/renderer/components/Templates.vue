@@ -2,10 +2,6 @@
     <div id="wrapper">
         <main>
             <div id="sidebar">
-                <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
-                <div id="tree">
-                    <Tree :tree="tree" @update="getEntryByDate"></Tree>
-                </div>
             </div>
             <div id="content">
                 <Editor ref="editor" :entry="entry"></Editor>
@@ -61,38 +57,23 @@
 </style>
 
 <script>
-  import flatPickr from 'vue-flatpickr-component'
-  import 'flatpickr/dist/flatpickr.css'
   import Editor from './Editor.vue'
-  import Tree from './Tree.vue'
 
   export default {
-    name: 'main',
+    name: 'templates',
     components: {
-      flatPickr,
-      Editor,
-      Tree
+      Editor
     },
     data () {
       return {
         date: this.$moment().format(this.$db.DATE_DAY),
-        entry: this.newEntry(),
-        autosaveTimer: '',
-        calendarMonth: null,
-        calendarStyle: '',
-        calConfig: {
-          locale: {
-            firstDayOfWeek: 1
-          },
-          inline: true,
-          onMonthChange: (selectedDates, dateStr, instance) => {
-            // Update calendar with new entry highlights
-            let month = this.$moment(instance.currentMonth + 1, 'M').format('MMMM') // from 0-11 to MMMM
-            this.updateCalendarEntries(month)
-          }
+        entry: {
+          id: null,
+          date: this.$moment().format(this.$db.DATE_DAY),
+          content: null,
+          saved: true
         },
         customStyles: '',
-        tree: {},
         editor: null
       }
     },
@@ -151,17 +132,19 @@
       focusOnEditor () {
         document.getElementById('editor').focus()
       },
-      newEntry () {
-        return {
-          id: null,
-          date: this.$moment().format(this.$db.DATE_DAY),
-          content: null,
-          tags: []
-        }
-      },
       clearEntry () {
-        this.entry = this.newEntry()
+        this.entry.id = null
+        this.entry.date = this.date
+        this.entry.saved = true
         this.setContent(null)
+      },
+      setEntryFromRow (row) {
+        if (row && 'entry_id' in row && 'date' in row && 'content' in row) {
+          this.entry.id = row.entry_id
+          this.entry.date = row.date
+          this.entry.saved = true
+          this.setContent(row.content)
+        }
       },
       getEntryByDate (date) {
         if (this.$moment(date, this.$db.DATE_DAY).format(this.$db.DATE_DAY) !== date) {
@@ -170,19 +153,16 @@
 
         // Check if we need to save the current entry
         this.save()
-        // And create a blank entry
-        this.clearEntry()
 
         this.date = date
         this.entry.date = date
         this.$db.getEntryByDate(date)
           .then((row) => {
-            if (row && 'entry_id' in row && 'date' in row && 'content' in row) {
-              // If exisitng entry, then fill in existing data
-              this.entry.id = row.entry_id
-              this.entry.date = row.date
-              this.setContent(row.content)
-            }
+            this.setEntryFromRow(row)
+          })
+          .catch((err) => {
+            if (err === 'dont output these') console.log(err)
+            this.clearEntry()
           })
         this.focusOnEditor()
       },
@@ -194,9 +174,6 @@
 
         // Get latest content from TinyMCE
         this.entry.content = this.getContent()
-
-        // Save tags in DB
-        this.updateTags()
 
         if (!this.entry.content || this.entry.content === '<p><br></p>') {
           /* Entry is empty
@@ -236,45 +213,6 @@
               console.log(err)
             })
         }
-      },
-      updateTags () {
-        if (!this.entry.id) return
-
-        // Get the existing database list of tags for this entry
-        this.$db.all('SELECT tag_id FROM entry_tags WHERE entry_id = ?', [this.entry.id])
-          .then((rows) => {
-            let tags = {}
-
-            // Add database tags to array
-            for (let i = 0; i < rows.length; i++) {
-              tags[rows[i].tag_id] = true
-            }
-
-            // Find tags in live entry
-            let regexp = /<span class="tag(\d+)"/g
-            let matches = this.entry.content.match(regexp)
-            if (matches) {
-              let processed = []
-              for (let i = 0; i < matches.length; i++) {
-                let tagId = matches[i].match(/tag(\d+)/)[1]
-                if (processed[tagId]) continue // skip it if we've already done it
-                if (!tags[tagId]) {
-                  // Live tag doesn't exist, so add it to database
-                  this.$db.run('REPLACE INTO entry_tags (entry_id, tag_id) VALUES (?, ?)', [this.entry.id, tagId])
-                } else {
-                  // Otherwise remove from database array
-                  delete tags[tagId]
-                }
-                processed[tagId] = true
-              }
-            }
-
-            // Whatever remains in the database array no longer remains in the entry, so delete them from table
-            for (let tagId in tags) {
-              this.$db.run('DELETE FROM entry_tags WHERE entry_id = ? AND tag_id = ?', [this.entry.id, tagId])
-              console.log(tagId)
-            }
-          })
       },
       updateTree () {
         this.$db.getEntryTree()
