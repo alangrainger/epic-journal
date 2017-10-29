@@ -28,11 +28,7 @@ new Vue({
 
 // Set up routing
 electron.ipcRenderer.on('route', (event, arg) => {
-  switch (arg) {
-    case 'tags':
-      router.push('tags')
-      break
-  }
+  router.push(arg)
 })
 
 router.push('password') // send them to the login screen

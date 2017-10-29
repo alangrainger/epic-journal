@@ -21,6 +21,11 @@ export default new Router({
       component: require('@/components/Tags').default
     },
     {
+      path: '/styles',
+      name: 'styles',
+      component: require('@/components/Styles').default
+    },
+    {
       path: '*',
       redirect: '/'
     }

@@ -3,6 +3,7 @@
 import { app, protocol, BrowserWindow, Menu, dialog, shell } from 'electron'
 import config from './config'
 import db from './datastore'
+import { version } from '../../package.json'
 
 const osLocale = require('os-locale')
 osLocale().then(locale => {
@@ -19,20 +20,6 @@ let template = [
         label: 'Open',
         click: () => { openFile() }
       }
-    ]
-  },
-  {
-    label: 'Edit',
-    submenu: [
-      {role: 'undo'},
-      {role: 'redo'},
-      {type: 'separator'},
-      {role: 'cut'},
-      {role: 'copy'},
-      {role: 'paste'},
-      {role: 'pasteandmatchstyle'},
-      {role: 'delete'},
-      {role: 'selectall'}
     ]
   },
   {
@@ -58,8 +45,16 @@ let template = [
         click: () => { mainWindow.webContents.send('goto', 'today') }
       },
       {
+        label: 'Go to journal',
+        click: () => { mainWindow.webContents.send('route', 'main') }
+      },
+      {
         label: 'Edit tags',
         click: () => { mainWindow.webContents.send('route', 'tags') }
+      },
+      {
+        label: 'Edit styles',
+        click: () => { mainWindow.webContents.send('route', 'styles') }
       }
     ]
   },
@@ -74,8 +69,8 @@ let template = [
     role: 'help',
     submenu: [
       {
-        label: 'Learn More',
-        click () { require('electron').shell.openExternal('https://electron.atom.io') }
+        label: 'About',
+        click: () => { showAbout() }
       }
     ]
   }
@@ -183,6 +178,15 @@ function openFile () {
         resolve()
       }
     })
+  })
+}
+
+function showAbout () {
+  dialog.showMessageBox({
+    type: 'none',
+    buttons: ['OK'],
+    title: 'About Epic Journal',
+    message: 'Epic Journal v' + version + '\n\nCreated by Alan Grainger'
   })
 }
 

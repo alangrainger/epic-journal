@@ -170,6 +170,17 @@ function Datastore () {
               'mime_type TEXT, ' +
               'data BLOB);')
           )
+          .then(
+            // Styles
+            db.run(
+              'CREATE TABLE IF NOT EXISTS styles(' +
+              'style_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+              'name TEXT, ' +
+              'type TEXT, ' +
+              'element TEXT, ' +
+              'class_name TEXT, ' +
+              'style TEXT);')
+          )
           .catch((err) => {
             reject(err)
           })
@@ -278,7 +289,9 @@ function Datastore () {
           if (row) {
             resolve(row)
           } else {
-            reject(new Error('No entry found with date ' + date))
+            let err = new Error('No entry found with date ' + date)
+            err.number = 101
+            reject(err)
           }
         })
         .catch((error) => {

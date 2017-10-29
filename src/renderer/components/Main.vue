@@ -184,6 +184,14 @@
               this.setContent(row.content)
             }
           })
+          .catch((err) => {
+            if (err.number === 101) {
+              // No entry at this date
+              console.debug(err.message)
+            } else {
+              console.error(err)
+            }
+          })
         this.focusOnEditor()
       },
       save () {
@@ -205,12 +213,12 @@
           if (this.entry.id) {
             this.$db.deleteEntry(this.entry)
               .then(() => {
-                console.log('Empty entry ' + this.entry.id + ' has been pruned')
+                console.info('Empty entry ' + this.entry.id + ' has been pruned')
                 this.clearEntry()
                 this.updateTree()
               })
               .catch((error) => {
-                console.log(error)
+                console.error(error)
               })
           }
         } else if (this.entry.id) {
@@ -221,19 +229,19 @@
               this.entry.saved = true
             })
             .catch(() => {
-              console.log('FAILED TO SAVE ENTRY')
+              console.error('FAILED TO SAVE ENTRY')
             })
         } else {
           // No existing entry, so create new entry
           this.$db.createNewEntry(this.entry)
             .then((entryId) => {
               this.entry.id = entryId
-              console.log(this.$moment().format('HH:mm:ss') + ' created new entry', 'ID: ' + this.entry.id)
+              console.info(this.$moment().format('HH:mm:ss') + ' created new entry', 'ID: ' + this.entry.id)
               this.entry.saved = true
               this.updateTree()
             })
             .catch((err) => {
-              console.log(err)
+              console.error(err)
             })
         }
       },
@@ -251,8 +259,7 @@
             }
 
             // Find tags in live entry
-            let regexp = /<span class="tag(\d+)"/g
-            let matches = this.entry.content.match(regexp)
+            let matches = this.entry.content.match(/<span class="tag(\d+)"/g)
             if (matches) {
               let processed = []
               for (let i = 0; i < matches.length; i++) {

@@ -50,46 +50,58 @@
     },
     mounted: function () {
       // Set up custom styles
-      for (let i = 0; i < this.customStyles.length; i++) {
-        let className = this.customStyles[i]['class']
-        let element = this.customStyles[i]['element']
-        let style = this.customStyles[i]['style']
-        let name = this.customStyles[i]['name']
-
-        // Create style list for dropdown
-        this.styleList.push({
-          title: name,
-          block: element,
-          classes: className
-        })
-
-        // Create CSS
-        let fullName = (className) ? element + '.' + className : element
-        this.customCSS += fullName + '{' + style + '}\n'
-      }
-
-      // Set up tags
-      this.$db.all('SELECT * FROM tags ORDER BY name ASC')
+      this.$db.all('SELECT * FROM styles ORDER BY name ASC')
         .then((rows) => {
-          rows.forEach((tag) => {
-            let tagClass = 'tag' + tag.tag_id
-            let type = (tag.type === 'block') ? 'block' : 'inline'
-            let element = (tag.type === 'block') ? 'p' : 'span'
-
-            // Set up tag list for dropdown
-            this.tagList.push({
-              'title': tag.name,
-              [type]: element,
-              'classes': tagClass,
-              attributes: { title: tag.name }
+          for (let i = 0; i < rows.length; i++) {
+            let style = rows[i]
+            // Create style list for dropdown
+            this.styleList.push({
+              title: style.name,
+              [style.type]: style.element,
+              classes: style.class_name
             })
 
-            // Add to CSS
-            this.customCSS += element + '.' + tagClass + '{' + tag.style + '}\n'
+            // Create CSS
+            let fullName = (style.class_name) ? style.element + '.' + style.class_name : style.element
+            this.customCSS += fullName + '{' + style.style + '}\n'
+          }
+
+          /* This way adds them asynchronously
+          this.editor.formatter.register('custom' + i, {
+            [type]: element,
+            title: tag.name,
+            classes: tagClass,
+            attributes: {title: tag.name}
           })
 
-          // Once all done, set up the editor
-          this.createEditor()
+          // Add to CSS
+          let css = element + '.' + tagClass + '{' + tag.style + '}'
+          this.editor.dom.addStyle(css) */
+
+          // Get tags
+          this.$db.all('SELECT * FROM tags ORDER BY name ASC')
+            .then((rows) => {
+              for (let i = 0; i < rows.length; i++) {
+                let tag = rows[i]
+                let tagClass = 'tag' + tag.tag_id
+                let type = (tag.type === 'block') ? 'block' : 'inline'
+                let element = (tag.type === 'block') ? 'p' : 'span'
+
+                // Set up tag list for dropdown
+                this.tagList.push({
+                  'title': tag.name,
+                  [type]: element,
+                  'classes': tagClass,
+                  attributes: {title: tag.name}
+                })
+
+                // Add to CSS
+                this.customCSS += element + '.' + tagClass + '{' + tag.style + '}\n'
+              }
+
+              // Once all done, set up the editor
+              this.createEditor()
+            })
         })
     },
     methods: {
