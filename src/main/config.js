@@ -2,21 +2,6 @@ import { app } from 'electron'
 
 let fs = require('fs')
 
-let defaultStyles = [
-  {
-    'name': 'Quote',
-    'class': 'quote',
-    'element': 'p',
-    'style': 'font-style: italic; margin: 1em; background-color: #fcfcfc; padding: 0.9em 1.1em; border: solid 1px #cccccc;'
-  },
-  {
-    'name': 'Important note',
-    'class': 'note',
-    'element': 'p',
-    'style': 'background-color: yellow;'
-  }
-]
-
 let Config = function () {
   // Default data
   this.data = {}
@@ -37,12 +22,6 @@ let Config = function () {
     fs.writeFile(this.iniFile, output, 'utf8', (err) => {
       if (err) console.log(err)
     })
-  }
-
-  // Check to see if the custom style section exists
-  if (!this.data.customStyles) {
-    this.data.customStyles = defaultStyles
-    this.write()
   }
 }
 

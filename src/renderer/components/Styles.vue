@@ -12,9 +12,10 @@
             <tr v-for="style in styles" @keyup="style.saved = false">
                 <td><input style="width: 120px" type="text" v-model="style.name"></td>
                 <td><input style="width: 60px" type="text" v-model="style.element"></td>
-                <td>
+                <td @change="style.saved = false">
                     <input type="radio" :id="'type' + style.style_id" value="block" v-model="style.type">&nbsp;<label :for="'type' + style.style_id">Block</label>
                     <input type="radio" :id="'type' + style.style_id" value="inline" v-model="style.type">&nbsp;<label :for="'type' + style.style_id">Inline</label>
+                </td>
                 <td><input style="width: 100px" type="text" v-model="style.class_name"></td>
                 <td><textarea v-model="style.style" @keyup="style.saved = false"></textarea></td>
                 <td>

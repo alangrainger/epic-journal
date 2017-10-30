@@ -3,6 +3,7 @@
         <table>
             <tr>
                 <th>Name</th>
+                <th>Type</th>
                 <th style="width:40%">Style</th>
                 <th style="width:30%">Preview</th>
                 <th></th>
@@ -11,9 +12,13 @@
                 <td>
                     <input style="width: 120px" type="text" v-model="tag.name"><br>
                 </td>
+                <td @change="tag.saved = false">
+                    <input type="radio" :id="'type' + tag.style_id" value="block" v-model="tag.type">&nbsp;<label :for="'type' + tag.style_id">Block</label>
+                    <input type="radio" :id="'type' + tag.style_id" value="inline" v-model="tag.type">&nbsp;<label :for="'type' + tag.style_id">Inline</label>
+                </td>
                 <td><textarea v-model="tag.style"></textarea></td>
-                <td>This is an <span :title="tag.name" :style="tag.style">example of how your final style will look</span>
-                    when it appears in your journal.</td>
+                <td v-if="tag.type === 'block'"><div :title="tag.name" :style="tag.style">This is an example of how your final style will look when it appears in your journal.</div></td>
+                <td v-else>This is an <span :title="tag.name" :style="tag.style">example of how your final style will look</span> when it appears in your journal.</td>
                 <td>
                     <button v-if="!tag.saved" @click="saveTag(tag)">Save</button>
                     <button @click="deleteTag(tag.tag_id, $event)">Delete</button>
@@ -84,7 +89,7 @@
             this.tags.push({
               tag_id: id,
               name: '',
-              type: 'inline',
+              type: 'block',
               style: '',
               saved: true
             })

@@ -40,7 +40,6 @@
     data () {
       return {
         id: 'editor',
-        customStyles: this.$config.data.customStyles,
         editor: '',
         customCSS: '',
         styleList: [],
@@ -79,35 +78,37 @@
           this.editor.dom.addStyle(css) */
 
           // Get tags
-          this.$db.all('SELECT * FROM tags ORDER BY name ASC')
-            .then((rows) => {
-              for (let i = 0; i < rows.length; i++) {
-                let tag = rows[i]
-                let tagClass = 'tag' + tag.tag_id
-                let type = (tag.type === 'block') ? 'block' : 'inline'
-                let element = (tag.type === 'block') ? 'p' : 'span'
+          return this.$db.all('SELECT * FROM tags ORDER BY name ASC')
+        })
+        .then((rows) => {
+          for (let i = 0; i < rows.length; i++) {
+            let tag = rows[i]
+            let tagClass = 'tag' + tag.tag_id
+            let type = (tag.type === 'block') ? 'block' : 'inline'
+            let element = (tag.type === 'block') ? 'p' : 'span'
 
-                // Set up tag list for dropdown
-                this.tagList.push({
-                  'title': tag.name,
-                  [type]: element,
-                  'classes': tagClass,
-                  attributes: {title: tag.name}
-                })
-
-                // Add to CSS
-                this.customCSS += element + '.' + tagClass + '{' + tag.style + '}\n'
-              }
-
-              // Once all done, set up the editor
-              this.createEditor()
+            // Set up tag list for dropdown
+            this.tagList.push({
+              'title': tag.name,
+              [type]: element,
+              'classes': tagClass,
+              attributes: {title: tag.name}
             })
+
+            // Add to CSS
+            this.customCSS += element + '.' + tagClass + '{' + tag.style + '}\n'
+          }
+
+          // Once all done, set up the editor
+          this.createEditor()
         })
     },
     methods: {
       getContent () {
-        if (this.editor) {
+        try {
           return this.editor.getContent()
+        } catch (err) {
+          // No editor created
         }
       },
       setContent (content) {
@@ -191,38 +192,53 @@
             if (err) {
               console.log(err)
             } else {
-              if (mimeType === 'image/jpg' || mimeType === 'image/jpeg' || mimeType === 'image/png') {
-                // Resize if JPG or PNG
-                let maxWidth = vm.$config.data.imageWidth || 400
-                let maxHeight = vm.$config.data.imageHeight || 400
+              new Promise(function (resolve, reject) {
+                if (mimeType === 'image/jpg' || mimeType === 'image/jpeg' || mimeType === 'image/png') {
+                  // Resize if JPG or PNG
+                  let maxWidth, maxHeight
+                  vm.$db.getOption('image_width')
+                    .then((value) => {
+                      maxWidth = value || 400
+                      return vm.$db.getOption('image_height')
+                    })
+                    .then((value) => {
+                      maxHeight = value || 400
 
-                const nativeImage = require('electron').nativeImage
-                let image = nativeImage.createFromBuffer(data)
-                let width = 0
-                let resize = false
-                if (maxWidth / maxHeight < image.getAspectRatio()) {
-                  width = Math.round(maxWidth)
-                  if (image.getSize().width > width) resize = true
+                      const nativeImage = require('electron').nativeImage
+                      let image = nativeImage.createFromBuffer(data)
+                      let width = 0
+                      let resize = false
+                      if (maxWidth / maxHeight < image.getAspectRatio()) {
+                        width = Math.round(maxWidth)
+                        if (image.getSize().width > width) resize = true
+                      } else {
+                        width = Math.round(maxHeight * image.getAspectRatio())
+                        if (image.getSize().width > width) resize = true
+                      }
+
+                      if (mimeType === 'image/jpg' || mimeType === 'image/jpeg') {
+                        // JPG
+                        mimeType = 'image/jpeg' // standardise mime type
+                        if (resize) data = image.resize({width: width}).toJPEG(65)
+                      } else if (mimeType === 'image/png') {
+                        // PNG
+                        if (resize) data = image.resize({width: width}).toPNG()
+                      }
+                      resolve(data)
+                    })
+                    .catch((err) => { reject(err) })
                 } else {
-                  width = Math.round(maxHeight * image.getAspectRatio())
-                  if (image.getSize().width > width) resize = true
+                  // Not a supported resize type - just add the attachment
+                  resolve(data)
                 }
-
-                if (mimeType === 'image/jpg' || mimeType === 'image/jpeg') {
-                  // JPG
-                  mimeType = 'image/jpeg' // standardise
-                  if (resize) data = image.resize({width: width}).toJPEG(65)
-                } else if (mimeType === 'image/png') {
-                  // PNG
-                  if (resize) data = image.resize({width: width}).toPNG()
-                }
-              }
-              // Add file to database
-              vm.$db.addAttachment(mimeType, data)
+              })
+                .then((data) => {
+                  // Add attachment to the DB
+                  return vm.$db.addAttachment(mimeType, data)
+                })
                 .then((rowId) => {
-                  console.log('New attachment added with ID ' + rowId)
                   // Link file into the content
-                  // editor.insertContent('<img src="attach://' + rowId + '" data-mime="' + mimeType + '">')
+                  console.info('New attachment added with ID ' + rowId)
                   // eslint-disable-next-line
                   cb('attach://' + rowId)
                 })
@@ -240,6 +256,7 @@
         this.tinymce.remove()
       } catch (err) {
         // TinyMCE throws an error each time, but the function works as expected. Not sure what the problem is.
+        console.log('Destroy error')
       }
     }
   }

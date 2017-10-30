@@ -347,23 +347,29 @@ function Datastore () {
     })
   }
 
-  this.getOption = function (name, callback) {
-    if (name) {
+  this.getOption = function (name) {
+    return new Promise(function (resolve, reject) {
+      if (!name) { reject(new Error('No option specified')) }
+
       db.get('SELECT * FROM options WHERE name = ?', [name])
         .then((row) => {
-          callback((row && row.value) ? row.value : null)
+          resolve((row && row.value) ? row.value : null)
         })
         .catch((error) => {
-          console.log(error)
+          reject(error)
         })
-    }
+    })
   }
 
   this.setOption = function (name, value) {
-    db.run('INSERT OR REPLACE INTO options VALUES (?, ?)', [name, value])
-      .catch((error) => {
-        console.log(error)
-      })
+    return new Promise(function (resolve, reject) {
+      if (!name) { reject(new Error('No option specified')) }
+
+      db.run('INSERT OR REPLACE INTO options VALUES (?, ?)', [name, value])
+        .catch((error) => {
+          reject(error)
+        })
+    })
   }
 
   this.addAttachment = function (mimetype, data) {
