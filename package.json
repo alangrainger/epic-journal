@@ -3,7 +3,7 @@
   "version": "0.4.1",
   "author": "Alan Grainger",
   "description": "A daily journal app",
-  "license": "NPOSL-3.0",
+  "license": "CC BY-NC 4.0",
   "main": "./dist/electron/main.js",
   "scripts": {
     "build": "node .electron-vue/build.js && electron-builder",
