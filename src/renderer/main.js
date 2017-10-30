@@ -11,8 +11,11 @@ import './assets/font-awesome/css/font-awesome.css'
 
 const electron = require('electron')
 
-Vue.prototype.$db = remote.getGlobal('db')
-Vue.prototype.$config = remote.getGlobal('config')
+let db = remote.getGlobal('db')
+let config = remote.getGlobal('config')
+
+Vue.prototype.$db = db
+Vue.prototype.$config = config
 Vue.prototype.$moment = moment
 
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
@@ -31,4 +34,10 @@ electron.ipcRenderer.on('route', (event, arg) => {
   router.push(arg)
 })
 
-router.push('password') // send them to the login screen
+if (!config.data.file) {
+  // No existing config, send them to the intro screen
+  router.push('intro')
+} else {
+  // Send them to the login screen
+  router.push('password')
+}

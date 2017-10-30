@@ -18,7 +18,12 @@ let template = [
     submenu: [
       {
         label: 'Open',
-        click: () => { openFile() }
+        click: () => {
+          openFile()
+            .then(() => {
+              mainWindow.webContents.reloadIgnoringCache()
+            })
+        }
       }
     ]
   },
@@ -79,6 +84,17 @@ let template = [
 const menu = Menu.buildFromTemplate(template)
 Menu.setApplicationMenu(menu)
 
+const {ipcMain} = require('electron')
+ipcMain.on('createJournal', (event) => {
+  openFile()
+    .then(() => {
+      event.returnValue = true
+    })
+    .catch(() => {
+      event.returnValue = false
+    })
+})
+
 /**
  * Set `__static` path to static files in production
  * https://simulatedgreg.gitbooks.io/electron-vue/content/en/using-static-assets.html
@@ -129,23 +145,20 @@ app.on('ready', function () {
     if (id) {
       db.getAttachment(id)
         .then((row) => {
-          // eslint-disable-next-line
-          callback({mimeType: row.mime_type, data: row.data})
+          if (row) {
+            // eslint-disable-next-line
+            callback({mimeType: row.mime_type, data: row.data})
+          }
+        })
+        .catch((err) => {
+          console.error(err)
         })
     }
   }, (error) => {
     if (error) console.log(error)
   })
 
-  if (!config.data.file) {
-    // No existing database file, ask them where to create it
-    openFile()
-      .then(() => {
-        createWindow()
-      })
-  } else {
-    createWindow()
-  }
+  createWindow()
 })
 
 app.on('window-all-closed', () => {

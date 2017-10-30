@@ -11,6 +11,11 @@ export default new Router({
       component: require('@/components/Password').default
     },
     {
+      path: '/intro',
+      name: 'intro',
+      component: require('@/components/Intro').default
+    },
+    {
       path: '/main',
       name: 'main',
       component: require('@/components/Main').default

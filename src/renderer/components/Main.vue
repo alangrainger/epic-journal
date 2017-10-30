@@ -259,20 +259,22 @@
             }
 
             // Find tags in live entry
-            let matches = this.entry.content.match(/<span class="tag(\d+)"/g)
-            if (matches) {
-              let processed = []
-              for (let i = 0; i < matches.length; i++) {
-                let tagId = matches[i].match(/tag(\d+)/)[1]
-                if (processed[tagId]) continue // skip it if we've already done it
-                if (!tags[tagId]) {
-                  // Live tag doesn't exist, so add it to database
-                  this.$db.run('REPLACE INTO entry_tags (entry_id, tag_id) VALUES (?, ?)', [this.entry.id, tagId])
-                } else {
-                  // Otherwise remove from database array
-                  delete tags[tagId]
+            if (this.entry.content) {
+              let matches = this.entry.content.match(/<span class="tag(\d+)"/g)
+              if (matches) {
+                let processed = []
+                for (let i = 0; i < matches.length; i++) {
+                  let tagId = matches[i].match(/tag(\d+)/)[1]
+                  if (processed[tagId]) continue // skip it if we've already done it
+                  if (!tags[tagId]) {
+                    // Live tag doesn't exist, so add it to database
+                    this.$db.run('REPLACE INTO entry_tags (entry_id, tag_id) VALUES (?, ?)', [this.entry.id, tagId])
+                  } else {
+                    // Otherwise remove from database array
+                    delete tags[tagId]
+                  }
+                  processed[tagId] = true
                 }
-                processed[tagId] = true
               }
             }
 

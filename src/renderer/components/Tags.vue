@@ -75,7 +75,7 @@
             this.tags.push({
               tag_id: row.tag_id,
               name: row.name,
-              type: 'inline',
+              type: row.type,
               style: row.style,
               saved: true
             })

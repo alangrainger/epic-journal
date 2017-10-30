@@ -30,6 +30,9 @@
 </style>
 
 <script>
+  let tinymce = require('tinymce')
+  tinymce.baseURL = 'static/tinymce'
+
   export default {
     props: {
       value: String,
@@ -105,10 +108,8 @@
     },
     methods: {
       getContent () {
-        try {
+        if (this.editor) {
           return this.editor.getContent()
-        } catch (err) {
-          // No editor created
         }
       },
       setContent (content) {
@@ -119,9 +120,7 @@
         }
       },
       createEditor () {
-        this.tinymce = require('tinymce')
-        this.tinymce.baseURL = 'static/tinymce'
-        this.tinymce.init({
+        tinymce.init({
           init_instance_callback: (editor) => {
             // this.toggleMenubar() // hide menu bar by default
             this.editor = editor // set the editor instance
@@ -253,10 +252,9 @@
     },
     beforeDestroy: function () {
       try {
-        this.tinymce.remove()
+        tinymce.remove()
       } catch (err) {
         // TinyMCE throws an error each time, but the function works as expected. Not sure what the problem is.
-        console.log('Destroy error')
       }
     }
   }

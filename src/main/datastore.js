@@ -192,19 +192,24 @@ function Datastore () {
     db.get('PRAGMA user_version;')
       .then((row) => {
         let version = row.user_version
-        if (version < SCHEMA_VERSION) console.log('Outdated database schema, updating...')
+        if (!version) {
+          // New database
+          db.run('PRAGMA user_version = ' + SCHEMA_VERSION)
+        } else {
+          if (version < SCHEMA_VERSION) console.log('Outdated database schema, updating...')
 
-        if (version < 5) {
-          /*
-          Tag table was updated to include style and a style-type of inline or block
-           */
-          db.run('DROP TABLE tags')
-          db.run(
-            'CREATE TABLE IF NOT EXISTS tags(' +
-            'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-            'name TEXT, ' +
-            'type TEXT, ' +
-            'style TEXT);')
+          if (version < 5) {
+            /*
+            Tag table was updated to include style and a style-type of inline or block
+             */
+            db.run('DROP TABLE tags')
+            db.run(
+              'CREATE TABLE IF NOT EXISTS tags(' +
+              'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+              'name TEXT, ' +
+              'type TEXT, ' +
+              'style TEXT);')
+          }
           db.run('PRAGMA user_version = ' + SCHEMA_VERSION)
         }
       })
@@ -394,11 +399,7 @@ function Datastore () {
       if (!isNaN(id) && id === parseInt(id, 10)) reject(new Error('No attachment ID specified'))
       db.get('SELECT * FROM attachments WHERE attachment_id = ?', [id])
         .then((row) => {
-          if (row) {
-            resolve(row)
-          } else {
-            reject(new Error('No entry found with ID ' + id))
-          }
+          resolve(row)
         })
         .catch((error) => {
           reject(error)

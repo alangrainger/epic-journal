@@ -1,6 +1,13 @@
 <template>
     <div id="container">
         <div id="inner">
+            <h1>Welcome to Epic Journal</h1>
+            <p style="text-align: left;">Click the Create button below to create a new journal. Choose a folder and then
+                type the desired filename.
+                You can also choose an existing journal.</p>
+            <p style="text-align: left;">The next screen will come up with a password. Type any password you like and press
+                Enter.</p>
+            <button @click="create">CREATE</button>
         </div>
     </div>
 </template>
@@ -11,6 +18,17 @@
         width: 100%;
         background-color: #569FF7;
         position: absolute;
+    }
+
+    h1 {
+        font-family: 'Segoe UI', sans-serif;
+        font-weight: normal;
+        margin-bottom: 1em;
+    }
+
+    p {
+        font-family: 'Segoe UI', sans-serif;
+        margin-bottom: 1em;
     }
 
     #inner {
@@ -38,20 +56,27 @@
         color: rgba(255, 255, 255, 0.8)
     }
 
-    input, input:focus {
-        font-size: 30pt;
-        background-color: transparent;
-        border: 0;
-        outline: none;
-        text-align: center;
+    button {
+        background: #569FF7;
+        border: 2px solid white;
         color: white;
-        border-bottom: 1px solid white;
-        margin: 0 0 0.5em 0;
-        width: 260px;
+        font-size: 1.2em;
+        line-height: 1em;
+        padding: 0.4em 0.8em 0.6em 0.8em;
+        margin: 1em 0;
+        white-space: nowrap;
+    }
+
+    button:hover {
+        background: white;
+        color: #5388dd;
+        cursor: pointer;
     }
 </style>
 
 <script>
+  import router from '../router'
+
   export default {
     data () {
       return {
@@ -62,6 +87,13 @@
     mounted: function () {
     },
     methods: {
+      create () {
+        const {ipcRenderer} = require('electron')
+        let result = ipcRenderer.sendSync('createJournal')
+        if (result) {
+          router.push('password')
+        }
+      }
     }
   }
 </script>
