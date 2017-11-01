@@ -149,6 +149,7 @@
         if (this.getContent() === this.entry.content && !this.entry.nameChanged) {
           return // entry has not changed
         }
+        if (!this.entry.name) return // no name
 
         // Get latest content from TinyMCE
         this.entry.content = this.getContent()

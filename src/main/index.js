@@ -122,12 +122,12 @@ function createWindow () {
    */
   mainWindow = new BrowserWindow({
     width: config.data.windowX || 1100,
-    height: config.data.windowY || 680,
-    useContentSize: true
+    height: config.data.windowY || 680
   })
 
   mainWindow.on('resize', function () {
     // Store the window dimensions in the config
+    config.data.window = mainWindow.getBounds()
     config.data.windowX = mainWindow.getSize()[0]
     config.data.windowY = mainWindow.getSize()[1]
   })

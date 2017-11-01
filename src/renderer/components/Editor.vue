@@ -161,7 +161,12 @@
           setup: (editor) => {
             editor.addMenuItem('insertTemplate', {
               text: 'Insert Template',
-              menu: this.templates
+              menu: this.templates.concat([{
+                text: 'Add new template...',
+                onclick: () => {
+                  this.$router.push('templates')
+                }
+              }])
             })
           },
           file_picker_types: 'image',
