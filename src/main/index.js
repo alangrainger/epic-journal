@@ -78,6 +78,10 @@ let template = [
     role: 'help',
     submenu: [
       {
+        label: 'Help',
+        click: () => { shell.openExternal('https://github.com/alangrainger/epic-journal#usage') }
+      },
+      {
         label: 'About',
         click: () => { showAbout() }
       }

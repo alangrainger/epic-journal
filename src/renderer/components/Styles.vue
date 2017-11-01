@@ -86,7 +86,11 @@
     },
     methods: {
       newTag () {
-        this.$db.insert('INSERT INTO styles (name, type, element) VALUES (?, ?, ?)', ['', 'block', 'p'])
+        this.$db.insert('styles', {
+          name: '',
+          type: 'block',
+          element: 'p'
+        })
           .then((id) => {
             this.styles.push({
               style_id: id,

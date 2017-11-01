@@ -292,7 +292,7 @@
             this.tree = tree
             this.updateCalendarEntries()
           })
-          .catch(console.error)
+          .catch(err => { console.error(err) })
       },
       updateCalendarEntries (monthName) {
         /*

@@ -17,12 +17,15 @@ h1 {
 
 h2 {
     font-size: 18pt;
+    font-weight: normal;
     margin-top: 1em;
     margin-bottom: 0.7em;
 }
 
 h3 {
     font-size: 16pt;
+    font-weight: normal;
+    font-style: italic;
     margin-top: 1em;
     margin-bottom: 0.7em;
 }

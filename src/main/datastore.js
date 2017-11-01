@@ -389,10 +389,11 @@ function Datastore () {
       let tree = {}
       db.all('SELECT entry_id, date FROM entries ORDER BY date ASC')
         .then((rows) => {
-          rows.forEach(function (row) {
+          for (let i = 0; i < rows.length; i++) {
             /*
             I feel that this section is a kludge, but I don't know a better way to do it :\
              */
+            let row = rows[i]
             let year = row.date.substr(0, 4)
             let month = moment(row.date, 'YYYY-MM-DD').format('MMMM')
             let day = moment(row.date, 'YYYY-MM-DD').format('DD - dddd')
@@ -405,7 +406,7 @@ function Datastore () {
             tree[year]['show'] = true
             tree[year]['months'][month]['show'] = true
             tree[year]['months'][month]['entries'].push({date: row.date, value: day})
-          })
+          }
           resolve(tree)
         })
         .catch((err) => {

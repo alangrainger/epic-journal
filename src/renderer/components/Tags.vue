@@ -84,7 +84,7 @@
     },
     methods: {
       newTag () {
-        this.$db.insert('INSERT INTO tags (name) VALUES (?)', [''])
+        this.$db.insert('tags', { name: '' })
           .then((id) => {
             this.tags.push({
               tag_id: id,

@@ -6,9 +6,6 @@ import router from './router'
 // import store from './store'
 import moment from 'moment'
 
-// Styles
-import './assets/font-awesome/css/font-awesome.css'
-
 const electron = require('electron')
 
 let db = remote.getGlobal('db')
