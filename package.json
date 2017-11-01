@@ -1,9 +1,9 @@
 {
   "name": "epic-journal",
-  "version": "0.4.1",
+  "version": "0.9.0",
   "author": "Alan Grainger",
   "description": "A daily journal app",
-  "license": "CC BY-NC 4.0",
+  "license": "CC-BY-NC-4.0",
   "main": "./dist/electron/main.js",
   "scripts": {
     "build": "node .electron-vue/build.js && electron-builder",

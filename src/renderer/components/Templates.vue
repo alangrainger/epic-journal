@@ -2,13 +2,16 @@
     <div id="wrapper">
         <main>
             <div id="sidebar">
+                <p>Current templates:</p>
+                <div class="row" v-for="item in templates" @click="load(item.template_id)" :class="{ selected: item.template_id === entry.id }">
+                    {{ item.name }}
+                </div>
             </div>
             <div id="content">
+                <input id="name" v-model="entry.name" placeholder="Template name" @keyup="entry.nameChanged = true"/>
                 <Editor ref="editor" :entry="entry"></Editor>
             </div>
         </main>
-        <div v-html="'<style>' + calendarStyle + '</style>'" style="display:none"></div>
-        <div v-html="'<style>' + customStyles + '</style>'" style="display:none"></div>
     </div>
 </template>
 
@@ -17,14 +20,6 @@
         box-sizing: border-box;
         margin: 0;
         padding: 0;
-    }
-
-    .flatpickr-input {
-        display: none;
-    }
-
-    .flatpickr-calendar {
-        margin-bottom: 20px;
     }
 
     #wrapper {
@@ -45,8 +40,23 @@
         margin-right: 40px;
     }
 
-    #tree {
-        overflow-y: auto;
+    .row {
+        padding: 10px;
+        background: white;
+        border-bottom: 1px solid #F0F0F0;
+        cursor: pointer;
+    }
+
+    .selected {
+        background: #D0E4FC;
+    }
+
+    #name {
+        font-size: 1.5em;
+        margin-bottom: 0.2em;
+        padding: 5px 10px;
+        border: none;
+        background: none;
     }
 
     #content {
@@ -66,32 +76,16 @@
     },
     data () {
       return {
-        date: this.$moment().format(this.$db.DATE_DAY),
-        entry: {
-          id: null,
-          date: this.$moment().format(this.$db.DATE_DAY),
-          content: null,
-          saved: true
-        },
+        name: 'templates',
+        templates: [],
+        entry: this.newEntry(),
+        autosaveTimer: '',
         customStyles: '',
         editor: null
       }
     },
     mounted: function () {
-      // Listen for goto commands from main menu
-      this.$electron.ipcRenderer.on('goto', (event, arg) => {
-        switch (arg) {
-          case 'today':
-            this.date = this.$moment().format(this.$db.DATE_DAY)
-            break
-        }
-      })
-
-      // Load existing entry if there is one
-      this.getEntryByDate(this.entry.date)
-
-      // Get entry tree
-      this.updateTree()
+      this.updateList()
 
       // Autosave entry
       this.autosaveTimer = setInterval(() => {
@@ -100,26 +94,6 @@
 
       // Save entry on close
       window.addEventListener('unload', this.save)
-
-      // Set focus to editor
-      this.focusOnEditor()
-    },
-    watch: {
-      date: function () {
-        /*
-        Watch for when a new calendar date is picked, and then select the entry for that day.
-        If no entry, then create a new blank one.
-         */
-        // Update marked entries on calendar
-        let month = this.$moment(this.date).format('MMMM')
-        if (this.calendarMonth !== month) {
-          this.calendarMonth = month
-          this.updateCalendarEntries()
-        }
-
-        // Update entry
-        this.getEntryByDate(this.date)
-      }
     },
     methods: {
       getContent () {
@@ -129,46 +103,50 @@
         this.entry.content = content
         this.$refs.editor.setContent(content)
       },
-      focusOnEditor () {
-        document.getElementById('editor').focus()
+      newEntry () {
+        return {
+          id: null,
+          name: '',
+          content: null
+        }
       },
       clearEntry () {
-        this.entry.id = null
-        this.entry.date = this.date
-        this.entry.saved = true
+        this.entry = this.newEntry()
         this.setContent(null)
       },
-      setEntryFromRow (row) {
-        if (row && 'entry_id' in row && 'date' in row && 'content' in row) {
-          this.entry.id = row.entry_id
-          this.entry.date = row.date
-          this.entry.saved = true
-          this.setContent(row.content)
-        }
+      updateList () {
+        // Get list of existing templates
+        this.$db.all('SELECT * FROM templates ORDER BY name ASC')
+          .then(rows => {
+            this.templates = rows
+          })
+          .catch((err) => { console.error(err) })
       },
-      getEntryByDate (date) {
-        if (this.$moment(date, this.$db.DATE_DAY).format(this.$db.DATE_DAY) !== date) {
-          return false // invalid date
-        }
-
+      load (id) {
         // Check if we need to save the current entry
         this.save()
 
-        this.date = date
-        this.entry.date = date
-        this.$db.getEntryByDate(date)
+        // Get template from DB
+        this.$db.getById('templates', id)
           .then((row) => {
-            this.setEntryFromRow(row)
+            if (row) {
+              this.entry.id = row.template_id
+              this.entry.name = row.name
+              this.setContent(row.content)
+            } else {
+              this.clearEntry()
+            }
           })
-          .catch((err) => {
-            if (err === 'dont output these') console.log(err)
-            this.clearEntry()
+          .catch((error) => {
+            console.error(error)
           })
-        this.focusOnEditor()
+
+        // Set focus to editor
+        this.$refs.editor.focus()
       },
       save () {
         if (!this.$refs.editor.editor) return // editor hasn't loaded
-        if (this.getContent() === this.entry.content) {
+        if (this.getContent() === this.entry.content && !this.entry.nameChanged) {
           return // entry has not changed
         }
 
@@ -180,69 +158,44 @@
              If it exists, then prune it from DB
              '<p><br></p>' is the minimum content for an empty Quill editor */
           if (this.entry.id) {
-            this.$db.deleteEntry(this.entry)
+            this.$db.delete('templates', this.entry.id)
               .then(() => {
-                console.log('Empty entry ' + this.entry.id + ' has been pruned')
-                this.clearEntry()
-                this.updateTree()
+                this.entry.id = null
               })
               .catch((error) => {
-                console.log(error)
+                console.error(error)
               })
           }
         } else if (this.entry.id) {
           // Entry ID already exists, update existing entry
-          this.$db.updateEntry(this.entry)
+          let data = {
+            name: this.entry.name,
+            content: this.entry.content
+          }
+          this.$db.update('templates', data, this.entry.id)
             .then(() => {
               console.log(this.$moment().format('HH:mm:ss') + ' saved entry', 'ID: ' + this.entry.id)
-              this.entry.saved = true
             })
             .catch(() => {
-              console.log('FAILED TO SAVE ENTRY')
+              console.error('FAILED TO SAVE ENTRY')
             })
         } else {
           // No existing entry, so create new entry
-          this.$db.createNewEntry(this.entry)
-            .then((entryId) => {
-              this.entry.id = entryId
-              console.log(this.$moment().format('HH:mm:ss') + ' created new entry', 'ID: ' + this.entry.id)
-              this.entry.saved = true
-              this.updateTree()
-            })
-            .catch((err) => {
-              console.log(err)
-            })
-        }
-      },
-      updateTree () {
-        this.$db.getEntryTree()
-          .then((tree) => {
-            // Set tree
-            this.tree = tree
-            this.updateCalendarEntries()
+          let date = this.$moment().format(this.$db.DATE_SQL)
+          this.$db.insert('templates', {
+            name: this.entry.name,
+            content: this.entry.content,
+            created: date,
+            modified: date
           })
-          .catch(console.error)
-      },
-      updateCalendarEntries (monthName) {
-        /*
-          Mark all dates with entries on the calendar
-         */
-        let year = this.$moment(this.date).format('YYYY')
-        let month = monthName || this.$moment(this.date).format('MMMM')
-        if (!this.tree || !this.tree[year] || !this.tree[year]['months'][month]) {
-          return // if the tree is not yet set
+            .then(id => {
+              this.entry.id = id
+              console.info(this.$moment().format('HH:mm:ss') + ' created new entry', 'ID: ' + this.entry.id)
+            })
+            .catch(err => { console.error(err) })
         }
-        let entries = this.tree[year]['months'][month]['entries']
-        let styles = []
-        let style = ''
-        if (entries.length) {
-          for (let i = 0; i < entries.length; i++) {
-            let flatpickrDate = this.$moment(entries[i].date).format('MMMM D, YYYY')
-            styles[i] = 'span[aria-label="' + flatpickrDate + '"]'
-          }
-          style = styles.join(', ') + ' { background-color: #D0E4F8; }'
-        }
-        this.calendarStyle = style
+        this.entry.nameChanged = false
+        this.updateList()
       }
     },
     beforeDestroy: function () {

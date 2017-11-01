@@ -47,7 +47,8 @@
         customCSS: '',
         styleList: [],
         tagList: [],
-        tinymce: ''
+        tinymce: '',
+        templates: []
       }
     },
     mounted: function () {
@@ -102,11 +103,21 @@
             this.customCSS += element + '.' + tagClass + '{' + tag.style + '}\n'
           }
 
+          return this.getTemplates()
+        })
+        .then(templates => {
+          // Add the templates
+          this.templates = templates
+
           // Once all done, set up the editor
           this.createEditor()
         })
+        .catch(err => { console.error(err) })
     },
     methods: {
+      focus () {
+        if (this.editor) this.editor.focus()
+      },
       getContent () {
         if (this.editor) {
           return this.editor.getContent()
@@ -124,14 +135,14 @@
           init_instance_callback: (editor) => {
             // this.toggleMenubar() // hide menu bar by default
             this.editor = editor // set the editor instance
-            this.setContent(this.entry.content) // Get initial text
-            this.editor.focus() // Set focus
+            if (this.entry.content) this.setContent(this.entry.content) // Get initial text
           },
           content_css: ['static/editor.css'],
           content_style: this.customCSS,
-          plugins: 'image fullscreen link hr codesample lists',
+          plugins: 'image fullscreen link hr codesample lists contextmenu table',
           browser_spellcheck: true,
-          contextmenu: false,
+          contextmenu: 'insertTemplate | link image inserttable | cell row column deletetable',
+          table_toolbar: '',
           default_link_target: '_blank',
           image_caption: true,
           image_description: false,
@@ -141,29 +152,40 @@
           statusbar: false,
           branding: false,
           menubar: false,
-          toolbar: ['styleselect | undo redo | bold italic | blockquote codesample hr | bullist numlist | alignleft aligncenter alignright | indent outdent | link image | showmenu'],
+          toolbar: ['styleselect | undo redo | bold italic | blockquote codesample hr | bullist numlist | alignleft aligncenter alignright | indent outdent | link image table | showmenu'],
           style_formats: [
             {title: 'My Styles', items: this.styleList},
             {title: 'Tags', items: this.tagList}
           ],
           style_formats_merge: true,
-          /* setup: function (editor) {
-            editor.addButton('tags', {
-              type: 'menubutton',
-              text: 'Tags',
-              icon: false,
-              onselect: function (e) {
-                console.log(vm.tinymce.activeEditor.formatter.get())
-              },
-              menu: [
-                {text: 'test', value: 'blah'}
-              ]
+          setup: (editor) => {
+            editor.addMenuItem('insertTemplate', {
+              text: 'Insert Template',
+              menu: this.templates
             })
-          }, */
+          },
           file_picker_types: 'image',
-          file_picker_callback: (cb, value, meta) => {
-            this.insertImage(cb, value, meta)
+          file_picker_callback: (callback) => {
+            this.insertImage(callback)
           }
+        })
+      },
+      getTemplates () {
+        return new Promise((resolve, reject) => {
+          let templates = []
+          this.$db.getAll('templates')
+            .then((rows) => {
+              for (let i = 0; i < rows.length; i++) {
+                templates.push({
+                  text: rows[i].name,
+                  onclick: () => {
+                    this.editor.insertContent(rows[i].content)
+                  }
+                })
+              }
+              resolve(templates)
+            })
+            .catch(err => { reject(err) })
         })
       },
       toggleMenubar () {
@@ -177,7 +199,7 @@
           this.menubar = !this.menubar
         }
       },
-      insertImage (cb, value, meta) {
+      insertImage (callback) {
         let vm = this
         let fs = require('fs')
         let input = document.createElement('input') // set up a temporary file input field
@@ -185,67 +207,63 @@
         input.setAttribute('accept', 'image/*')
         input.onchange = function () {
           // Get the file
-          let filename = this.files[0].path
+          let fileName = this.files[0].path
           let mimeType = this.files[0].type
-          fs.readFile(filename, (err, data) => {
-            if (err) {
-              console.log(err)
-            } else {
-              new Promise(function (resolve, reject) {
-                if (mimeType === 'image/jpg' || mimeType === 'image/jpeg' || mimeType === 'image/png') {
-                  // Resize if JPG or PNG
-                  let maxWidth, maxHeight
-                  vm.$db.getOption('image_width')
-                    .then((value) => {
-                      maxWidth = value || 400
-                      return vm.$db.getOption('image_height')
-                    })
-                    .then((value) => {
-                      maxHeight = value || 400
 
-                      const nativeImage = require('electron').nativeImage
-                      let image = nativeImage.createFromBuffer(data)
-                      let width = 0
-                      let resize = false
-                      if (maxWidth / maxHeight < image.getAspectRatio()) {
-                        width = Math.round(maxWidth)
-                        if (image.getSize().width > width) resize = true
-                      } else {
-                        width = Math.round(maxHeight * image.getAspectRatio())
-                        if (image.getSize().width > width) resize = true
-                      }
-
-                      if (mimeType === 'image/jpg' || mimeType === 'image/jpeg') {
-                        // JPG
-                        mimeType = 'image/jpeg' // standardise mime type
-                        if (resize) data = image.resize({width: width}).toJPEG(65)
-                      } else if (mimeType === 'image/png') {
-                        // PNG
-                        if (resize) data = image.resize({width: width}).toPNG()
-                      }
-                      resolve(data)
-                    })
-                    .catch((err) => { reject(err) })
-                } else {
-                  // Not a supported resize type - just add the attachment
-                  resolve(data)
-                }
-              })
-                .then((data) => {
-                  // Add attachment to the DB
-                  return vm.$db.addAttachment(mimeType, data)
-                })
-                .then((rowId) => {
-                  // Link file into the content
-                  console.info('New attachment added with ID ' + rowId)
-                  // eslint-disable-next-line
-                  cb('attach://' + rowId)
-                })
-                .catch((err) => {
-                  console.log(err)
-                })
-            }
+          new Promise((resolve, reject) => {
+            fs.readFile(fileName, (err, data) => {
+              if (err) reject(err)
+              else resolve(data)
+            })
           })
+            .then(fileData => {
+              // Resize if JPG or PNG
+              if (mimeType === 'image/jpg' || mimeType === 'image/jpeg' || mimeType === 'image/png') {
+                return Promise.all([vm.$db.getOption('image_width'), vm.$db.getOption('image_height')])
+                  .then(results => {
+                    const maxWidth = results[0] || 400
+                    const maxHeight = results[1] || 400
+
+                    const nativeImage = require('electron').nativeImage
+                    let image = nativeImage.createFromBuffer(fileData)
+                    let width = 0
+                    let resize = false
+                    if (maxWidth / maxHeight < image.getAspectRatio()) {
+                      width = Math.round(maxWidth)
+                      if (image.getSize().width > width) resize = true
+                    } else {
+                      width = Math.round(maxHeight * image.getAspectRatio())
+                      if (image.getSize().width > width) resize = true
+                    }
+
+                    if (mimeType === 'image/jpg' || mimeType === 'image/jpeg') {
+                      // JPG
+                      mimeType = 'image/jpeg' // standardise mime type
+                      if (resize) fileData = image.resize({width: width}).toJPEG(65)
+                    } else if (mimeType === 'image/png') {
+                      // PNG
+                      if (resize) fileData = image.resize({width: width}).toPNG()
+                    }
+                    // Return the resized data
+                    return fileData
+                  })
+              } else {
+                // Not a supported resize type - just return the attachment
+                return fileData
+              }
+            })
+            .then((data) => {
+              // Add attachment to the DB
+              return vm.$db.addAttachment(mimeType, data)
+            })
+            .then((rowId) => {
+              // Link file into the content
+              // eslint-disable-next-line
+              callback('attach://' + rowId)
+            })
+            .catch((err) => {
+              console.log(err)
+            })
         }
         input.click() // click the input to launch the process
       }

@@ -31,6 +31,11 @@ export default new Router({
       component: require('@/components/Styles').default
     },
     {
+      path: '/templates',
+      name: 'templates',
+      component: require('@/components/Templates').default
+    },
+    {
       path: '*',
       redirect: '/'
     }

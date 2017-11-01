@@ -50,15 +50,19 @@ let template = [
         click: () => { mainWindow.webContents.send('goto', 'today') }
       },
       {
-        label: 'Go to journal',
+        label: 'Go to Journal',
         click: () => { mainWindow.webContents.send('route', 'main') }
       },
       {
-        label: 'Edit tags',
+        label: 'Edit Templates',
+        click: () => { mainWindow.webContents.send('route', 'templates') }
+      },
+      {
+        label: 'Edit Tags',
         click: () => { mainWindow.webContents.send('route', 'tags') }
       },
       {
-        label: 'Edit styles',
+        label: 'Edit Styles',
         click: () => { mainWindow.webContents.send('route', 'styles') }
       }
     ]

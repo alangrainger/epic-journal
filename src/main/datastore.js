@@ -17,6 +17,12 @@ function Datastore () {
   let sql = false
   let db = this
 
+  // ID translation array
+  const primaryKeys = {
+    entries: 'entry_id',
+    templates: 'template_id'
+  }
+
   this.openDatabase = function (password) {
     return new Promise(function (resolve, reject) {
       let sqlite3 = require('win-sqlcipher')
@@ -95,96 +101,141 @@ function Datastore () {
       })
     })
   }
-  this.insert = function (query, parameters) {
+  this.insert = function (table, data) {
     return new Promise(function (resolve, reject) {
-      if (!sql) { reject(new Error('run: Database object not created')) }
-      sql.run(query, parameters, function (error) {
-        if (error) {
-          reject(error)
-        } else if (this.lastID) {
-          resolve(this.lastID)
-        } else {
-          reject(new Error('insert: Row not inserted'))
-        }
-      })
+      let columns = []
+      let values = []
+      let placeholders = []
+      for (let key in data) {
+        columns.push(key)
+        values.push(data[key])
+        placeholders.push('?')
+      }
+
+      db.run('INSERT INTO ' + table + ' (' + columns.join(', ') + ') VALUES (' + placeholders.join(', ') + ')', values)
+        .then(result => {
+          resolve(result.lastID)
+        })
+        .catch(err => { reject(err) })
     })
   }
+
+  this.update = function (table, data, id) {
+    return new Promise(function (resolve, reject) {
+      let columns = []
+      let values = []
+      for (let key in data) {
+        columns.push(key + ' = ?')
+        values.push(data[key])
+      }
+
+      db.run('UPDATE ' + table + ' SET ' + columns.join(', ') + ' WHERE ' + primaryKeys[table] + ' = ' + id, values)
+        .then(result => {
+          resolve(result.changes)
+        })
+        .catch(err => { reject(err) })
+    })
+  }
+  this.delete = function (table, id) {
+    return new Promise(function (resolve, reject) {
+      // Reject if bad table name
+      if (!primaryKeys.hasOwnProperty(table)) reject(new Error('Invalid table specified for delete'))
+      // Reject if ID not an integer
+      if (!parseInt(Number(id))) reject(new Error('Invalid ID specified for delete'))
+      console.log('DELETE FROM ' + table + ' WHERE ' + primaryKeys[table] + ' = ' + id)
+      db.run('DELETE FROM ' + table + ' WHERE ' + primaryKeys[table] + ' = ' + id)
+        .then(result => {
+          resolve(result.changes)
+        })
+        .catch(err => { reject(err) })
+    })
+  }
+
   /*
    * END PROMISE WRAPPERS
    */
 
   const createTables = function () {
     return new Promise(function (resolve, reject) {
-      sql.serialize(function () {
-        // Folders
-        db.run(
-          'CREATE TABLE IF NOT EXISTS folders(' +
-          'folder_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-          'name TEXT, ' +
-          'type TEXT);')
-          .then(
-            // Entries
-            db.run(
-              'CREATE TABLE IF NOT EXISTS entries(' +
-              'entry_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-              'folder_id INTEGER, ' +
-              'date TEXT, ' + // YYYY-MM-DD
-              'created TEXT, ' +
-              'modified TEXT, ' +
-              'content TEXT, ' +
-              'FOREIGN KEY (folder_id) REFERENCES folders (folder_id));')
+      // Folders
+      db.run(
+        'CREATE TABLE IF NOT EXISTS folders(' +
+        'folder_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+        'name TEXT, ' +
+        'type TEXT);')
+        .then(
+          // Entries
+          db.run(
+            'CREATE TABLE IF NOT EXISTS entries(' +
+            'entry_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+            'folder_id INTEGER, ' +
+            'date TEXT, ' + // YYYY-MM-DD
+            'created TEXT, ' +
+            'modified TEXT, ' +
+            'content TEXT, ' +
+            'FOREIGN KEY (folder_id) REFERENCES folders (folder_id));')
+        )
+        .then(
+          db.run('CREATE INDEX IF NOT EXISTS index_date ON entries(date)')
+        )
+        .then(
+          // Tags
+          db.run(
+            'CREATE TABLE IF NOT EXISTS tags(' +
+            'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+            'name TEXT, ' +
+            'type TEXT, ' +
+            'style TEXT);')
+        )
+        .then(
+          db.run(
+            'CREATE TABLE IF NOT EXISTS entry_tags(' +
+            'entry_id INTEGER, ' +
+            'tag_id INTEGER, ' +
+            'FOREIGN KEY (entry_id) REFERENCES entries (entry_id), ' +
+            'FOREIGN KEY (tag_id) REFERENCES tags (tag_id));')
+        )
+        .then(
+          // Options
+          db.run(
+            'CREATE TABLE IF NOT EXISTS options(' +
+            'name TEXT PRIMARY KEY, ' +
+            'value TEXT);')
+        )
+        .then(
+          // Attachments
+          db.run(
+            'CREATE TABLE IF NOT EXISTS attachments(' +
+            'attachment_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+            'created TEXT, ' +
+            'mime_type TEXT, ' +
+            'data BLOB);')
+        )
+        .then(
+          // Styles
+          db.run(
+            'CREATE TABLE IF NOT EXISTS styles(' +
+            'style_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+            'name TEXT, ' +
+            'type TEXT, ' +
+            'element TEXT, ' +
+            'class_name TEXT, ' +
+            'style TEXT);')
+        )
+        .then(
+          // Templates
+          db.run(
+            'CREATE TABLE IF NOT EXISTS templates(' +
+            'template_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+            'name TEXT, ' +
+            'created TEXT, ' +
+            'modified TEXT, ' +
+            'content TEXT)'
           )
-          .then(
-            db.run('CREATE INDEX IF NOT EXISTS index_date ON entries(date)')
-          )
-          .then(
-            // Tags
-            db.run(
-              'CREATE TABLE IF NOT EXISTS tags(' +
-              'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-              'name TEXT, ' +
-              'type TEXT, ' +
-              'style TEXT);')
-          )
-          .then(
-            db.run(
-              'CREATE TABLE IF NOT EXISTS entry_tags(' +
-              'entry_id INTEGER, ' +
-              'tag_id INTEGER, ' +
-              'FOREIGN KEY (entry_id) REFERENCES entries (entry_id), ' +
-              'FOREIGN KEY (tag_id) REFERENCES tags (tag_id));')
-          )
-          .then(
-            // Options
-            db.run(
-              'CREATE TABLE IF NOT EXISTS options(' +
-              'name TEXT PRIMARY KEY, ' +
-              'value TEXT);')
-          )
-          .then(
-            // Attachments
-            db.run(
-              'CREATE TABLE IF NOT EXISTS attachments(' +
-              'attachment_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-              'created TEXT, ' +
-              'mime_type TEXT, ' +
-              'data BLOB);')
-          )
-          .then(
-            // Styles
-            db.run(
-              'CREATE TABLE IF NOT EXISTS styles(' +
-              'style_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-              'name TEXT, ' +
-              'type TEXT, ' +
-              'element TEXT, ' +
-              'class_name TEXT, ' +
-              'style TEXT);')
-          )
-          .catch((err) => {
-            reject(err)
-          })
-      })
+        )
+        .catch((err) => {
+          reject(err)
+        })
     })
   }
   const updateTables = function () {
@@ -305,20 +356,31 @@ function Datastore () {
     })
   }
 
-  this.getEntryById = function (entryId) {
+  this.getById = function (table, id) {
     return new Promise(function (resolve, reject) {
-      if (!entryId) reject(new Error('Not a valid ID'))
-      db.get('SELECT * FROM entries WHERE entry_id = ?', [entryId])
+      if (!table) reject(new Error('No table specified'))
+
+      // ID translation array
+      let primaryKey = {
+        entries: 'entry_id',
+        templates: 'template_id'
+      }
+      if (!(table in primaryKey)) reject(new Error('Invalid table specified in getById'))
+      db.get('SELECT * FROM ' + table + ' WHERE ' + primaryKey[table] + ' = ?', [id])
         .then((row) => {
-          if (row) {
-            resolve(row)
-          } else {
-            reject(new Error('No row found for ID ' + entryId))
-          }
+          resolve(row)
         })
         .catch((error) => {
           console.log(error)
         })
+    })
+  }
+
+  this.getAll = function (table) {
+    return new Promise((resolve, reject) => {
+      db.all('SELECT * FROM ' + table)
+        .then(rows => { resolve(rows) })
+        .catch(err => { reject(err) })
     })
   }
 
@@ -396,7 +458,6 @@ function Datastore () {
 
   this.getAttachment = function (id) {
     return new Promise(function (resolve, reject) {
-      if (!isNaN(id) && id === parseInt(id, 10)) reject(new Error('No attachment ID specified'))
       db.get('SELECT * FROM attachments WHERE attachment_id = ?', [id])
         .then((row) => {
           resolve(row)

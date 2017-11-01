@@ -11,7 +11,7 @@ The app is in progress, but completely usable right now. New features are being 
 constantly, but you can safely start adding entries. The journal is a single file
 that you can store in your Dropbox, or wherever you like.
 
-I built it as an open-source replacement for [The Journal](http://www.davidrm.com/) by DavidRM, which I have used 
+I built it as a free and open replacement for [The Journal](http://www.davidrm.com/) by DavidRM, which I have used 
 for years. The main issues I wanted to solve were better styling, and the ability to know that my
 entries are safe, with an open and known database format.
 
