@@ -3,6 +3,7 @@
         <main>
             <div id="sidebar">
                 <p>Current templates:</p>
+                <button @click="clearEntry">Add New</button>
                 <div class="row" v-for="item in templates" @click="load(item.template_id)" :class="{ selected: item.template_id === entry.id }">
                     {{ item.name }}
                 </div>
@@ -113,6 +114,7 @@
       clearEntry () {
         this.entry = this.newEntry()
         this.setContent(null)
+        document.getElementById('name').focus()
       },
       updateList () {
         // Get list of existing templates

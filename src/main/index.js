@@ -1,15 +1,19 @@
 'use strict'
 
 import { app, protocol, BrowserWindow, Menu, dialog, shell } from 'electron'
-import config from './config'
 import db from './datastore'
 import { version } from '../../package.json'
 
+// Locale
 const osLocale = require('os-locale')
 osLocale().then(locale => {
   global['locale'] = locale
 })
-global.config = config // make available for renderer
+
+// Config
+const Store = require('electron-store')
+const config = new Store()
+global['config'] = config // make available for renderer
 global.db = db // make available for renderer
 
 let template = [
@@ -121,15 +125,13 @@ function createWindow () {
    * Initial window options
    */
   mainWindow = new BrowserWindow({
-    width: config.data.windowX || 1100,
-    height: config.data.windowY || 680
+    width: config.get('window.width') || 1100,
+    height: config.get('window.height') || 680
   })
 
   mainWindow.on('resize', function () {
     // Store the window dimensions in the config
-    config.data.window = mainWindow.getBounds()
-    config.data.windowX = mainWindow.getSize()[0]
-    config.data.windowY = mainWindow.getSize()[1]
+    config.set('window', mainWindow.getBounds())
   })
 
   // Open all target="_blank" links in the external browser
@@ -171,7 +173,6 @@ app.on('ready', function () {
 
 app.on('window-all-closed', () => {
   // Main exit process
-  config.write() // write out the config file in case we haven't
   if (process.platform !== 'darwin') {
     app.quit()
   }
@@ -194,8 +195,7 @@ function openFile () {
       if (filenames === undefined || !filenames[0]) {
         reject(new Error('No file specified'))
       } else {
-        config.data.file = filenames[0]
-        config.write()
+        config.set('journal', filenames[0])
         resolve()
       }
     })

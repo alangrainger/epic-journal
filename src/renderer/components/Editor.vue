@@ -127,7 +127,6 @@
         if (this.editor) {
           if (!content) content = '' // if empty, set to a string, TinyMCE expects this
           this.editor.setContent(content)
-          this.editor.focus() // set focus back to editor
         }
       },
       createEditor () {

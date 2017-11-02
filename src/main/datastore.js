@@ -1,5 +1,4 @@
 import moment from 'moment'
-import config from './config'
 
 const SCHEMA_VERSION = 5
 
@@ -28,7 +27,7 @@ function Datastore () {
       let sqlite3 = require('win-sqlcipher')
 
       // Get filename from config always at point of open
-      let filename = config.data.file
+      let filename = global['config'].get('journal')
       sql = new sqlite3.Database(filename, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, function (err) {
         if (err) {
           reject(err)
