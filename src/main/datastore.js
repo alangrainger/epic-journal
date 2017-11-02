@@ -263,6 +263,7 @@ function Datastore () {
           db.run('PRAGMA user_version = ' + SCHEMA_VERSION)
         }
       })
+      .catch(err => console.error(err))
   }
 
   const createDefaultData = function () {

@@ -125,8 +125,8 @@ function createWindow () {
    * Initial window options
    */
   mainWindow = new BrowserWindow({
-    width: config.get('window.width') || 1100,
-    height: config.get('window.height') || 680
+    width: config.get('window.width') || 1154,
+    height: config.get('window.height') || 808
   })
 
   mainWindow.on('resize', function () {

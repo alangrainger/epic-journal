@@ -85,7 +85,7 @@
             setTimeout(function () {
               vm.message = ''
             }, 3500)
-            console.log(error)
+            console.error(error)
           })
       }
     }

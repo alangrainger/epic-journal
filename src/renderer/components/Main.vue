@@ -121,7 +121,7 @@
       window.addEventListener('unload', this.save)
 
       // Set focus to editor
-      this.focusOnEditor()
+      this.$refs.editor.focus()
     },
     watch: {
       date: function () {
@@ -147,9 +147,6 @@
       setContent (content) {
         this.entry.content = content
         this.$refs.editor.setContent(content)
-      },
-      focusOnEditor () {
-        document.getElementById('editor').focus()
       },
       newEntry () {
         return {
