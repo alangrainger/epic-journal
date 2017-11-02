@@ -189,7 +189,7 @@
               console.error(err)
             }
           })
-        this.focusOnEditor()
+        this.$refs.editor.focus()
       },
       save () {
         if (!this.$refs.editor.editor) return // editor hasn't loaded
