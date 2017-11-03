@@ -141,7 +141,6 @@ function Datastore () {
       if (!primaryKeys.hasOwnProperty(table)) reject(new Error('Invalid table specified for delete'))
       // Reject if ID not an integer
       if (!parseInt(Number(id))) reject(new Error('Invalid ID specified for delete'))
-      console.log('DELETE FROM ' + table + ' WHERE ' + primaryKeys[table] + ' = ' + id)
       db.run('DELETE FROM ' + table + ' WHERE ' + primaryKeys[table] + ' = ' + id)
         .then(result => {
           resolve(result.changes)

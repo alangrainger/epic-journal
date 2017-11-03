@@ -5,6 +5,9 @@ SQLcipher with AES 256 CBC encryption.
 
 I have builds for Windows, and I'd be very happy for anyone to submit builds for Mac and Linux.
 
+**NOTE: I have not paid for a Windows code-signing certificate, so you will get a warning when you
+try to install it.**
+
 Download the [latest release here](https://github.com/alangrainger/epic-journal/releases).
 
 ![Screenshot](screenshot.png?raw=true)
@@ -38,5 +41,6 @@ I'll be working towards feature parity with The Journal, but the next things I'm
 
 - **Tagging of entries**, both inline, and at the entry level.
 - Search. Good fast search.
+- Multiple folders. They will be tabs above the editor - think of them as master categories.
 - Minimise to tray, and hotkey open.
 - Emoji support.
