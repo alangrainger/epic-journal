@@ -19,7 +19,8 @@ function Datastore () {
   // ID translation array
   const primaryKeys = {
     entries: 'entry_id',
-    templates: 'template_id'
+    templates: 'template_id',
+    tags: 'tag_id'
   }
 
   this.openDatabase = function (password) {
@@ -359,13 +360,8 @@ function Datastore () {
     return new Promise(function (resolve, reject) {
       if (!table) reject(new Error('No table specified'))
 
-      // ID translation array
-      let primaryKey = {
-        entries: 'entry_id',
-        templates: 'template_id'
-      }
-      if (!(table in primaryKey)) reject(new Error('Invalid table specified in getById'))
-      db.get('SELECT * FROM ' + table + ' WHERE ' + primaryKey[table] + ' = ?', [id])
+      if (!primaryKeys.hasOwnProperty(table)) reject(new Error('Invalid table specified in getById'))
+      db.get('SELECT * FROM ' + table + ' WHERE ' + primaryKeys[table] + ' = ?', [id])
         .then((row) => {
           resolve(row)
         })

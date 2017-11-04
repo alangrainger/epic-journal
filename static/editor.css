@@ -7,7 +7,9 @@ body {
 
 p {
     font-size: 13pt;
-    margin-bottom: 0.7em;
+    margin-top: 0;
+    margin-bottom: 0.8em;
+    padding: 0;
 }
 
 li {

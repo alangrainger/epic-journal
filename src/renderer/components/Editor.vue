@@ -2,6 +2,7 @@
     <div id="editorContainer">
         <div v-html="'<style>' + customCSS + '</style>'" class="display:none"></div>
         <div :id="id"></div>
+        <div>{{ statusBarTags }}&nbsp;</div>
     </div>
 </template>
 
@@ -48,7 +49,8 @@
         styleList: [],
         tagList: [],
         tinymce: '',
-        templates: []
+        templates: [],
+        statusBarTags: ''
       }
     },
     mounted: function () {
@@ -68,18 +70,6 @@
             let fullName = (style.class_name) ? style.element + '.' + style.class_name : style.element
             this.customCSS += fullName + '{' + style.style + '}\n'
           }
-
-          /* This way adds them asynchronously
-          this.editor.formatter.register('custom' + i, {
-            [type]: element,
-            title: tag.name,
-            classes: tagClass,
-            attributes: {title: tag.name}
-          })
-
-          // Add to CSS
-          let css = element + '.' + tagClass + '{' + tag.style + '}'
-          this.editor.dom.addStyle(css) */
 
           // Get tags
           return this.$db.all('SELECT * FROM tags ORDER BY name ASC')
@@ -135,12 +125,13 @@
             // this.toggleMenubar() // hide menu bar by default
             this.editor = editor // set the editor instance
             if (this.entry.content) this.setContent(this.entry.content) // Get initial text
+            editor.on('NodeChange', (event) => { this.nodeChange(event) })
           },
           content_css: ['static/editor.css'],
           content_style: this.customCSS,
           plugins: 'image fullscreen link hr codesample lists contextmenu table',
           browser_spellcheck: true,
-          contextmenu: 'insertTemplate | link image inserttable | cell row column deletetable',
+          contextmenu: 'insertTemplate | link removeformat | inserttable cell row column deletetable',
           table_toolbar: '',
           default_link_target: '_blank',
           image_caption: true,
@@ -149,9 +140,10 @@
           image_dimensions: false,
           selector: '#' + this.id,
           statusbar: false,
+          resize: false,
           branding: false,
           menubar: false,
-          toolbar: ['styleselect | undo redo | bold italic | blockquote codesample hr | bullist numlist | alignleft aligncenter alignright | indent outdent | link image table | showmenu'],
+          toolbar: ['styleselect | undo redo | bold italic | blockquote codesample hr | bullist numlist | alignleft aligncenter alignright | indent outdent | link image table | removeformat'],
           style_formats: [
             {title: 'My Styles', items: this.styleList},
             {title: 'Tags', items: this.tagList}
@@ -270,6 +262,27 @@
             })
         }
         input.click() // click the input to launch the process
+      },
+      nodeChange (event) {
+        // Get the list of tags for current cursor position
+        let tagList = []
+        let tagCount = 0
+        let parents = event.parents // array
+        for (let i = 0; i < parents.length; i++) {
+          if (parents[i].className.startsWith('tag')) {
+            tagCount++
+            let tagId = parents[i].className.substring(3)
+            this.$db.getById('tags', tagId)
+              .then(row => {
+                if (row.name) {
+                  tagList.push(row.name)
+                  this.statusBarTags = 'Tags: ' + tagList.join(', ')
+                }
+              })
+              .catch(err => { console.error(err) })
+          }
+        }
+        if (!tagCount) this.statusBarTags = ''
       }
     },
     beforeDestroy: function () {

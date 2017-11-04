@@ -257,28 +257,37 @@
 
             // Find tags in live entry
             if (this.entry.content) {
-              let matches = this.entry.content.match(/<span class="tag(\d+)"/g)
-              if (matches) {
-                let processed = []
-                for (let i = 0; i < matches.length; i++) {
-                  let tagId = matches[i].match(/tag(\d+)/)[1]
-                  if (processed[tagId]) continue // skip it if we've already done it
-                  if (!tags[tagId]) {
-                    // Live tag doesn't exist, so add it to database
-                    this.$db.run('REPLACE INTO entry_tags (entry_id, tag_id) VALUES (?, ?)', [this.entry.id, tagId])
-                  } else {
-                    // Otherwise remove from database array
-                    delete tags[tagId]
-                  }
-                  processed[tagId] = true
+              let classes = /<[^>]*?class="([^"]*tag\d+[^"]*)"/g
+              let match
+              let processed = []
+              do {
+                // Find all classes containing at least one tag
+                match = classes.exec(this.entry.content)
+                if (match) {
+                  let tagReg = /tag(\d+)/g
+                  let tag
+                  do {
+                    // Find all tags inside those classes
+                    tag = tagReg.exec(match[1])
+                    if (tag && !processed[tag[1]]) {
+                      let tagId = tag[1]
+                      if (!tags[tagId]) {
+                        // Live tag doesn't exist, so add it to database
+                        this.$db.run('REPLACE INTO entry_tags (entry_id, tag_id) VALUES (?, ?)', [this.entry.id, tagId])
+                      } else {
+                        // Otherwise remove from database array
+                        delete tags[tagId]
+                      }
+                      processed[tagId] = true
+                    }
+                  } while (tag)
                 }
-              }
+              } while (match)
             }
 
             // Whatever remains in the database array no longer remains in the entry, so delete them from table
             for (let tagId in tags) {
               this.$db.run('DELETE FROM entry_tags WHERE entry_id = ? AND tag_id = ?', [this.entry.id, tagId])
-              console.log(tagId)
             }
           })
       },
