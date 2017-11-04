@@ -371,9 +371,10 @@ function Datastore () {
     })
   }
 
-  this.getAll = function (table) {
+  this.getAll = function (table, options) {
     return new Promise((resolve, reject) => {
-      db.all('SELECT * FROM ' + table)
+      let orderBy = (options && options.orderBy) ? ' ORDER BY ' + options.orderBy : ''
+      db.all('SELECT * FROM ' + table + orderBy)
         .then(rows => { resolve(rows) })
         .catch(err => { reject(err) })
     })

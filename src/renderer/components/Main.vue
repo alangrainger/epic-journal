@@ -101,7 +101,24 @@
       this.$electron.ipcRenderer.on('goto', (event, arg) => {
         switch (arg) {
           case 'today':
+            if (this.$router.currentRoute.name !== 'main') {
+              this.$router.push('main')
+            }
             this.date = this.$moment().format(this.$db.DATE_DAY)
+            break
+          case 'previous':
+            if (this.$router.currentRoute.name !== 'main') break
+            this.$db.get('SELECT date FROM entries WHERE DATE(date) < DATE(?) ORDER BY date DESC LIMIT 1', this.date)
+              .then(row => {
+                if (row && row.date) this.date = row.date
+              })
+            break
+          case 'next':
+            if (this.$router.currentRoute.name !== 'main') break
+            this.$db.get('SELECT date FROM entries WHERE DATE(date) > DATE(?) ORDER BY date ASC LIMIT 1', this.date)
+              .then(row => {
+                if (row && row.date) this.date = row.date
+              })
             break
         }
       })
@@ -146,7 +163,7 @@
       },
       setContent (content) {
         this.entry.content = content
-        this.$refs.editor.setContent(content)
+        if (this.$refs.editor) this.$refs.editor.setContent(content)
       },
       newEntry () {
         return {

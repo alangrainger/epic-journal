@@ -54,6 +54,16 @@ let template = [
         click: () => { mainWindow.webContents.send('goto', 'today') }
       },
       {
+        label: 'Go to Previous entry',
+        accelerator: 'F7',
+        click: () => { mainWindow.webContents.send('goto', 'previous') }
+      },
+      {
+        label: 'Go to Next entry',
+        accelerator: 'F8',
+        click: () => { mainWindow.webContents.send('goto', 'next') }
+      },
+      {
         label: 'Go to Journal',
         click: () => { mainWindow.webContents.send('route', 'main') }
       },

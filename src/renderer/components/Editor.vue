@@ -55,6 +55,7 @@
         customCSS: '',
         styleList: [],
         tagList: [],
+        tagContextItems: [],
         tinymce: '',
         templates: [],
         statusBarTags: '',
@@ -62,55 +63,14 @@
       }
     },
     mounted: function () {
-      // Set up custom styles
-      this.$db.all('SELECT * FROM styles ORDER BY name ASC')
-        .then((rows) => {
-          for (let i = 0; i < rows.length; i++) {
-            let style = rows[i]
-            // Create style list for dropdown
-            this.styleList.push({
-              title: style.name,
-              [style.type]: style.element,
-              classes: style.class_name
-            })
-
-            // Create CSS
-            let fullName = (style.class_name) ? style.element + '.' + style.class_name : style.element
-            this.customCSS += fullName + '{' + style.style + '}\n'
-          }
-
-          // Get tags
-          return this.$db.all('SELECT * FROM tags ORDER BY name ASC')
-        })
-        .then((rows) => {
-          for (let i = 0; i < rows.length; i++) {
-            let tag = rows[i]
-            let tagClass = 'tag' + tag.tag_id
-            let type = (tag.type === 'block') ? 'block' : 'inline'
-            let element = (tag.type === 'block') ? 'p' : 'span'
-
-            // Set up tag list for dropdown
-            this.tagList.push({
-              'title': tag.name,
-              [type]: element,
-              'classes': tagClass
-              // attributes: {title: tag.name}
-            })
-
-            // Add to CSS
-            this.customCSS += element + '.' + tagClass + '{' + tag.style + '}\n'
-          }
-
-          return this.getTemplates()
-        })
-        .then(templates => {
-          // Add the templates
-          this.templates = templates
-
-          // Once all done, set up the editor
+      this.getStyles()
+        .then(() => { return this.getTags() }) // we have to create the tag styles arrays before initialising the editor
+        .then(() => { return this.getTemplates() })
+        .then(() => {
+          // Initialise the editor
           this.createEditor()
         })
-        .catch(err => { console.error(err) })
+        .catch(err => console.error(err))
     },
     methods: {
       focus () {
@@ -140,12 +100,21 @@
             editor.on('NodeChange', (event) => { this.nodeChange(event) })
             // Update word count
             editor.on('KeyUp', () => { this.updateWordCount() })
+
+            // Register the tag classes
+            this.tagList.forEach((tag) => {
+              this.editor.formatter.register(tag.id, {
+                [tag.type]: tag.element,
+                title: tag.name,
+                classes: tag.id
+              })
+            })
           },
           content_css: ['static/editor.css'],
           content_style: this.customCSS,
           plugins: 'image fullscreen link hr codesample lists contextmenu table wordcount',
           browser_spellcheck: true,
-          contextmenu: 'insertTemplate | link removeformat | inserttable cell row column deletetable',
+          contextmenu: 'insertTemplate applyTag | link removeformat | inserttable cell row column deletetable',
           table_toolbar: '',
           default_link_target: '_blank',
           image_caption: true,
@@ -173,6 +142,10 @@
                 }
               }])
             })
+            editor.addMenuItem('applyTag', {
+              text: 'Apply Tag',
+              menu: this.tagContextItems
+            })
           },
           file_picker_types: 'image',
           file_picker_callback: (callback) => {
@@ -193,7 +166,66 @@
                   }
                 })
               }
-              resolve(templates)
+              this.templates = templates
+              resolve()
+            })
+            .catch(err => { reject(err) })
+        })
+      },
+      getStyles () {
+        return new Promise((resolve, reject) => {
+          // Set up custom styles
+          this.$db.all('SELECT * FROM styles ORDER BY name ASC')
+            .then((rows) => {
+              for (let i = 0; i < rows.length; i++) {
+                let style = rows[i]
+                // Create style list for dropdown
+                this.styleList.push({
+                  title: style.name,
+                  [style.type]: style.element,
+                  classes: style.class_name
+                })
+
+                // Create CSS
+                let fullName = (style.class_name) ? style.element + '.' + style.class_name : style.element
+                this.customCSS += fullName + '{' + style.style + '}\n'
+              }
+              resolve()
+            })
+            .catch(err => reject(err))
+        })
+      },
+      getTags () {
+        return new Promise((resolve, reject) => {
+          // Get tags
+          this.$db.getAll('tags', {orderBy: 'name ASC'})
+            .then((rows) => {
+              for (let i = 0; i < rows.length; i++) {
+                let tag = rows[i]
+                let tagClass = 'tag' + tag.tag_id
+                let type = (tag.type === 'block') ? 'block' : 'inline'
+                let element = (tag.type === 'block') ? 'p' : 'span'
+
+                // Set up tag list for registering in TinyMCE once it's initialised
+                this.tagList.push({
+                  id: tagClass,
+                  name: tag.name,
+                  type: type,
+                  element: element
+                })
+
+                // Set up tag items for the TinyMCE context menu
+                this.tagContextItems.push({
+                  text: tag.name,
+                  onclick: () => {
+                    this.editor.formatter.apply(tagClass)
+                  }
+                })
+
+                // Add to the CSS applied to TinyMCE editor iframe
+                this.customCSS += element + '.' + tagClass + '{' + tag.style + '}\n'
+              }
+              resolve()
             })
             .catch(err => { reject(err) })
         })
@@ -272,7 +304,7 @@
               callback('attach://' + rowId)
             })
             .catch((err) => {
-              console.log(err)
+              console.error(err)
             })
         }
         input.click() // click the input to launch the process
@@ -288,7 +320,7 @@
             let tagId = parents[i].className.substring(3)
             this.$db.getById('tags', tagId)
               .then(row => {
-                if (row.name) {
+                if (row && row.name) {
                   tagList.push(row.name)
                   this.statusBarTags = 'Tags: ' + tagList.join(', ')
                 }
