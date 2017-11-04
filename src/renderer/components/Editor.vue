@@ -2,7 +2,7 @@
     <div id="editorContainer">
         <div v-html="'<style>' + customCSS + '</style>'" class="display:none"></div>
         <div :id="id"></div>
-        <div>{{ statusBarTags }}&nbsp;</div>
+        <div id="statusbar">{{ statusBarTags }}<span style="float:right">{{ wordCount }} </span></div>
     </div>
 </template>
 
@@ -28,6 +28,13 @@
         flex-direction: column;
         flex-grow: 1;
     }
+
+    #statusbar {
+        font-size: 12px;
+        background: #f0f0f0;
+        padding: 3px 6px;
+        color: #404040;
+    }
 </style>
 
 <script>
@@ -50,7 +57,8 @@
         tagList: [],
         tinymce: '',
         templates: [],
-        statusBarTags: ''
+        statusBarTags: '',
+        wordCount: ''
       }
     },
     mounted: function () {
@@ -85,8 +93,8 @@
             this.tagList.push({
               'title': tag.name,
               [type]: element,
-              'classes': tagClass,
-              attributes: {title: tag.name}
+              'classes': tagClass
+              // attributes: {title: tag.name}
             })
 
             // Add to CSS
@@ -113,10 +121,12 @@
           return this.editor.getContent()
         }
       },
-      setContent (content) {
+      setContent (content, focus = true) {
         if (this.editor) {
           if (!content) content = '' // if empty, set to a string, TinyMCE expects this
           this.editor.setContent(content)
+          if (focus) this.editor.focus()
+          this.updateWordCount()
         }
       },
       createEditor () {
@@ -124,12 +134,16 @@
           init_instance_callback: (editor) => {
             // this.toggleMenubar() // hide menu bar by default
             this.editor = editor // set the editor instance
-            if (this.entry.content) this.setContent(this.entry.content) // Get initial text
+            // Get initial text
+            if (this.entry.content) this.setContent(this.entry.content)
+            // Watch when selection changes
             editor.on('NodeChange', (event) => { this.nodeChange(event) })
+            // Update word count
+            editor.on('KeyUp', () => { this.updateWordCount() })
           },
           content_css: ['static/editor.css'],
           content_style: this.customCSS,
-          plugins: 'image fullscreen link hr codesample lists contextmenu table',
+          plugins: 'image fullscreen link hr codesample lists contextmenu table wordcount',
           browser_spellcheck: true,
           contextmenu: 'insertTemplate | link removeformat | inserttable cell row column deletetable',
           table_toolbar: '',
@@ -283,6 +297,11 @@
           }
         }
         if (!tagCount) this.statusBarTags = ''
+      },
+      updateWordCount () {
+        if (this.editor) {
+          this.wordCount = 'Words: ' + this.editor.plugins.wordcount.getCount()
+        }
       }
     },
     beforeDestroy: function () {

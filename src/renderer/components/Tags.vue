@@ -13,14 +13,14 @@
                     <input style="width: 120px" type="text" v-model="tag.name"><br>
                 </td>
                 <td @change="tag.saved = false">
-                    <input type="radio" :id="'type' + tag.style_id" value="block" v-model="tag.type">&nbsp;<label :for="'type' + tag.style_id">Block</label>
-                    <input type="radio" :id="'type' + tag.style_id" value="inline" v-model="tag.type">&nbsp;<label :for="'type' + tag.style_id">Inline</label>
+                    <div style="white-space: nowrap"><input type="radio" :id="'block' + tag.tag_id" value="block" v-model="tag.type">&nbsp;<label :for="'block' + tag.tag_id">Block</label></div>
+                    <div style="white-space: nowrap"><input type="radio" :id="'inline' + tag.tag_id" value="inline" v-model="tag.type">&nbsp;<label :for="'inline' + tag.tag_id">Inline</label></div>
                 </td>
                 <td><textarea v-model="tag.style"></textarea></td>
                 <td v-if="tag.type === 'block'"><div :title="tag.name" :style="tag.style">This is an example of how your final style will look when it appears in your journal.</div></td>
                 <td v-else>This is an <span :title="tag.name" :style="tag.style">example of how your final style will look</span> when it appears in your journal.</td>
                 <td>
-                    <button v-if="!tag.saved" @click="saveTag(tag)">Save</button>
+                    <button :class="{disabled: tag.saved}" :disabled="tag.saved" @click="saveTag(tag)">Save</button>
                     <button @click="deleteTag(tag.tag_id, $event)">Delete</button>
                 </td>
             </tr>
@@ -57,6 +57,16 @@
 
     input {
         font-size: 1em;
+    }
+
+    button.disabled {
+        color: #d5d5d5;
+        border-color: #d5d5d5;
+        cursor: default;
+    }
+    button.disabled:hover {
+        background: white;
+        color: #d5d5d5;
     }
 </style>
 
