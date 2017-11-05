@@ -18,7 +18,7 @@ entries are safe for the long-term, with an open and known database format.
 
 ## Features
 
-- Fast and clean
+- Fast and clean Electron app
 - AES 256 CBC encryption
 - Single journal file that you can store in your Dropbox, or wherever you like
 - Custom style types
