@@ -1,7 +1,7 @@
 {
   "name": "epic-journal",
-  "version": "0.9.4",
-  "author": "Alan Grainger <me@alan.fyi> (https://alan.fyi/)",
+  "version": "1.0.0",
+  "author": "Alan Grainger (https://epicjournal.xyz/)",
   "description": "A daily journal app",
   "license": "CC-BY-NC-4.0",
   "main": "./dist/electron/main.js",

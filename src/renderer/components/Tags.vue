@@ -1,6 +1,6 @@
 <template>
     <div id="wrapper">
-        <h1>Tags</h1>
+        <div class="info"><h1>Tags</h1></div>
         <table>
             <tr>
                 <th>Name</th>
@@ -28,11 +28,13 @@
         </table>
         <button @click="newTag">Add New</button>
         <button @click="exit">Go Back</button>
+        <div class="info">
         <h2>Note:</h2>
         <p>Tags work by applying a custom class to a section of text. By default they are inline and work using a &lt;span&gt;.
         Be careful about using block-type tags. They are limited to &lt;p&gt; elements and can have unintended consequences.</p>
         <p>If you create a tag as an inline style, and later switch it to block, it can cause a bit of formatting havoc in your existing entries.
         I have included them for completeness, and for people who really wish to customise the visual style of their journal.</p>
+        </div>
     </div>
 </template>
 
@@ -43,8 +45,14 @@
         width: 100vw;
     }
 
-    h1 {
-        margin-bottom: 0.8em;
+    h1, h2, h3 {
+        margin: 0.5em 0;
+    }
+
+    .info {
+        max-width: 760px;
+        margin: 0 0 1.5em 0;
+        padding: 0;
     }
 
     tr {
