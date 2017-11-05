@@ -52,20 +52,32 @@
       return {
         id: 'editor',
         editor: '',
+        attachments: [],
         customCSS: '',
         styleList: [],
-        tagList: [],
+        tagList: {},
         tagContextItems: [],
         tinymce: '',
         templates: [],
         statusBarTags: '',
-        wordCount: ''
+        wordCount: 'Words: 0'
       }
     },
     mounted: function () {
-      this.getStyles()
-        .then(() => { return this.getTags() }) // we have to create the tag styles arrays before initialising the editor
-        .then(() => { return this.getTemplates() })
+      // Set up all custom styles and tags BEFORE initialising the editor
+      this.getCustomCSS()
+        .then(() => {
+          // Get custom dropdown styles
+          return this.getStyles()
+        })
+        .then(() => {
+          // Get tags
+          return this.getTags()
+        })
+        .then(() => {
+          // Get templates
+          return this.getTemplates()
+        })
         .then(() => {
           // Initialise the editor
           this.createEditor()
@@ -102,15 +114,15 @@
             editor.on('KeyUp', () => { this.updateWordCount() })
 
             // Register the tag classes
-            this.tagList.forEach((tag) => {
+            for (const key of Object.keys(this.tagList)) {
+              let tag = this.tagList[key]
               this.editor.formatter.register(tag.id, {
                 [tag.type]: tag.element,
                 title: tag.name,
                 classes: tag.id
               })
-            })
+            }
           },
-          content_css: ['static/editor.css'],
           content_style: this.customCSS,
           plugins: 'image fullscreen link hr codesample lists contextmenu table wordcount',
           browser_spellcheck: true,
@@ -127,10 +139,7 @@
           branding: false,
           menubar: false,
           toolbar: ['styleselect | undo redo | bold italic | blockquote codesample hr | bullist numlist | alignleft aligncenter alignright | indent outdent | link image table | removeformat'],
-          style_formats: [
-            {title: 'My Styles', items: this.styleList},
-            {title: 'Tags', items: this.tagList}
-          ],
+          style_formats: this.styleList,
           style_formats_merge: true,
           setup: (editor) => {
             editor.addMenuItem('insertTemplate', {
@@ -146,6 +155,11 @@
               text: 'Apply Tag',
               menu: this.tagContextItems
             })
+            for (let i = 1; i <= 4; i++) {
+              editor.addShortcut('ctrl+alt+' + i, 'Heading ' + i, function () { editor.formatter.apply('h' + i) })
+            }
+            editor.addShortcut('ctrl+shift+l', 'Bulleted list', function () { editor.execCommand('InsertUnorderedList') })
+            editor.addShortcut('ctrl+shift+n', 'Numbered list', function () { editor.execCommand('InsertOrderedList') })
           },
           file_picker_types: 'image',
           file_picker_callback: (callback) => {
@@ -178,8 +192,8 @@
           this.$db.all('SELECT * FROM styles ORDER BY name ASC')
             .then((rows) => {
               for (let i = 0; i < rows.length; i++) {
+                // Create style list for Formats dropdown
                 let style = rows[i]
-                // Create style list for dropdown
                 this.styleList.push({
                   title: style.name,
                   [style.type]: style.element,
@@ -207,12 +221,12 @@
                 let element = (tag.type === 'block') ? 'p' : 'span'
 
                 // Set up tag list for registering in TinyMCE once it's initialised
-                this.tagList.push({
+                this.tagList[tag.tag_id] = {
                   id: tagClass,
                   name: tag.name,
                   type: type,
                   element: element
-                })
+                }
 
                 // Set up tag items for the TinyMCE context menu
                 this.tagContextItems.push({
@@ -228,6 +242,29 @@
               resolve()
             })
             .catch(err => { reject(err) })
+        })
+      },
+      getCustomCSS () {
+        return new Promise((resolve, reject) => {
+          let name = 'editorCSS'
+          this.$db.getOption(name)
+            .then((stored) => {
+              // If it's empty, add the default CSS
+              if (!stored) {
+                let fs = require('fs')
+                fs.readFile('static/editor.css', 'utf8', (err, content) => {
+                  if (err) reject(err)
+                  this.customCSS += content
+                  this.$db.setOption(name, content)
+                    .then(resolve())
+                    .catch(err => reject(err))
+                })
+              } else {
+                this.customCSS += stored
+                resolve()
+              }
+            })
+            .catch(err => reject(err))
         })
       },
       toggleMenubar () {
@@ -311,24 +348,15 @@
       },
       nodeChange (event) {
         // Get the list of tags for current cursor position
-        let tagList = []
-        let tagCount = 0
+        let names = []
         let parents = event.parents // array
         for (let i = 0; i < parents.length; i++) {
           if (parents[i].className.startsWith('tag')) {
-            tagCount++
             let tagId = parents[i].className.substring(3)
-            this.$db.getById('tags', tagId)
-              .then(row => {
-                if (row && row.name) {
-                  tagList.push(row.name)
-                  this.statusBarTags = 'Tags: ' + tagList.join(', ')
-                }
-              })
-              .catch(err => { console.error(err) })
+            names.push(this.tagList[tagId].name)
           }
         }
-        if (!tagCount) this.statusBarTags = ''
+        this.statusBarTags = (names.length) ? 'Tags: ' + names.join(', ') : ''
       },
       updateWordCount () {
         if (this.editor) {

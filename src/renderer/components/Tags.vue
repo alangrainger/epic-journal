@@ -13,8 +13,8 @@
                     <input style="width: 120px" type="text" v-model="tag.name"><br>
                 </td>
                 <td @change="tag.saved = false">
-                    <div style="white-space: nowrap"><input type="radio" :id="'block' + tag.tag_id" value="block" v-model="tag.type">&nbsp;<label :for="'block' + tag.tag_id">Block</label></div>
                     <div style="white-space: nowrap"><input type="radio" :id="'inline' + tag.tag_id" value="inline" v-model="tag.type">&nbsp;<label :for="'inline' + tag.tag_id">Inline</label></div>
+                    <div style="white-space: nowrap"><input type="radio" :id="'block' + tag.tag_id" value="block" v-model="tag.type">&nbsp;<label :for="'block' + tag.tag_id">Block</label></div>
                 </td>
                 <td><textarea v-model="tag.style"></textarea></td>
                 <td v-if="tag.type === 'block'"><div :title="tag.name" :style="tag.style">This is an example of how your final style will look when it appears in your journal.</div></td>
@@ -24,10 +24,14 @@
                     <button @click="deleteTag(tag.tag_id, $event)">Delete</button>
                 </td>
             </tr>
-            <button @click="newTag">Add New</button>
-            <br>
-            <button @click="exit">Go Back</button>
         </table>
+        <button @click="newTag">Add New</button>
+        <button @click="exit">Go Back</button>
+        <h2>Note:</h2>
+        <p>Tags work by applying a custom class to a section of text. By default they are inline and work using a &lt;span&gt;.
+        Be careful about using block-type tags. They are limited to &lt;p&gt; elements and can have unintended consequences.</p>
+        <p>If you create a tag as an inline style, and later switch it to block, it can cause a bit of formatting havoc in your existing entries.
+        I have included them for completeness, and for people who really wish to customise the visual style of their journal.</p>
     </div>
 </template>
 
@@ -68,6 +72,8 @@
         background: white;
         color: #d5d5d5;
     }
+
+    p { margin-bottom: 0.8em; }
 </style>
 
 <script>
@@ -99,7 +105,7 @@
             this.tags.push({
               tag_id: id,
               name: '',
-              type: 'block',
+              type: 'inline',
               style: '',
               saved: true
             })

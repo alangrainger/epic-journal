@@ -1,5 +1,3 @@
-/* Styles for inside the TinyMCE iframe */
-
 body {
     font-family: 'Segoe UI', sans-serif;
     padding: 0 10px 0 10px;
@@ -7,8 +5,7 @@ body {
 
 p {
     font-size: 13pt;
-    margin-top: 0;
-    margin-bottom: 0.8em;
+    margin: 0 0 0.8em 0;
     padding: 0;
 }
 
@@ -24,16 +21,20 @@ h1 {
 h2 {
     font-size: 18pt;
     font-weight: normal;
-    margin-top: 1em;
-    margin-bottom: 0.7em;
+    margin: 1em 0 0.7em 0;
 }
 
 h3 {
     font-size: 16pt;
     font-weight: normal;
     font-style: italic;
-    margin-top: 1em;
-    margin-bottom: 0.7em;
+    margin: 1em 0 0.7em 0;
+}
+
+h4 {
+    font-size: 13pt;
+    font-weight: bold;
+    margin: 1em 0 0.3em 0;
 }
 
 blockquote {
