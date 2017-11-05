@@ -12,6 +12,7 @@ function Datastore () {
   this.table = []
   this.table.entries = 'entries'
   this.table.tags = 'tags'
+  this.connected = false
 
   let sql = false
   let db = this
@@ -50,6 +51,7 @@ function Datastore () {
               .then(updateTables())
               .catch((err) => { reject(err) })
             createDefaultData()
+            db.connected = true
             resolve() // back to main execution
           })
           .catch((err) => {

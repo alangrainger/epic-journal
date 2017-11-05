@@ -1,5 +1,6 @@
 <template>
     <div id="wrapper">
+        <h1>Tags</h1>
         <table>
             <tr>
                 <th>Name</th>
@@ -40,6 +41,10 @@
         height: 100vh;
         padding: 46px 60px;
         width: 100vw;
+    }
+
+    h1 {
+        margin-bottom: 0.8em;
     }
 
     tr {

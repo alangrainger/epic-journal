@@ -28,7 +28,7 @@ new Vue({
 
 // Set up routing
 electron.ipcRenderer.on('route', (event, arg) => {
-  router.push(arg)
+  if (db.connected) router.push(arg)
 })
 
 if (!config.get('journal')) {

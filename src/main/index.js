@@ -96,6 +96,10 @@ let template = [
         click: () => { shell.openExternal('https://github.com/alangrainger/epic-journal#usage') }
       },
       {
+        label: 'Donate',
+        click: () => { shell.openExternal('https://epicjournal.xyz/donate/') }
+      },
+      {
         label: 'About',
         click: () => { showAbout() }
       }

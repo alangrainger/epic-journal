@@ -1,6 +1,5 @@
 <template>
     <div id="editorContainer">
-        <div v-html="'<style>' + customCSS + '</style>'" class="display:none"></div>
         <div :id="id"></div>
         <div id="statusbar">{{ statusBarTags }}<span style="float:right">{{ wordCount }} </span></div>
     </div>
@@ -249,10 +248,10 @@
           let name = 'editorCSS'
           this.$db.getOption(name)
             .then((stored) => {
-              // If it's empty, add the default CSS
               if (!stored) {
+                // If it's empty, add the default CSS
                 let fs = require('fs')
-                fs.readFile('static/editor.css', 'utf8', (err, content) => {
+                fs.readFile('static/editor-default.css', 'utf8', (err, content) => {
                   if (err) reject(err)
                   this.customCSS += content
                   this.$db.setOption(name, content)
@@ -260,6 +259,7 @@
                     .catch(err => reject(err))
                 })
               } else {
+                // Otherwise use the stored CSS
                 this.customCSS += stored
                 resolve()
               }
