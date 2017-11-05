@@ -16,6 +16,16 @@ I built it as a free and open replacement for [The Journal](http://www.davidrm.c
 for many years. The main issues I wanted to solve were better styling, and the ability to know that my
 entries are safe for the long-term, with an open and known database format.
 
+## Features
+
+- Fast and clean
+- AES 256 CBC encryption
+- Single journal file that you can store in your Dropbox, or wherever you like
+- Insertable templates
+- Tagging
+- Image support
+- Active development
+
 ## Usage
 
 #### Using templates
@@ -43,7 +53,6 @@ This page needs a bit of work, but any styles you set up here will persist into 
 
 I'll be working towards feature parity with The Journal, but the next things I'm working on are:
 
-- **Tagging of entries**, both inline, and at the entry level.
 - Search. Good fast search.
 - Multiple folders. They will be tabs above the editor - think of them as master categories.
 - Minimise to tray, and hotkey open.
