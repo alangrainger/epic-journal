@@ -21,6 +21,8 @@ entries are safe for the long-term, with an open and known database format.
 - Fast and clean
 - AES 256 CBC encryption
 - Single journal file that you can store in your Dropbox, or wherever you like
+- Custom style types
+- Pure HTML5 compatible
 - Insertable templates
 - Tagging
 - Image support
