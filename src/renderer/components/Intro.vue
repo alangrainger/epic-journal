@@ -2,10 +2,10 @@
     <div id="container">
         <div id="inner">
             <h1>Welcome to Epic Journal</h1>
-            <p style="text-align: left;">Click the Create button below to create a new journal. Choose a folder and then
+            <p>Click the Create button below to create a new journal. Choose a folder and then
                 type the desired filename.
                 You can also choose an existing journal.</p>
-            <p style="text-align: left;">The next screen will come up with a password. Type any password you like and press
+            <p>The next screen will come up with a password. Type any password you like and press
                 Enter.</p>
             <button @click="create">CREATE</button>
             <button @click="open">OPEN EXISTING</button>
@@ -30,6 +30,7 @@
     p {
         font-family: 'Segoe UI', sans-serif;
         margin-bottom: 1em;
+        text-align: left;
     }
 
     #inner {

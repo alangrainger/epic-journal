@@ -169,9 +169,9 @@ function Datastore () {
         'folder_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
         'name TEXT, ' +
         'type TEXT);')
-        .then(
+        .then(() => {
           // Entries
-          db.run(
+          return db.run(
             'CREATE TABLE IF NOT EXISTS entries(' +
             'entry_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
             'folder_id INTEGER, ' +
@@ -180,35 +180,35 @@ function Datastore () {
             'modified TEXT, ' +
             'content TEXT, ' +
             'FOREIGN KEY (folder_id) REFERENCES folders (folder_id));')
-        )
-        .then(
-          db.run('CREATE INDEX IF NOT EXISTS index_date ON entries(date)')
-        )
-        .then(
+        })
+        .then(() => {
+          return db.run('CREATE INDEX IF NOT EXISTS index_date ON entries(date)')
+        })
+        .then(() => {
           // Tags
-          db.run(
+          return db.run(
             'CREATE TABLE IF NOT EXISTS tags(' +
             'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
             'name TEXT, ' +
             'type TEXT, ' +
             'style TEXT);')
-        )
-        .then(
+        })
+        .then(() => {
           db.run(
             'CREATE TABLE IF NOT EXISTS entry_tags(' +
             'entry_id INTEGER, ' +
             'tag_id INTEGER, ' +
             'FOREIGN KEY (entry_id) REFERENCES entries (entry_id), ' +
             'FOREIGN KEY (tag_id) REFERENCES tags (tag_id));')
-        )
-        .then(
+        })
+        .then(() => {
           // Options
           db.run(
             'CREATE TABLE IF NOT EXISTS options(' +
             'name TEXT PRIMARY KEY, ' +
             'value TEXT);')
-        )
-        .then(
+        })
+        .then(() => {
           // Attachments
           db.run(
             'CREATE TABLE IF NOT EXISTS attachments(' +
@@ -216,8 +216,8 @@ function Datastore () {
             'created TEXT, ' +
             'mime_type TEXT, ' +
             'data BLOB);')
-        )
-        .then(
+        })
+        .then(() => {
           // Styles
           db.run(
             'CREATE TABLE IF NOT EXISTS styles(' +
@@ -227,8 +227,8 @@ function Datastore () {
             'element TEXT, ' +
             'class_name TEXT, ' +
             'style TEXT);')
-        )
-        .then(
+        })
+        .then(() => {
           // Templates
           db.run(
             'CREATE TABLE IF NOT EXISTS templates(' +
@@ -238,7 +238,7 @@ function Datastore () {
             'modified TEXT, ' +
             'content TEXT)'
           )
-        )
+        })
         .then(resolve())
         .catch((err) => {
           reject(err)
