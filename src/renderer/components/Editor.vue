@@ -148,17 +148,20 @@ blockquote::after {
       }
     },
     mounted: function () {
-      // Set up all custom styles and tags BEFORE initialising the editor
-      this.getCustomCSS()
+      // Initialise the editor
+      this.createEditor()
+        .then(() => {
+          // Get custom CSS
+          return this.getCustomCSS()
+        })
         .then(() => {
           // Get custom dropdown styles
           return this.getStyles()
         })
         .then(() => {
-          // Initialise the editor
-          return this.createEditor()
-        })
-        .then(() => {
+          // Set the custom styles
+          this.editor.dom.addStyle(this.customCSS)
+
           // Get templates
           return this.getTemplates()
         })
@@ -204,7 +207,6 @@ blockquote::after {
 
               resolve()
             },
-            content_style: this.customCSS,
             plugins: 'image fullscreen link hr codesample lists contextmenu table wordcount',
             browser_spellcheck: true,
             contextmenu: 'insertTemplate applyTag | link removeformat | inserttable cell row column deletetable',
@@ -246,29 +248,6 @@ blockquote::after {
               resolve()
             })
             .catch(err => { reject(err) })
-        })
-      },
-      getStyles () {
-        return new Promise((resolve, reject) => {
-          // Set up custom styles
-          this.$db.all('SELECT * FROM styles ORDER BY name ASC')
-            .then((rows) => {
-              for (let i = 0; i < rows.length; i++) {
-                // Create style list for Formats dropdown
-                let style = rows[i]
-                this.styleList.push({
-                  title: style.name,
-                  [style.type]: style.element,
-                  classes: style.class_name
-                })
-
-                // Create CSS
-                let fullName = (style.class_name) ? style.element + '.' + style.class_name : style.element
-                this.customCSS += fullName + '{' + style.style + '}\n'
-              }
-              resolve()
-            })
-            .catch(err => reject(err))
         })
       },
       getTags () {
@@ -314,6 +293,29 @@ blockquote::after {
               resolve()
             })
             .catch(err => { reject(err) })
+        })
+      },
+      getStyles () {
+        return new Promise((resolve, reject) => {
+          // Set up custom styles
+          this.$db.all('SELECT * FROM styles ORDER BY name ASC')
+            .then((rows) => {
+              for (let i = 0; i < rows.length; i++) {
+                // Create style list for Formats dropdown
+                let style = rows[i]
+                this.styleList.push({
+                  title: style.name,
+                  [style.type]: style.element,
+                  classes: style.class_name
+                })
+
+                // Create CSS
+                let fullName = (style.class_name) ? style.element + '.' + style.class_name : style.element
+                this.customCSS += fullName + '{' + style.style + '}\n'
+              }
+              resolve()
+            })
+            .catch(err => reject(err))
         })
       },
       getCustomCSS () {
