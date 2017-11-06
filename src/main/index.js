@@ -222,10 +222,7 @@ app.on('ready', function () {
 })
 
 app.on('window-all-closed', () => {
-  // Main exit process
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+  app.quit()
 })
 
 app.on('activate', () => {
