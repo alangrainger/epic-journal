@@ -3,7 +3,8 @@
 A cross-platform encrypted daily journal / diary app, with full CSS styling. It is built with Sqlite3 and 
 SQLcipher with AES 256 CBC encryption.
 
-I have builds for Windows, and I'd be very happy for anyone to submit builds for Mac and Linux.
+I have builds for Windows, and I'd be very happy for anyone to submit builds for Mac and Linux. You'll need to
+change `"win-sqlcipher": "^0.0.4"` to be `"unix-sqlcipher": "^0.0.4"`.
 
 **NOTE: I have not paid for a Windows code-signing certificate, so you will get a warning when you
 try to install it.**
@@ -23,6 +24,7 @@ entries are safe for the long-term, with an open and known database format.
 - Single journal file that you can store in your Dropbox, or wherever you like
 - Custom style types
 - Pure HTML5 compatible
+- Syntax highlighting
 - Insertable templates
 - Tagging
 - Image support

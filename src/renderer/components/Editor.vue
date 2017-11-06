@@ -148,20 +148,17 @@ blockquote::after {
       }
     },
     mounted: function () {
-      // Initialise the editor
-      this.createEditor()
+      // Get custom dropdown styles before initialising the editor
+      this.getStyles()
+        .then(() => {
+          // Initialise the editor
+          return this.createEditor()
+        })
         .then(() => {
           // Get custom CSS
           return this.getCustomCSS()
         })
         .then(() => {
-          // Get custom dropdown styles
-          return this.getStyles()
-        })
-        .then(() => {
-          // Set the custom styles
-          this.editor.dom.addStyle(this.customCSS)
-
           // Get templates
           return this.getTemplates()
         })
@@ -170,6 +167,9 @@ blockquote::after {
           return this.getTags()
         })
         .then(() => {
+          // Inject the custom stylesheet
+          this.editor.dom.addStyle(this.customCSS)
+
           // Add tags and templates to menus
           this.addMenus()
         })
@@ -204,7 +204,7 @@ blockquote::after {
               editor.on('NodeChange', (event) => { this.nodeChange(event) })
               // Update word count
               editor.on('KeyUp', () => { this.updateWordCount() })
-
+              // Back to main execution
               resolve()
             },
             plugins: 'image fullscreen link hr codesample lists contextmenu table wordcount',
