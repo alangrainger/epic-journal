@@ -60,3 +60,32 @@ I'll be working towards feature parity with The Journal, but the next things I'm
 - Minimise to tray, and hotkey open.
 - Notes folder – i.e. non date-related entries
 - Emoji support.
+
+## Building
+
+### Windows
+
+- `yarn install`
+
+- `yarn run dev`
+
+- `yarn run build`
+
+### MacOS
+
+There is an unresolved issue with cross-sqlcipher and yarn, 
+so the source files are set up for my Windows dev machine.
+
+To build on MacOS, you will need to make two changes:
+
+1. In `package.json`, change `"win-sqlcipher": "^0.0.4"` to be `"unix-sqlcipher": "^0.0.4"`
+
+1. In `src/main/datastore.js`, replace 'win-sqlcipher' with 'unix-sqlcipher'.
+
+Then build as above:
+
+- `yarn install`
+
+- `yarn run dev`
+
+- `yarn run build`

@@ -36,29 +36,34 @@ function Datastore () {
         }
       })
 
-      sql.serialize(function () {
-        password = password.replace(/'/g, '\'\'') // escape single quotes with two single quotes
-        db.run('PRAGMA KEY = \'' + password + '\'')
-          .catch((err) => { reject(err) })
-        db.run('PRAGMA CIPHER = \'aes-256-cbc\'')
-          .catch((err) => { reject(err) })
-
-        // Test DB read/write
-        db.run('CREATE TABLE IF NOT EXISTS test (id INTEGER)')
-          .then(() => {
-            db.run('DROP TABLE test')
-            createTables() // Create tables IF NOT EXISTS
-              .then(updateTables())
-              .catch((err) => { reject(err) })
-            createDefaultData()
-            db.connected = true
-            resolve() // back to main execution
-          })
-          .catch((err) => {
-            console.log('Fatal error: Database not writeable. Please check your password, check if your database file is locked, and restart the app.')
-            reject(err)
-          })
-      })
+      password = password.replace(/'/g, '\'\'') // escape single quotes with two single quotes
+      db.run('PRAGMA KEY = \'' + password + '\'')
+        .then(() => {
+          return db.run('PRAGMA CIPHER = \'aes-256-cbc\'')
+        })
+        .then(() => {
+          // Test DB read/write
+          return db.run('CREATE TABLE IF NOT EXISTS test (id INTEGER)')
+        })
+        .then(() => {
+          return db.run('DROP TABLE test')
+        })
+        .then(() => {
+          return createTables() // Create tables IF NOT EXISTS
+        })
+        .then(() => {
+          return updateTables()
+        })
+        .then(() => {
+          createDefaultData()
+          db.connected = true
+          resolve() // back to main execution
+        })
+        .catch((err) => {
+          sql.close()
+          console.log('Fatal error: Database not writeable. Please check your password, check if your database file is locked, and restart the app.')
+          reject(err)
+        })
     })
   }
 
@@ -234,38 +239,44 @@ function Datastore () {
             'content TEXT)'
           )
         )
+        .then(resolve())
         .catch((err) => {
           reject(err)
         })
     })
   }
   const updateTables = function () {
-    // Get DB version
-    db.get('PRAGMA user_version;')
-      .then((row) => {
-        let version = row.user_version
-        if (!version) {
-          // New database
-          db.run('PRAGMA user_version = ' + SCHEMA_VERSION)
-        } else {
-          if (version < SCHEMA_VERSION) console.log('Outdated database schema, updating...')
+    return new Promise(function (resolve, reject) {
+      // Get DB version
+      db.get('PRAGMA user_version;')
+        .then((row) => {
+          let version = row.user_version
+          if (!version) {
+            // New database
+            db.run('PRAGMA user_version = ' + SCHEMA_VERSION)
+          } else {
+            if (version < SCHEMA_VERSION) console.log('Outdated database schema, updating...')
 
-          if (version < 5) {
-            /*
-            Tag table was updated to include style and a style-type of inline or block
-             */
-            db.run('DROP TABLE tags')
-            db.run(
-              'CREATE TABLE IF NOT EXISTS tags(' +
-              'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-              'name TEXT, ' +
-              'type TEXT, ' +
-              'style TEXT);')
+            if (version < 5) {
+              /*
+              Tag table was updated to include style and a style-type of inline or block
+               */
+              db.run('DROP TABLE tags')
+                .then(() => {
+                  db.run(
+                    'CREATE TABLE IF NOT EXISTS tags(' +
+                    'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+                    'name TEXT, ' +
+                    'type TEXT, ' +
+                    'style TEXT);')
+                })
+            }
+            db.run('PRAGMA user_version = ' + SCHEMA_VERSION)
           }
-          db.run('PRAGMA user_version = ' + SCHEMA_VERSION)
-        }
-      })
-      .catch(err => console.error(err))
+          resolve()
+        })
+        .catch(err => reject(err))
+    })
   }
 
   const createDefaultData = function () {
