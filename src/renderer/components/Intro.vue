@@ -8,6 +8,7 @@
             <p style="text-align: left;">The next screen will come up with a password. Type any password you like and press
                 Enter.</p>
             <button @click="create">CREATE</button>
+            <button @click="open">OPEN EXISTING</button>
         </div>
     </div>
 </template>
@@ -60,7 +61,7 @@
         background: #569FF7;
         border: 2px solid white;
         color: white;
-        font-size: 1.2em;
+        font-size: 1em;
         line-height: 1em;
         padding: 0.4em 0.8em 0.6em 0.8em;
         margin: 1em 0;
@@ -90,6 +91,13 @@
       create () {
         const {ipcRenderer} = require('electron')
         let result = ipcRenderer.sendSync('createJournal')
+        if (result) {
+          router.push('password')
+        }
+      },
+      open () {
+        const {ipcRenderer} = require('electron')
+        let result = ipcRenderer.sendSync('openJournal')
         if (result) {
           router.push('password')
         }

@@ -112,6 +112,15 @@ Menu.setApplicationMenu(menu)
 
 const {ipcMain} = require('electron')
 ipcMain.on('createJournal', (event) => {
+  saveFile()
+    .then(() => {
+      event.returnValue = true
+    })
+    .catch(() => {
+      event.returnValue = false
+    })
+})
+ipcMain.on('openJournal', (event) => {
   openFile()
     .then(() => {
       event.returnValue = true
@@ -225,22 +234,22 @@ function showAbout () {
   })
 }
 
-/* function saveFile () {
+function saveFile () {
   return new Promise(function (resolve, reject) {
     dialog.showSaveDialog({
       filters: [
         {name: 'Epic Journal', extensions: ['epic']}
       ]
-    }, function (filenames) {
-      if (filenames === undefined || !filenames[0]) {
+    }, function (filename) {
+      if (filename === undefined) {
         reject(new Error('No file specified'))
       } else {
-        let filename = filenames[0]
-        resolve(filename)
+        config.set('journal', filename)
+        resolve()
       }
     })
   })
-} */
+}
 
 /**
  * Auto Updater
