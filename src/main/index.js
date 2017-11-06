@@ -107,8 +107,31 @@ let template = [
   }
 ]
 
-const menu = Menu.buildFromTemplate(template)
-Menu.setApplicationMenu(menu)
+if (process.platform === 'darwin') {
+  template.unshift({
+    label: app.getName(),
+    submenu: [
+      {role: 'about'},
+      {type: 'separator'},
+      {role: 'services', submenu: []},
+      {type: 'separator'},
+      {role: 'hide'},
+      {role: 'hideothers'},
+      {role: 'unhide'},
+      {type: 'separator'},
+      {role: 'quit'}
+    ]
+  })
+
+  // Window menu
+  template[4].submenu = [
+    {role: 'close'},
+    {role: 'minimize'},
+    {role: 'zoom'},
+    {type: 'separator'},
+    {role: 'front'}
+  ]
+}
 
 const {ipcMain} = require('electron')
 ipcMain.on('createJournal', (event) => {
@@ -190,6 +213,10 @@ app.on('ready', function () {
   }, (error) => {
     if (error) console.log(error)
   })
+
+  // Set menus
+  const menu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(menu)
 
   createWindow()
 })
