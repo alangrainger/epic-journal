@@ -155,16 +155,20 @@ blockquote::after {
           return this.getStyles()
         })
         .then(() => {
-          // Get tags
-          return this.getTags()
+          // Initialise the editor
+          return this.createEditor()
         })
         .then(() => {
           // Get templates
           return this.getTemplates()
         })
         .then(() => {
-          // Initialise the editor
-          this.createEditor()
+          // Get tags
+          return this.getTags()
+        })
+        .then(() => {
+          // Add tags and templates to menus
+          this.addMenus()
         })
         .catch(err => console.error(err))
     },
@@ -186,69 +190,43 @@ blockquote::after {
         }
       },
       createEditor () {
-        tinymce.init({
-          init_instance_callback: (editor) => {
-            // this.toggleMenubar() // hide menu bar by default
-            this.editor = editor // set the editor instance
-            // Get initial text
-            if (this.entry.content) this.setContent(this.entry.content)
-            // Watch when selection changes
-            editor.on('NodeChange', (event) => { this.nodeChange(event) })
-            // Update word count
-            editor.on('KeyUp', () => { this.updateWordCount() })
+        return new Promise((resolve) => {
+          tinymce.init({
+            init_instance_callback: (editor) => {
+              // Set the editor instance
+              this.editor = editor
+              // Get initial text
+              if (this.entry.content) this.setContent(this.entry.content)
+              // Watch when selection changes
+              editor.on('NodeChange', (event) => { this.nodeChange(event) })
+              // Update word count
+              editor.on('KeyUp', () => { this.updateWordCount() })
 
-            // Register the tag classes
-            for (const key of Object.keys(this.tagList)) {
-              let tag = this.tagList[key]
-              this.editor.formatter.register(tag.id, {
-                [tag.type]: tag.element,
-                title: tag.name,
-                classes: tag.id
-              })
+              resolve()
+            },
+            content_style: this.customCSS,
+            plugins: 'image fullscreen link hr codesample lists contextmenu table wordcount',
+            browser_spellcheck: true,
+            contextmenu: 'insertTemplate applyTag | link removeformat | inserttable cell row column deletetable',
+            table_toolbar: '',
+            default_link_target: '_blank',
+            image_caption: true,
+            image_description: false,
+            image_title: true,
+            image_dimensions: false,
+            selector: '#' + this.id,
+            statusbar: false,
+            resize: false,
+            branding: false,
+            menubar: false,
+            toolbar: ['styleselect | undo redo | bold italic | blockquote codesample hr | bullist numlist | alignleft aligncenter alignright | indent outdent | link image table | removeformat'],
+            style_formats: this.styleList,
+            style_formats_merge: true,
+            file_picker_types: 'image',
+            file_picker_callback: (callback) => {
+              this.insertImage(callback)
             }
-          },
-          content_style: this.customCSS,
-          plugins: 'image fullscreen link hr codesample lists contextmenu table wordcount',
-          browser_spellcheck: true,
-          contextmenu: 'insertTemplate applyTag | link removeformat | inserttable cell row column deletetable',
-          table_toolbar: '',
-          default_link_target: '_blank',
-          image_caption: true,
-          image_description: false,
-          image_title: true,
-          image_dimensions: false,
-          selector: '#' + this.id,
-          statusbar: false,
-          resize: false,
-          branding: false,
-          menubar: false,
-          toolbar: ['styleselect | undo redo | bold italic | blockquote codesample hr | bullist numlist | alignleft aligncenter alignright | indent outdent | link image table | removeformat'],
-          style_formats: this.styleList,
-          style_formats_merge: true,
-          setup: (editor) => {
-            editor.addMenuItem('insertTemplate', {
-              text: 'Insert Template',
-              menu: this.templates.concat([{
-                text: 'Add new template...',
-                onclick: () => {
-                  this.$router.push('templates')
-                }
-              }])
-            })
-            editor.addMenuItem('applyTag', {
-              text: 'Apply Tag',
-              menu: this.tagContextItems
-            })
-            for (let i = 1; i <= 4; i++) {
-              editor.addShortcut('ctrl+alt+' + i, 'Heading ' + i, function () { editor.formatter.apply('h' + i) })
-            }
-            editor.addShortcut('ctrl+shift+l', 'Bulleted list', function () { editor.execCommand('InsertUnorderedList') })
-            editor.addShortcut('ctrl+shift+n', 'Numbered list', function () { editor.execCommand('InsertOrderedList') })
-          },
-          file_picker_types: 'image',
-          file_picker_callback: (callback) => {
-            this.insertImage(callback)
-          }
+          })
         })
       },
       getTemplates () {
@@ -323,6 +301,16 @@ blockquote::after {
                 // Add to the CSS applied to TinyMCE editor iframe
                 this.customCSS += element + '.' + tagClass + '{' + tag.style + '}\n'
               }
+              // Register the tag classes
+              for (const key of Object.keys(this.tagList)) {
+                let tag = this.tagList[key]
+                this.editor.formatter.register(tag.id, {
+                  [tag.type]: tag.element,
+                  title: tag.name,
+                  classes: tag.id
+                })
+              }
+
               resolve()
             })
             .catch(err => { reject(err) })
@@ -358,6 +346,26 @@ blockquote::after {
           }
           this.menubar = !this.menubar
         }
+      },
+      addMenus () {
+        this.editor.addMenuItem('insertTemplate', {
+          text: 'Insert Template',
+          menu: this.templates.concat([{
+            text: 'Add new template...',
+            onclick: () => {
+              this.$router.push('templates')
+            }
+          }])
+        })
+        this.editor.addMenuItem('applyTag', {
+          text: 'Apply Tag',
+          menu: this.tagContextItems
+        })
+        for (let i = 1; i <= 4; i++) {
+          this.editor.addShortcut('ctrl+alt+' + i, 'Heading ' + i, function () { this.editor.formatter.apply('h' + i) })
+        }
+        this.editor.addShortcut('ctrl+shift+l', 'Bulleted list', function () { this.editor.execCommand('InsertUnorderedList') })
+        this.editor.addShortcut('ctrl+shift+n', 'Numbered list', function () { this.editor.execCommand('InsertOrderedList') })
       },
       insertImage (callback) {
         let vm = this
