@@ -9,7 +9,7 @@ change `"win-sqlcipher": "^0.0.4"` to be `"unix-sqlcipher": "^0.0.4"`.
 **NOTE: I have not paid for a Windows code-signing certificate, so you will get a warning when you
 try to install it.**
 
-Download the [latest release here](https://github.com/alangrainger/epic-journal/releases).
+Download the [latest release here](https://github.com/alangrainger/epic-journal/releases/latest).
 
 ![Screenshot](screenshot.png?raw=true)
 
