@@ -3,9 +3,6 @@
 A cross-platform encrypted daily journal / diary app, with full CSS styling. It is built with Sqlite3 and 
 SQLcipher with AES 256 CBC encryption.
 
-I have builds for Windows, and I'd be very happy for anyone to submit builds for Mac and Linux. You'll need to
-change `"win-sqlcipher": "^0.0.4"` to be `"unix-sqlcipher": "^0.0.4"`.
-
 **NOTE: I have not paid for a Windows code-signing certificate, so you will get a warning when you
 try to install it.**
 
@@ -13,7 +10,7 @@ Download the [latest release here](https://github.com/alangrainger/epic-journal/
 
 ![Screenshot](screenshot.png?raw=true)
 
-I built it as a free and open replacement for [The Journal](http://www.davidrm.com/) by DavidRM, which I have used 
+I built it as a free and open replacement for *The Journal* by DavidRM, which I have used 
 for many years. The main issues I wanted to solve were better styling, and the ability to know that my
 entries are safe for the long-term, with an open and known database format.
 
@@ -59,5 +56,7 @@ I'll be working towards feature parity with The Journal, but the next things I'm
 
 - Search. Good fast search.
 - Multiple folders. They will be tabs above the editor - think of them as master categories.
+- Linking between entries
 - Minimise to tray, and hotkey open.
+- Notes folder – i.e. non date-related entries
 - Emoji support.

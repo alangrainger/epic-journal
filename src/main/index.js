@@ -15,11 +15,17 @@ const Store = require('electron-store')
 const config = new Store()
 global['config'] = config // make available for renderer
 global.db = db // make available for renderer
-
 let template = [
   {
     label: 'File',
     submenu: [
+      {
+        label: 'New',
+        click: () => {
+          config.delete('journal')
+          mainWindow.webContents.reloadIgnoringCache()
+        }
+      },
       {
         label: 'Open',
         click: () => {
