@@ -11,3 +11,5 @@ thumbs.db
 /yarn-error.log
 .idea/
 testing.db
+package-lock.json
+yarn.lock
