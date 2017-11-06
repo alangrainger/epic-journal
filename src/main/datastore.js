@@ -217,7 +217,7 @@ function Datastore () {
           'created TEXT, ' +
           'modified TEXT, ' +
           'content TEXT)'))
-        .then(setTimeout(() => { resolve() }, 200))
+        .then(setTimeout(() => { resolve() }, 300))
         .catch((err) => {
           reject(err)
         })
