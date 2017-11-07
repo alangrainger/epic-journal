@@ -1,6 +1,6 @@
 import moment from 'moment'
 
-const SCHEMA_VERSION = 5
+const SCHEMA_VERSION = 6
 
 const DATE_SQL = 'YYYY-MM-DD HH:mm:ss'
 const DATE_DAY = 'YYYY-MM-DD'
@@ -193,7 +193,7 @@ function Datastore () {
         })
         .then(() => {
           return db.run(
-            'CREATE INDEX IF NOT EXISTS index_date ON entries(date)')
+            'CREATE INDEX IF NOT EXISTS index_date ON entries(date, folder_id)')
         })
         .then(() => {
           return db.run(
@@ -259,9 +259,8 @@ function Datastore () {
           if (!version) {
             // New database
             db.run('PRAGMA user_version = ' + SCHEMA_VERSION)
-          } else {
-            if (version < SCHEMA_VERSION) console.log('Outdated database schema, updating...')
-
+          } else if (version < SCHEMA_VERSION) {
+            console.log('Outdated database schema, updating...')
             if (version < 5) {
               /*
               Tag table was updated to include style and a style-type of inline or block
@@ -274,6 +273,15 @@ function Datastore () {
                     'name TEXT, ' +
                     'type TEXT, ' +
                     'style TEXT);')
+                })
+            }
+            if (version <= 6) {
+              /*
+              Multicolumn index_date added
+               */
+              db.run('DROP INDEX IF EXISTS index_date')
+                .then(() => {
+                  db.run('CREATE INDEX index_date ON entries(date, folder_id)')
                 })
             }
             db.run('PRAGMA user_version = ' + SCHEMA_VERSION)
