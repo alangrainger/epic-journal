@@ -131,7 +131,7 @@
       })
 
       // Load existing entry if there is one
-      this.getEntryByDate(this.entry.date)
+      this.getEntryByDate(this.date)
 
       // Get entry tree
       this.updateTree()
@@ -216,16 +216,16 @@
       },
       save () {
         if (!this.$refs.editor.editor) return // editor hasn't loaded
-        if (this.getContent() === this.entry.content) {
-          return // entry has not changed
+        let entry = this.entry
+        let liveContent = this.getContent()
+        if (entry.content === liveContent) {
+          return // entry has not changed - no need to save
+        } else {
+          entry.content = liveContent
         }
 
-        // Get latest content from TinyMCE
-        let entry = this.entry
-        entry.content = this.getContent()
-
         // Save tags in DB
-        this.updateTags()
+        this.updateTags(entry)
 
         if (!entry.content || entry.content === '<p><br></p>') {
           /* Entry is empty
@@ -267,11 +267,11 @@
             })
         }
       },
-      updateTags () {
-        if (!this.entry.id) return
+      updateTags (entry) {
+        if (!entry.id) return
 
         // Get the existing database list of tags for this entry
-        this.$db.all('SELECT tag_id FROM entry_tags WHERE entry_id = ?', [this.entry.id])
+        this.$db.all('SELECT tag_id FROM entry_tags WHERE entry_id = ?', [entry.id])
           .then((rows) => {
             let tags = {}
 
@@ -281,13 +281,13 @@
             }
 
             // Find tags in live entry
-            if (this.entry.content) {
+            if (entry.content) {
               let classes = /<[^>]*?class="([^"]*tag\d+[^"]*)"/g
               let match
               let processed = []
               do {
                 // Find all classes containing at least one tag
-                match = classes.exec(this.entry.content)
+                match = classes.exec(entry.content)
                 if (match) {
                   let tagReg = /tag(\d+)/g
                   let tag
@@ -298,7 +298,7 @@
                       let tagId = tag[1]
                       if (!tags[tagId]) {
                         // Live tag doesn't exist, so add it to database
-                        this.$db.run('REPLACE INTO entry_tags (entry_id, tag_id) VALUES (?, ?)', [this.entry.id, tagId])
+                        this.$db.run('REPLACE INTO entry_tags (entry_id, tag_id) VALUES (?, ?)', [entry.id, tagId])
                       } else {
                         // Otherwise remove from database array
                         delete tags[tagId]
@@ -312,7 +312,7 @@
 
             // Whatever remains in the database array no longer remains in the entry, so delete them from table
             for (let tagId in tags) {
-              this.$db.run('DELETE FROM entry_tags WHERE entry_id = ? AND tag_id = ?', [this.entry.id, tagId])
+              this.$db.run('DELETE FROM entry_tags WHERE entry_id = ? AND tag_id = ?', [entry.id, tagId])
             }
           })
       },
