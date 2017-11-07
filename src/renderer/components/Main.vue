@@ -113,6 +113,13 @@
                 if (row && row.date) this.date = row.date
               })
             break
+          case 'random':
+            if (this.$router.currentRoute.name !== 'main') break
+            this.$db.get('SELECT date FROM entries WHERE entry_id IN (SELECT entry_id FROM entries ORDER BY RANDOM() LIMIT 1)')
+              .then(row => {
+                if (row && row.date) this.date = row.date
+              })
+            break
           case 'next':
             if (this.$router.currentRoute.name !== 'main') break
             this.$db.get('SELECT date FROM entries WHERE DATE(date) > DATE(?) ORDER BY date ASC LIMIT 1', this.date)

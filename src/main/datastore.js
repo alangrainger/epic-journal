@@ -28,32 +28,27 @@ function Datastore () {
     return new Promise(function (resolve, reject) {
       let sqlite3 = require('win-sqlcipher')
 
-      // Get filename from config always at point of open
       let filename = global['config'].get('journal')
-      sql = new sqlite3.Database(filename, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, function (err) {
-        if (err) {
-          reject(err)
-        }
-      })
-
       password = password.replace(/'/g, '\'\'') // escape single quotes with two single quotes
-      db.run('PRAGMA KEY = \'' + password + '\'')
-        .then(() => {
-          return db.run('PRAGMA CIPHER = \'aes-256-cbc\'')
+
+      // Create/connect database
+      new Promise(function (resolve, reject) {
+        sql = new sqlite3.Database(filename, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, function (err) {
+          if (err) {
+            reject(err)
+          } else {
+            resolve()
+          }
         })
-        .then(() => {
-          // Test DB read/write
-          return db.run('CREATE TABLE IF NOT EXISTS test (id INTEGER)')
-        })
-        .then(() => {
-          return db.run('DROP TABLE test')
-        })
-        .then(() => {
-          return createTables() // Create tables IF NOT EXISTS
-        })
-        .then(() => {
-          return updateTables()
-        })
+      })
+        .then(() => { return db.run('PRAGMA KEY = \'' + password + '\'') })
+        .then(() => { return db.run('PRAGMA CIPHER = \'aes-256-cbc\'') })
+        // Test DB read/write
+        .then(() => { return db.run('CREATE TABLE IF NOT EXISTS test (id INTEGER)') })
+        .then(() => { return db.run('DROP TABLE test') })
+        // Create tables IF NOT EXISTS
+        .then(() => { return createTables() })
+        .then(() => { return updateTables() })
         .then(() => {
           createDefaultData()
           db.connected = true
@@ -74,6 +69,7 @@ function Datastore () {
    */
   this.run = function (query, parameters = []) {
     return new Promise(function (resolve, reject) {
+      console.log(query)
       if (!sql) { reject(new Error('run: Database object not created')) }
       sql.run(query, parameters, function (error) {
         if (error) {
@@ -161,7 +157,7 @@ function Datastore () {
    * END PROMISE WRAPPERS
    */
 
-  const createTables = function () {
+  let createTables = function () {
     return new Promise(function (resolve, reject) {
       // Folders
       db.run(
@@ -169,61 +165,77 @@ function Datastore () {
         'folder_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
         'name TEXT, ' +
         'type TEXT);')
-        .then(db.run(
-          'CREATE TABLE IF NOT EXISTS entries(' +
-          'entry_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-          'folder_id INTEGER, ' +
-          'date TEXT, ' + // YYYY-MM-DD
-          'created TEXT, ' +
-          'modified TEXT, ' +
-          'content TEXT, ' +
-          'FOREIGN KEY (folder_id) REFERENCES folders (folder_id));'))
-        .then(db.run(
-          'CREATE INDEX IF NOT EXISTS index_date ON entries(date)'))
-        .then(db.run(
-          'CREATE TABLE IF NOT EXISTS tags(' +
-          'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-          'name TEXT, ' +
-          'type TEXT, ' +
-          'style TEXT);'))
-        .then(db.run(
-          'CREATE TABLE IF NOT EXISTS entry_tags(' +
-          'entry_id INTEGER, ' +
-          'tag_id INTEGER, ' +
-          'FOREIGN KEY (entry_id) REFERENCES entries (entry_id), ' +
-          'FOREIGN KEY (tag_id) REFERENCES tags (tag_id));'))
-        .then(db.run(
-          'CREATE TABLE IF NOT EXISTS options(' +
-          'name TEXT PRIMARY KEY, ' +
-          'value TEXT);'))
-        .then(db.run(
-          'CREATE TABLE IF NOT EXISTS attachments(' +
-          'attachment_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-          'created TEXT, ' +
-          'mime_type TEXT, ' +
-          'data BLOB);'))
-        .then(db.run(
-          'CREATE TABLE IF NOT EXISTS styles(' +
-          'style_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-          'name TEXT, ' +
-          'type TEXT, ' +
-          'element TEXT, ' +
-          'class_name TEXT, ' +
-          'style TEXT);'))
-        .then(db.run(
-          'CREATE TABLE IF NOT EXISTS templates(' +
-          'template_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-          'name TEXT, ' +
-          'created TEXT, ' +
-          'modified TEXT, ' +
-          'content TEXT)'))
-        .then(setTimeout(() => { resolve() }, 300))
+        .then(() => {
+          return db.run(
+            'CREATE TABLE IF NOT EXISTS entries(' +
+            'entry_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+            'folder_id INTEGER, ' +
+            'date TEXT, ' + // YYYY-MM-DD
+            'created TEXT, ' +
+            'modified TEXT, ' +
+            'content TEXT, ' +
+            'FOREIGN KEY (folder_id) REFERENCES folders (folder_id));')
+        })
+        .then(() => {
+          return db.run(
+            'CREATE INDEX IF NOT EXISTS index_date ON entries(date)')
+        })
+        .then(() => {
+          return db.run(
+            'CREATE TABLE IF NOT EXISTS tags(' +
+            'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+            'name TEXT, ' +
+            'type TEXT, ' +
+            'style TEXT);')
+        })
+        .then(() => {
+          return db.run(
+            'CREATE TABLE IF NOT EXISTS entry_tags(' +
+            'entry_id INTEGER, ' +
+            'tag_id INTEGER, ' +
+            'FOREIGN KEY (entry_id) REFERENCES entries (entry_id), ' +
+            'FOREIGN KEY (tag_id) REFERENCES tags (tag_id));')
+        })
+        .then(() => {
+          return db.run(
+            'CREATE TABLE IF NOT EXISTS options(' +
+            'name TEXT PRIMARY KEY, ' +
+            'value TEXT);')
+        })
+        .then(() => {
+          return db.run(
+            'CREATE TABLE IF NOT EXISTS attachments(' +
+            'attachment_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+            'created TEXT, ' +
+            'mime_type TEXT, ' +
+            'data BLOB);')
+        })
+        .then(() => {
+          return db.run(
+            'CREATE TABLE IF NOT EXISTS styles(' +
+            'style_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+            'name TEXT, ' +
+            'type TEXT, ' +
+            'element TEXT, ' +
+            'class_name TEXT, ' +
+            'style TEXT);')
+        })
+        .then(() => {
+          return db.run(
+            'CREATE TABLE IF NOT EXISTS templates(' +
+            'template_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+            'name TEXT, ' +
+            'created TEXT, ' +
+            'modified TEXT, ' +
+            'content TEXT)')
+        })
+        .then(resolve())
         .catch((err) => {
           reject(err)
         })
     })
   }
-  const updateTables = function () {
+  let updateTables = function () {
     return new Promise(function (resolve, reject) {
       // Get DB version
       db.get('PRAGMA user_version;')
@@ -257,7 +269,7 @@ function Datastore () {
     })
   }
 
-  const createDefaultData = function () {
+  let createDefaultData = function () {
     db.get('SELECT * FROM folders')
       .then((result) => {
         if (result) {

@@ -70,6 +70,11 @@ let template = [
         click: () => { mainWindow.webContents.send('goto', 'next') }
       },
       {
+        label: 'Go to Random entry',
+        accelerator: 'CommandOrControl+Shift+F5',
+        click: () => { mainWindow.webContents.send('goto', 'random') }
+      },
+      {
         label: 'Go to Journal',
         click: () => { mainWindow.webContents.send('route', 'main') }
       },
