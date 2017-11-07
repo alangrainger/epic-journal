@@ -46,9 +46,25 @@ function Datastore () {
         // Test DB read/write
         .then(() => { return db.run('CREATE TABLE IF NOT EXISTS test (id INTEGER)') })
         .then(() => { return db.run('DROP TABLE test') })
-        // Create tables IF NOT EXISTS
-        .then(() => { return createTables() })
-        .then(() => { return updateTables() })
+        // Check database schema version
+        .then(() => {
+          return new Promise((resolve, reject) => {
+            db.get('PRAGMA user_version;')
+              .then((row) => {
+                let version = row.user_version
+                if (!version || version < SCHEMA_VERSION) {
+                  // Database is new or out of date
+                  createTables()
+                    .then(() => { return updateTables() })
+                    .then(() => { resolve() })
+                    .catch(err => { reject(err) })
+                } else {
+                  resolve()
+                }
+              })
+              .catch(err => { reject(err) })
+          })
+        })
         .then(() => {
           createDefaultData()
           db.connected = true
@@ -69,7 +85,6 @@ function Datastore () {
    */
   this.run = function (query, parameters = []) {
     return new Promise(function (resolve, reject) {
-      console.log(query)
       if (!sql) { reject(new Error('run: Database object not created')) }
       sql.run(query, parameters, function (error) {
         if (error) {
@@ -157,7 +172,7 @@ function Datastore () {
    * END PROMISE WRAPPERS
    */
 
-  let createTables = function () {
+  const createTables = function () {
     return new Promise(function (resolve, reject) {
       // Folders
       db.run(
@@ -229,13 +244,13 @@ function Datastore () {
             'modified TEXT, ' +
             'content TEXT)')
         })
-        .then(resolve())
+        .then(() => { resolve() })
         .catch((err) => {
           reject(err)
         })
     })
   }
-  let updateTables = function () {
+  const updateTables = function () {
     return new Promise(function (resolve, reject) {
       // Get DB version
       db.get('PRAGMA user_version;')
@@ -269,7 +284,7 @@ function Datastore () {
     })
   }
 
-  let createDefaultData = function () {
+  const createDefaultData = function () {
     db.get('SELECT * FROM folders')
       .then((result) => {
         if (result) {
