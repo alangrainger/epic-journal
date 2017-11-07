@@ -54,12 +54,13 @@ This page needs a bit of work, but any styles you set up here will persist into 
 
 I'll be working towards feature parity with The Journal, but the next things I'm working on are:
 
+- Mobile app (nothing fancy, just to add entries on the go)
 - Search. Good fast search.
 - Multiple folders. They will be tabs above the editor - think of them as master categories.
 - Linking between entries
-- Minimise to tray, and hotkey open.
+- Minimise to tray, and hotkey open
 - Notes folder – i.e. non date-related entries
-- Emoji support.
+- Emoji support
 
 ## Building
 
@@ -72,6 +73,8 @@ I'll be working towards feature parity with The Journal, but the next things I'm
 - `yarn run build`
 
 ### MacOS
+
+**NOTE: I haven't yet got unix-sqlcipher to compile properly on Mac. If you know how, let me know!** 
 
 There is an unresolved issue with cross-sqlcipher and yarn, 
 so the source files are set up for my Windows dev machine.
