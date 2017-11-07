@@ -364,10 +364,10 @@ blockquote::after {
           menu: this.tagContextItems
         })
         for (let i = 1; i <= 4; i++) {
-          this.editor.addShortcut('ctrl+alt+' + i, 'Heading ' + i, function () { this.editor.formatter.apply('h' + i) })
+          this.editor.addShortcut('ctrl+alt+' + i, 'Heading ' + i, () => { this.editor.formatter.apply('h' + i) })
         }
-        this.editor.addShortcut('ctrl+shift+l', 'Bulleted list', function () { this.editor.execCommand('InsertUnorderedList') })
-        this.editor.addShortcut('ctrl+shift+n', 'Numbered list', function () { this.editor.execCommand('InsertOrderedList') })
+        this.editor.addShortcut('ctrl+shift+l', 'Bulleted list', () => { this.editor.execCommand('InsertUnorderedList') })
+        this.editor.addShortcut('ctrl+shift+n', 'Numbered list', () => { this.editor.execCommand('InsertOrderedList') })
       },
       insertImage (callback) {
         let vm = this
