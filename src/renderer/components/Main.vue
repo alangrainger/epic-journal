@@ -221,19 +221,20 @@
         }
 
         // Get latest content from TinyMCE
-        this.entry.content = this.getContent()
+        let entry = this.entry
+        entry.content = this.getContent()
 
         // Save tags in DB
         this.updateTags()
 
-        if (!this.entry.content || this.entry.content === '<p><br></p>') {
+        if (!entry.content || entry.content === '<p><br></p>') {
           /* Entry is empty
              If it exists, then prune it from DB
              '<p><br></p>' is the minimum content for an empty Quill editor */
-          if (this.entry.id) {
-            this.$db.deleteEntry(this.entry)
+          if (entry.id) {
+            this.$db.deleteEntry(entry)
               .then(() => {
-                console.info('Empty entry ' + this.entry.id + ' has been pruned')
+                console.info('Empty entry ' + entry.id + ' has been pruned')
                 this.clearEntry()
                 this.updateTree()
               })
@@ -241,24 +242,25 @@
                 console.error(error)
               })
           }
-        } else if (this.entry.id) {
+        } else if (entry.id) {
           // Entry ID already exists, update existing entry
-          this.$db.updateEntry(this.entry)
+          this.$db.updateEntry(entry)
             .then(() => {
-              console.log(this.$moment().format('HH:mm:ss') + ' saved entry', 'ID: ' + this.entry.id)
-              this.entry.saved = true
+              console.log(this.$moment().format('HH:mm:ss') + ' saved entry', 'ID: ' + entry.id)
             })
             .catch(() => {
               console.error('FAILED TO SAVE ENTRY')
             })
         } else {
           // No existing entry, so create new entry
-          this.$db.createNewEntry(this.entry)
+          this.$db.createNewEntry(entry)
             .then((entryId) => {
-              this.entry.id = entryId
-              console.info(this.$moment().format('HH:mm:ss') + ' created new entry', 'ID: ' + this.entry.id)
-              this.entry.saved = true
+              entry.id = entryId
+              console.info(this.$moment().format('HH:mm:ss') + ' created new entry', 'ID: ' + entry.id)
               this.updateTree()
+              // If the current entry hasn't already changed (through clicking the calendar etc)
+              // update the ID
+              if (this.date === entry.date) this.entry.id = entry.id
             })
             .catch((err) => {
               console.error(err)
@@ -320,6 +322,11 @@
             // Set tree
             this.tree = tree
             this.updateCalendarEntries()
+            // Scroll the tree (this function is temporary)
+            setTimeout(() => {
+              let container = document.getElementById('tree')
+              if (container) container.scrollTop = container.scrollHeight
+            }, 100)
           })
           .catch(err => { console.error(err) })
       },
