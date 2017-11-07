@@ -102,6 +102,10 @@ let template = [
         click: () => { shell.openExternal('https://epicjournal.xyz/docs/') }
       },
       {
+        label: 'Keyboard Shortcuts',
+        click: () => { shell.openExternal('https://epicjournal.xyz/docs/#shortcuts') }
+      },
+      {
         label: 'Donate',
         click: () => { shell.openExternal('https://epicjournal.xyz/donate/') }
       },

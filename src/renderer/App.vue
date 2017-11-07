@@ -18,7 +18,7 @@
     }
 
     body, p, button, input {
-        font-family: 'Segoe UI', sans-serif;
+        font-family: Segoe UI, sans-serif;
     }
 
     body {

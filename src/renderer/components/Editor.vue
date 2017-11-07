@@ -42,8 +42,8 @@
 
   let defaultCSS = `
 body {
-    font-family: 'Segoe UI', sans-serif;
-    padding: 6px 10px;
+    font-family: Segoe UI, sans-serif !important;
+    padding: 8px 10px;
 }
 
 p {
