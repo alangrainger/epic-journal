@@ -99,7 +99,7 @@ let template = [
     submenu: [
       {
         label: 'Help',
-        click: () => { shell.openExternal('https://epicjournal.xyz/features/#usage') }
+        click: () => { shell.openExternal('https://epicjournal.xyz/docs/') }
       },
       {
         label: 'Donate',
