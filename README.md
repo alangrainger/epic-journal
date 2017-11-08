@@ -69,14 +69,11 @@ I'll be working towards feature parity with The Journal, but the next things I'm
 
 - `yarn run build`
 
-### MacOS
+### MacOS / Linux
 
 **NOTE: I haven't yet got unix-sqlcipher to compile properly on Mac. If you know how, let me know!** 
 
-There is an unresolved issue with cross-sqlcipher and yarn, 
-so the source files are set up for my Windows dev machine.
-
-To build on MacOS, you will need to make two changes:
+To build on MacOS / Linux, you will need to make two changes:
 
 1. In `package.json`, change `"win-sqlcipher": "^0.0.4"` to be `"unix-sqlcipher": "^0.0.4"`
 
