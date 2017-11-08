@@ -1,10 +1,7 @@
 # Epic Journal
 
-A cross-platform encrypted daily journal / diary app, with full CSS styling. It is built with Sqlite3 and 
+A free cross-platform encrypted daily journal / diary app, with full CSS styling. It is built with Sqlite3 and 
 SQLcipher with AES 256 CBC encryption.
-
-**NOTE: I have not paid for a Windows code-signing certificate, so you will get a warning when you
-try to install it.**
 
 Download the [latest release here](https://github.com/alangrainger/epic-journal/releases/latest).
 
