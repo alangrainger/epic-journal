@@ -48,7 +48,11 @@ let template = [
       {role: 'zoomin'},
       {role: 'zoomout'},
       {type: 'separator'},
-      {role: 'togglefullscreen'}
+      {
+        label: 'Fullscreen Mode',
+        accelerator: 'F11',
+        click: () => { mainWindow.webContents.send('goto', 'fullscreen') }
+      }
     ]
   },
   {

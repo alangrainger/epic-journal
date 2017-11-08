@@ -97,39 +97,6 @@
       }
     },
     mounted: function () {
-      // Listen for goto commands from main menu
-      this.$electron.ipcRenderer.on('goto', (event, arg) => {
-        switch (arg) {
-          case 'today':
-            if (this.$router.currentRoute.name !== 'main') {
-              this.$router.push('main')
-            }
-            this.date = this.$moment().format(this.$db.DATE_DAY)
-            break
-          case 'previous':
-            if (this.$router.currentRoute.name !== 'main') break
-            this.$db.get('SELECT date FROM entries WHERE DATE(date) < DATE(?) ORDER BY date DESC LIMIT 1', this.date)
-              .then(row => {
-                if (row && row.date) this.date = row.date
-              })
-            break
-          case 'random':
-            if (this.$router.currentRoute.name !== 'main') break
-            this.$db.get('SELECT date FROM entries WHERE entry_id IN (SELECT entry_id FROM entries ORDER BY RANDOM() LIMIT 1)')
-              .then(row => {
-                if (row && row.date) this.date = row.date
-              })
-            break
-          case 'next':
-            if (this.$router.currentRoute.name !== 'main') break
-            this.$db.get('SELECT date FROM entries WHERE DATE(date) > DATE(?) ORDER BY date ASC LIMIT 1', this.date)
-              .then(row => {
-                if (row && row.date) this.date = row.date
-              })
-            break
-        }
-      })
-
       // Load existing entry if there is one
       this.getEntryByDate(this.date)
 
@@ -350,6 +317,19 @@
           style = styles.join(', ') + ' { background-color: #D0E4F8; }'
         }
         this.calendarStyle = style
+      },
+      goFullscreen () {
+        let win = require('electron').remote.getCurrentWindow()
+
+        if (!win.isFullScreen()) {
+          // Set fullscreen mode
+          win.setFullScreen(true)
+        } else {
+          // Go back to normal mode
+          win.setFullScreen(false)
+        }
+
+        console.log('fullscreen')
       }
     },
     beforeDestroy: function () {
