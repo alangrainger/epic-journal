@@ -221,7 +221,7 @@ blockquote::after {
             resize: false,
             branding: false,
             menubar: false,
-            toolbar: ['styleselect | undo redo | bold italic | blockquote codesample hr | bullist numlist | alignleft aligncenter alignright | indent outdent | link image table | removeformat'],
+            toolbar: ['styleselect | undo redo | bold italic | blockquote codesample hr | bullist numlist | alignleft aligncenter alignright | indent outdent | link image | removeformat'],
             style_formats: this.styleList,
             style_formats_merge: true,
             file_picker_types: 'image',

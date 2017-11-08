@@ -26,26 +26,7 @@ entries are safe for the long-term, with an open and known database format.
 
 ## Usage
 
-#### Using templates
-
-To create a template, click the Go menu, and then Edit Templates. Give your template a name and fill in some text
-and it will auto-save it for you.
-
-To insert a template, right-click anywhere in an entry and choose Insert Template. 
-
-#### Editing your own styles
-
-Click Go > Edit Styles.
-
-The editor I'm using is TinyMCE, and it requires you to specify if it's a block or inline level element.
-If you wanted to make a highlighted span class, you'd set it up like this:
-
-- Element: `span`
-- Type: `inline`
-- Class name: `myclass`
-- Style: `background-color: yellow;`
-
-This page needs a bit of work, but any styles you set up here will persist into future versions.
+[See the documentation here](https://epicjournal.xyz/docs/).
 
 ## Upcoming features
 
