@@ -158,6 +158,7 @@ blockquote::after {
         id: 'editor',
         editor: '',
         scrollCheck: '',
+        scrollCheckLength: 20,
         attachments: [],
         innerDocument: null,
         customCSS: '',
@@ -213,6 +214,7 @@ blockquote::after {
           this.editor.setContent(content)
           if (focus) this.editor.focus()
           this.updateWordCount()
+          this.scrollCheck = this.editor.getContent().substring(this.editor.getContent().length - this.scrollCheckLength)
         }
       },
       createEditor () {
@@ -234,8 +236,7 @@ blockquote::after {
 
                 // Function to scoll to bottom of editor pane when typing at the bottom
                 let check = this.editor.getContent()
-                let length = 20
-                check = check.substring(check.length - length)
+                check = check.substring(check.length - this.scrollCheckLength)
                 if (check !== this.scrollCheck) {
                   this.innerDocument.body.scrollTop = this.innerDocument.body.scrollHeight
                 }
