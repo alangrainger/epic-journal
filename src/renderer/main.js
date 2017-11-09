@@ -19,7 +19,7 @@ if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
 Vue.config.productionTip = false
 
 /* eslint-disable no-new */
-new Vue({
+let vm = new Vue({
   components: {App},
   router,
   // store,
@@ -33,44 +33,39 @@ electron.ipcRenderer.on('route', (event, arg) => {
 
 // Listen for goto commands from main menu
 electron.ipcRenderer.on('goto', (event, arg) => {
+  // Get the current Vue instance
+  let component = router.currentRoute.matched[0].instances.default
+
   switch (arg) {
     case 'today':
       if (router.currentRoute.name !== 'main') {
         router.push('main')
       }
-      this.date = this.$moment().format(this.$db.DATE_DAY)
+      component.date = moment().format(db.DATE_DAY)
       break
     case 'previous':
       if (router.currentRoute.name !== 'main') break
-      this.$db.get('SELECT date FROM entries WHERE DATE(date) < DATE(?) ORDER BY date DESC LIMIT 1', this.date)
+      db.get('SELECT date FROM entries WHERE DATE(date) < DATE(?) ORDER BY date DESC LIMIT 1', component.date)
         .then(row => {
-          if (row && row.date) this.date = row.date
+          if (row && row.date) component.date = row.date
         })
       break
     case 'random':
       if (router.currentRoute.name !== 'main') break
-      console.log('random')
-      this.$db.get('SELECT date FROM entries WHERE entry_id IN (SELECT entry_id FROM entries ORDER BY RANDOM() LIMIT 1)')
+      db.get('SELECT date FROM entries WHERE entry_id IN (SELECT entry_id FROM entries WHERE folder_id = 1 ORDER BY RANDOM() LIMIT 1)')
         .then(row => {
-          if (row && row.date) this.date = row.date
+          if (row && row.date) component.date = row.date
         })
       break
     case 'next':
       if (router.currentRoute.name !== 'main') break
-      this.$db.get('SELECT date FROM entries WHERE DATE(date) > DATE(?) ORDER BY date ASC LIMIT 1', this.date)
+      db.get('SELECT date FROM entries WHERE DATE(date) > DATE(?) ORDER BY date ASC LIMIT 1', component.date)
         .then(row => {
-          if (row && row.date) this.date = row.date
+          if (row && row.date) component.date = row.date
         })
       break
     case 'fullscreen':
-      if (router.currentRoute.name !== 'main') {
-        router.push('main')
-      } else {
-        console.log('going')
-        // this.goFullscreen()
-        let vm = router.currentRoute.matched[0].instances.default
-        vm.goFullscreen()
-      }
+      goFullscreen()
       break
   }
 })
@@ -81,4 +76,21 @@ if (!config.get('journal')) {
 } else {
   // Send them to the login screen
   router.push('password')
+}
+
+function goFullscreen () {
+  let win = require('electron').remote.getCurrentWindow()
+
+  if (!win.isFullScreen()) {
+    // Set fullscreen mode
+    let bounds = win.getBounds()
+    console.log(bounds)
+    console.log(vm)
+    vm.$el.style.width = '400px' // bounds.width
+    vm.$el.style.height = '400px' // bounds.height
+    // win.setFullScreen(true)
+  } else {
+    // Go back to normal mode
+    win.setFullScreen(false)
+  }
 }

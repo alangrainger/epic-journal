@@ -273,7 +273,7 @@ function showAbout () {
     type: 'none',
     buttons: ['OK'],
     title: 'About Epic Journal',
-    message: 'Epic Journal v' + version + '\n\nCreated by Alan Grainger'
+    message: 'Epic Journal v' + version + '\n\nCreated by Alan Grainger\n\nhttps://epicjournal.xyz/'
   })
 }
 

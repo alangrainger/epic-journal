@@ -317,19 +317,6 @@
           style = styles.join(', ') + ' { background-color: #D0E4F8; }'
         }
         this.calendarStyle = style
-      },
-      goFullscreen () {
-        let win = require('electron').remote.getCurrentWindow()
-
-        if (!win.isFullScreen()) {
-          // Set fullscreen mode
-          win.setFullScreen(true)
-        } else {
-          // Go back to normal mode
-          win.setFullScreen(false)
-        }
-
-        console.log('fullscreen')
       }
     },
     beforeDestroy: function () {
