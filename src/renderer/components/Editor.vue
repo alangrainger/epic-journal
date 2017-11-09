@@ -80,6 +80,8 @@ h4 {
     margin: 1em 0 0.3em 0;
 }
 
+hr { margin: 2em 0; }
+
 blockquote {
     display: block;
     background: #fff;
