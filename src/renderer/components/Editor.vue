@@ -43,7 +43,7 @@
   let defaultCSS = `
 body {
     font-family: Segoe UI, sans-serif !important;
-    padding: 8px 10px;
+    padding: 12px 14px 4px 14px;
 }
 
 p {
@@ -155,7 +155,9 @@ blockquote::after {
       return {
         id: 'editor',
         editor: '',
+        scrollCheck: '',
         attachments: [],
+        innerDocument: null,
         customCSS: '',
         styleList: [],
         tagList: {},
@@ -217,12 +219,26 @@ blockquote::after {
             init_instance_callback: (editor) => {
               // Set the editor instance
               this.editor = editor
+              // Set the iframe document
+              let iframe = document.getElementById('editor_ifr')
+              this.innerDocument = iframe.contentDocument || iframe.contentWindow.document
               // Get initial text
               if (this.entry.content) this.setContent(this.entry.content)
               // Watch when selection changes
               editor.on('NodeChange', (event) => { this.nodeChange(event) })
               // Update word count
-              editor.on('KeyUp', () => { this.updateWordCount() })
+              editor.on('KeyUp', () => {
+                this.updateWordCount()
+
+                // Function to scoll to bottom of editor pane when typing at the bottom
+                let check = this.editor.getContent()
+                let length = 20
+                check = check.substring(check.length - length)
+                if (check !== this.scrollCheck) {
+                  this.innerDocument.body.scrollTop = this.innerDocument.body.scrollHeight
+                }
+                this.scrollCheck = check
+              })
               // Back to main execution
               resolve()
             },
