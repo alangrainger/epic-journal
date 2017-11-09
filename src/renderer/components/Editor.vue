@@ -124,6 +124,25 @@ blockquote::after {
     content: "";
 }
   `
+  let scrollbarCSS = `
+/* Scrollbars */
+::-webkit-scrollbar-track
+{
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.1);
+    background-color: #FEFEFE;
+}
+
+::-webkit-scrollbar
+{
+    width: 6px;
+    background-color: #FEFEFE;
+}
+
+::-webkit-scrollbar-thumb
+{
+    background-color: #E0E0E0;
+}
+    `
 
   export default {
     props: {
@@ -320,6 +339,8 @@ blockquote::after {
       },
       getCustomCSS () {
         return new Promise((resolve, reject) => {
+          // Add the scrollbars
+          this.customCSS += scrollbarCSS
           let name = 'editorCSS'
           this.$db.getOption(name)
             .then((stored) => {

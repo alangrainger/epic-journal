@@ -1,6 +1,6 @@
 <template>
-    <div id="wrapper">
-        <main>
+    <div id="main">
+        <div id="wrapper">
             <div id="sidebar">
                 <p>Current templates:</p>
                 <button @click="clearEntry">Add New</button>
@@ -12,24 +12,22 @@
                 <input id="name" v-model="entry.name" placeholder="Template name" @keyup="entry.nameChanged = true"/>
                 <Editor ref="editor" :entry="entry"></Editor>
             </div>
-        </main>
+        </div>
     </div>
 </template>
 
-<style>
+<style scoped>
     * {
         box-sizing: border-box;
         margin: 0;
         padding: 0;
     }
 
-    #wrapper {
-        height: 100vh;
-        padding: 46px 60px;
-        width: 100vw;
+    #main {
+        height: 100%;
     }
 
-    main {
+    #wrapper {
         display: flex;
         height: 100%;
         justify-content: stretch;

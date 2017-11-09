@@ -1,5 +1,5 @@
 <template>
-    <div id="wrapper">
+    <div id="main">
         <div class="info">
             <h1>Styles</h1>
             <p>These styles will appear in the dropdown Formats list in the editor. If you wish to add raw CSS,
@@ -43,11 +43,6 @@
 </template>
 
 <style scoped>
-    #wrapper {
-        padding: 46px 60px;
-        width: 100%;
-    }
-
     tr {
         vertical-align: top;
     }

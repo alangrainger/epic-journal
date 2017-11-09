@@ -17,6 +17,17 @@
         padding: 0;
     }
 
+    #app {
+        width: 100vw;
+        height: 100vh;
+        overflow-y: auto;
+    }
+
+    #main {
+        padding: 46px 60px;
+        background: #FDFDFD;
+    }
+
     body, p, button, input {
         font-family: Segoe UI, sans-serif;
     }
@@ -39,5 +50,23 @@
         background: #569FF7;
         color: white;
         cursor: pointer;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar-track
+    {
+        -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.1);
+        background-color: #FEFEFE;
+    }
+
+    ::-webkit-scrollbar
+    {
+        width: 6px;
+        background-color: #FEFEFE;
+    }
+
+    ::-webkit-scrollbar-thumb
+    {
+        background-color: #E0E0E0;
     }
 </style>

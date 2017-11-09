@@ -19,7 +19,7 @@ if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
 Vue.config.productionTip = false
 
 /* eslint-disable no-new */
-let vm = new Vue({
+new Vue({
   components: {App},
   router,
   // store,
@@ -80,17 +80,25 @@ if (!config.get('journal')) {
 
 function goFullscreen () {
   let win = require('electron').remote.getCurrentWindow()
+  let wrapper = document.getElementById('app')
 
   if (!win.isFullScreen()) {
     // Set fullscreen mode
     let bounds = win.getBounds()
-    console.log(bounds)
-    console.log(vm)
-    vm.$el.style.width = '400px' // bounds.width
-    vm.$el.style.height = '400px' // bounds.height
-    // win.setFullScreen(true)
+    wrapper.style.width = bounds.width + 'px'
+    wrapper.style.height = bounds.height + 'px'
+    wrapper.style.position = 'absolute'
+    wrapper.style.top = '50%'
+    wrapper.style.left = '50%'
+    wrapper.style.marginLeft = '-' + Math.round(bounds.width / 2) + 'px'
+    wrapper.style.marginTop = '-' + Math.round(bounds.height / 2) + 'px'
+    wrapper.style.boxShadow = '0 0 50px 10px rgba(0, 0, 0, 0.6)'
+    document.body.style.backgroundImage = 'url(static/background.jpg)'
+    win.setFullScreen(true)
   } else {
     // Go back to normal mode
+    wrapper.style = null
+    document.body.style = null
     win.setFullScreen(false)
   }
 }

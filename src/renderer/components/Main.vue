@@ -1,26 +1,40 @@
 <template>
-    <div id="wrapper">
-        <main>
+    <div id="main">
+        <div id="wrapper">
             <div id="sidebar">
                 <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
-                <div id="tree">
+                <div id="tree" class="scrollbar">
                     <Tree :tree="tree" @update="getEntryByDate"></Tree>
                 </div>
             </div>
             <div id="content">
                 <Editor ref="editor" :entry="entry"></Editor>
             </div>
-        </main>
-        <div v-html="'<style>' + calendarStyle + '</style>'" style="display:none"></div>
-        <div v-html="'<style>' + customStyles + '</style>'" style="display:none"></div>
+            <div v-html="'<style>' + calendarStyle + '</style>'" style="display:none"></div>
+            <div v-html="'<style>' + customStyles + '</style>'" style="display:none"></div>
+        </div>
     </div>
 </template>
 
 <style>
+
+</style>
+
+<style scoped>
     * {
         box-sizing: border-box;
         margin: 0;
         padding: 0;
+    }
+
+    #main {
+        height: 100%;
+    }
+
+    #wrapper {
+        display: flex;
+        height: 100%;
+        justify-content: stretch;
     }
 
     .flatpickr-input {
@@ -31,18 +45,6 @@
         margin-bottom: 20px;
     }
 
-    #wrapper {
-        height: 100vh;
-        padding: 46px 60px;
-        width: 100vw;
-    }
-
-    main {
-        display: flex;
-        height: 100%;
-        justify-content: stretch;
-    }
-
     #sidebar {
         display: flex;
         flex-direction: column;
@@ -51,6 +53,8 @@
 
     #tree {
         overflow-y: auto;
+        padding: 0 30px;
+        margin-top: 20px;
     }
 
     #content {

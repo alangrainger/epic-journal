@@ -1,5 +1,5 @@
 <template>
-    <div id="wrapper">
+    <div id="main">
         <div class="info"><h1>Tags</h1></div>
         <table>
             <tr>
@@ -39,12 +39,6 @@
 </template>
 
 <style scoped>
-    #wrapper {
-        height: 100vh;
-        padding: 46px 60px;
-        width: 100vw;
-    }
-
     h1, h2, h3 {
         margin: 0.5em 0;
     }

@@ -27,11 +27,8 @@
 </template>
 
 <style scoped>
-    @import '../assets/font-awesome/css/font-awesome.min.css';
-
     #container {
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        padding: 12px 30px;
     }
 
     ul {
