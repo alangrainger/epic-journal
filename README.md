@@ -5,7 +5,7 @@ SQLcipher with AES 256 CBC encryption.
 
 Download the [latest release here](https://github.com/alangrainger/epic-journal/releases/latest).
 
-![Screenshot](screenshot.jpg?raw=true)
+[![Screenshot](screenshot-small.jpg)](screenshot.jpg)
 
 I built it as a free and open replacement for *The Journal* by DavidRM, which I have used 
 for many years. The main issues I wanted to solve were better styling, and the ability to know that my
