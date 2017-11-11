@@ -1,8 +1,22 @@
 <template>
-    <div id="container">
-        <ul class="tree-year">
-            <li v-for="(year, name) in tree">
-            <span @click="year.show = toggle(year.show)"><i v-if="year.show" class="fa fa-minus-square-o branch"></i><i
+    <div class="tree-item">
+        <div @click="click">
+            <i v-if="isFolder" :class="{ 'fa-minus-square-o': open, 'fa-plus-square-o': !open }" class="fa branch"></i>
+            <i :class="icon" :style="colour" class="fa icon"></i>
+            {{model.label}}
+        </div>
+        <Tree
+                v-if="isFolder"
+                v-show="open"
+                v-for="model in model.children"
+                :model="model"
+        >
+        </Tree>
+    </div>
+</template>
+
+<!--
+         <span @click="year.show = toggle(year.show)"><i v-if="year.show" class="fa fa-minus-square-o branch"></i><i
                     v-if="!year.show" class="fa fa-plus-square-o branch"></i> <i class="fa fa-archive icon-year"></i> {{ name }}</span>
                 <ul class="tree-month" v-show="year.show">
                     <li v-for="(month, name) in year.months">
@@ -18,21 +32,19 @@
                             ><span :class="isSelected(entry.date)" class="pointer"><i
                                     class="fa fa-file-text-o icon"></i> {{ entry.value }}</span>
                             </li>
-                        </ul>
-                    </li>
-                </ul>
-            </li>
-        </ul>
-    </div>
-</template>
-
+-->
 <style scoped>
     #container {
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     }
 
+    .tree-item {
+        padding-left: 30px;
+    }
+
     ul {
         list-style: none;
+        padding-left: 15px;
     }
 
     ul span {
@@ -74,26 +86,40 @@
         color: #333333;
     }
 
-    .icon-year {
+    .fa-archive {
         color: #284971;
     }
 </style>
 
 <script>
   export default {
+    name: 'Tree',
+    data () {
+      return {
+        open: false
+      }
+    },
     props: {
-      tree: {
-        type: Object,
-        required: true
+      model: Object
+    },
+    computed: {
+      isFolder: function () {
+        return this.model.hasOwnProperty('children')
+      },
+      icon: function () {
+        return (this.model.icon) ? 'fa-' + this.model.icon : ''
+      },
+      colour: function () {
+        if (this.model.colour) return {color: this.model.colour}
       }
     },
     methods: {
-      toggle: function (value) {
-        this.$forceUpdate()
-        return !value
-      },
-      isSelected: function (date) {
-        return (date === this.$parent.date) ? 'selected' : ''
+      click: function () {
+        if (this.isFolder) {
+          this.open = !this.open
+        } else {
+          console.log('entry')
+        }
       }
     }
   }
