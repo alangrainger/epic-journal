@@ -1,6 +1,6 @@
 <template>
     <div id="tree" class="scrollbar">
-        <Tree v-for="model in tree" :model="model"></Tree>
+        <Tree v-for="model in tree" :model="model" :selected="selected"></Tree>
     </div>
 </template>
 
@@ -14,36 +14,32 @@
     },
     data () {
       return {
-        tree: []
+        tree: [],
+        selected: null
       }
     },
     props: {},
     mounted: function () {
       this.createTree()
         .then(() => {
-          this.$set(this.findYear(2017), 'open', true)
-          this.findYear(2017).update()
+          this.findYear(2005)
+          // this.findYear(2017).open()
+          // this.findYear(2017).update()
         })
     },
     methods: {
-      template (type, id) {
-        id = parseInt(id)
-        switch (type) {
-          case 'year':
-            return {
-              id: id,
-              label: id.toString(),
-              icon: 'archive',
-              children: []
-            }
-          case 'month':
-            return {
-              id: id,
-              label: this.$moment(id, 'M').format('MMMM'), // convert month to word format,
-              icon: 'calendar',
-              children: []
-            }
-        }
+      expandToDate (date) {
+        let year = this.$moment(date, 'YYYY-MM-DD').format('YYYY')
+        // let month = this.$moment(date, 'YYYY-MM-DD').format('M')
+        let yearObj = this.findYear(year)
+        this.open(yearObj.open)
+      },
+      open (obj) {
+        obj.update()
+        this.$set(obj, 'isOpen', true)
+      },
+      close (obj) {
+        this.$set(obj, 'isOpen', false)
       },
       createTree () {
         return new Promise((resolve, reject) => {
@@ -58,93 +54,95 @@
             .catch(err => reject(err))
         })
       },
-      updateYear (obj) {
-        let year = obj.id
+      updateYear (yearObj) {
+        let year = yearObj.year
         // Get months for that year
         this.$db.all('SELECT DISTINCT strftime(\'%m\', date) as month FROM entries WHERE DATE(date) BETWEEN DATE(\'' + year + '-01-01\') AND date(\'' + year + '-12-31\') AND folder_id = 1 ORDER BY date ASC')
           .then(rows => {
             rows.forEach(row => {
-              this.findMonth(obj.children, row.month)
+              this.findMonth(yearObj, row.month)
             })
           })
       },
+      updateMonth (monthObj) {
+        let yearObj = monthObj.parent
+        let start = this.$moment(yearObj.year + '-' + monthObj.month, 'YYYY-M').startOf('month').format('YYYY-MM-DD')
+        let end = this.$moment(yearObj.year + '-' + monthObj.month, 'YYYY-M').endOf('month').format('YYYY-MM-DD')
+        // Get entries for that month
+        this.$db.all('SELECT * FROM entries WHERE DATE(date) BETWEEN DATE(\'' + start + '\') AND date(\'' + end + '\') AND folder_id = 1 ORDER BY date ASC')
+          .then(rows => {
+            let children = []
+            for (let i = 0; i < rows.length; i++) {
+              let row = rows[i]
+              let label = this.$moment(row.date, 'YYYY-MM-DD').format('DD - dddd')
+              children.push({
+                id: row.entry_id,
+                date: row.date,
+                label: label,
+                parent: monthObj,
+                icon: 'file-text-o',
+                action: () => {
+                  this.$emit('update', row.date)
+                  this.selected = row.entry_id
+                }
+              })
+            }
+            this.$set(monthObj, 'children', children)
+          })
+      },
       findYear (year) {
+        let vm = this
         year = parseInt(year)
         let index = this.tree.findIndex(e => {
           // Find existing index for that year
-          return e.id === year
+          return e.year === year
         })
         if (index === -1) {
           // If no existing element, create a new one
           index = this.tree.findIndex(e => {
-            return e.id > year
+            return e.year > year
           })
           if (index === -1) index = this.tree.length // no element found, add to end
-          this.tree.splice(index, 0, this.template('year', year))
-          let obj = this.tree[index]
-          this.$set(obj, 'update', () => { this.updateYear(obj) })
+          this.tree.splice(index, 0, {
+            year: year,
+            label: year.toString(),
+            icon: 'archive',
+            children: [],
+            update: function () { vm.updateYear(this) },
+            open: function () { vm.open(this) },
+            close: function () { vm.close(this) }
+          })
         }
 
         // Return the year object
         return this.tree[index]
       },
-      findMonth (array, month) {
+      findMonth (yearObj, month) {
+        let vm = this
         // Find existing index for that month, or create new index
         month = parseInt(month)
+        let array = yearObj.children
 
         let index = array.findIndex((e) => {
-          return e.id === month
+          return e.month === month
         })
-        if (index !== -1) {
-          return array[index]
-        } else {
-          let nextIndex = array.findIndex(e => {
-            return e.id > month
+        if (index === -1) {
+          index = array.findIndex(e => {
+            return e.month > month
           })
-          if (nextIndex === -1) nextIndex = array.length // no element found, add to end
-          array.splice(nextIndex, 0, this.template('month', month))
-          return array[nextIndex]
+          if (index === -1) index = array.length // no element found, add to end
+          array.splice(index, 0, {
+            month: month,
+            label: this.$moment(month, 'M').format('MMMM'), // convert month to word format,
+            icon: 'calendar',
+            children: [],
+            update: function () { vm.updateMonth(this) },
+            open: function () { vm.open(this) },
+            close: function () { vm.close(this) },
+            parent: yearObj
+          })
         }
-      },
-      addMonths (date) {
-        date = date || this.date
-        let year = this.$moment(date).format('YYYY')
-        console.log(this.tree)
-        let index = this.tree.findIndex((e) => {
-          console.log(e)
-          return e.id === 2017
-        })
-        console.log('i ' + index)
-        this.$db.all('SELECT DISTINCT strftime(\'%m\', date) as month FROM entries WHERE DATE(date) BETWEEN DATE(\'' + year + '-01-01\') AND date(\'' + year + '-12-31\') AND folder_id = 1 ORDER BY date ASC')
-          .then(rows => {
-            for (let i = 0; i < rows.length; i++) {
-              let month = this.$moment(rows[i].month, 'MM').format('MMMM') // convert month to word format
-              this.tree[index].children.push({
-                id: rows[i].month,
-                label: month,
-                icon: 'calendar',
-                children: []
-              })
-            }
-            console.log(this.tree)
-          })
-      },
-      addEntries (date) {
-        date = date || this.date
-        let year = this.$moment(date).format('YYYY')
-        let month = this.$moment(date).format('MM')
-        let start = this.$moment(date).startOf('month').format('YYYY-MM-DD')
-        let end = this.$moment(date).endOf('month').format('YYYY-MM-DD')
-        this.$db.all('SELECT * FROM entries WHERE DATE(date) BETWEEN DATE(\'' + start + '\') AND date(\'' + end + '\') AND folder_id = 1 ORDER BY date ASC')
-          .then(rows => {
-            for (let i = 0; i < rows.length; i++) {
-              let label = this.$moment(rows[i].date).format('DD - dddd')
-              this.$set(this.tree[year].children[month].children, rows[i].date, {
-                label: label,
-                icon: 'file-text-o'
-              })
-            }
-          })
+        return array[index]
       }
     }
   }

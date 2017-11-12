@@ -1,15 +1,16 @@
 <template>
     <div class="tree-item">
         <div @click="click">
-            <i v-if="isFolder" :class="{ 'fa-minus-square-o': open, 'fa-plus-square-o': !open }" class="fa branch"></i>
+            <span :class="isSelected"><i v-if="isFolder" :class="{ 'fa-minus-square-o': open, 'fa-plus-square-o': !open }" class="fa plus"></i>
             <i :class="icon" :style="colour" class="fa icon"></i>
-            {{model.label}}
+            {{model.label}}</span>
         </div>
         <Tree
                 v-if="isFolder"
                 v-show="open"
                 v-for="model in model.children"
                 :model="model"
+                :selected="selected"
         >
         </Tree>
     </div>
@@ -34,35 +35,19 @@
                             </li>
 -->
 <style scoped>
-    #container {
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    }
-
     .tree-item {
+        /* font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; */
         padding-left: 30px;
+        font-size: 16px;
     }
 
-    ul {
-        list-style: none;
-        padding-left: 15px;
-    }
-
-    ul span {
+    span {
         padding: 1px 3px;
-        cursor: default;
-    }
-
-    span.pointer {
         cursor: pointer;
     }
 
-    li {
-        line-height: 1.3em;
-    }
-
-    .branch {
+    .plus {
         font-size: 14px;
-        cursor: pointer;
     }
 
     .tree-year {
@@ -100,11 +85,12 @@
       }
     },
     props: {
-      model: Object
+      model: Object,
+      selected: Number
     },
     watch: {
-      'model.open': function () {
-        this.open = this.model.open
+      'model.isOpen': function () {
+        this.open = this.model.isOpen
       }
     },
     computed: {
@@ -112,11 +98,13 @@
         return this.model.hasOwnProperty('children')
       },
       hasChildren: function () {
-        console.log(this.model)
         return this.isFolder && this.model.children.length
       },
       isOpen: function () {
         return this.open && this.hasChildren()
+      },
+      isSelected: function () {
+        return (this.selected === this.model.id) ? 'selected' : null
       },
       icon: function () {
         return (this.model.icon) ? 'fa-' + this.model.icon : ''
@@ -127,10 +115,14 @@
     },
     methods: {
       click: function () {
-        if (this.hasChildren) {
-          this.open = !this.open
+        if (this.isFolder) {
+          if (this.open) {
+            this.model.close()
+          } else {
+            this.model.open()
+          }
         } else {
-          console.log('entry')
+          this.model.action()
         }
       }
     }
