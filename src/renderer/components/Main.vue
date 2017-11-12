@@ -3,9 +3,7 @@
         <div id="wrapper">
             <div id="sidebar">
                 <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
-                <div id="tree" class="scrollbar">
-                    <Tree v-for="model in tree" :model="model" @update="getEntryByDate"></Tree>
-                </div>
+                <EntriesTree @update="getEntryByDate"></EntriesTree>
             </div>
             <div id="content">
                 <Editor ref="editor" :entry="entry"></Editor>
@@ -68,14 +66,14 @@
   import flatPickr from 'vue-flatpickr-component'
   import 'flatpickr/dist/flatpickr.css'
   import Editor from './Editor.vue'
-  import Tree from './Tree.vue'
+  import EntriesTree from './EntriesTree.vue'
 
   export default {
     name: 'main',
     components: {
       flatPickr,
       Editor,
-      Tree
+      EntriesTree
     },
     data () {
       return {
@@ -96,18 +94,13 @@
           }
         },
         customStyles: '',
-        tree: {},
+        tree: [],
         editor: null
       }
     },
     mounted: function () {
       // Load existing entry if there is one
       this.getEntryByDate(this.date)
-
-      // Get entry tree
-      this.createTree()
-      this.addMonths(this.date)
-      this.addEntries(this.date)
 
       // Autosave entry
       this.autosaveTimer = setInterval(() => {
@@ -289,52 +282,7 @@
             }
           })
       },
-      createTree () {
-        // Get all years
-        this.$db.all('SELECT DISTINCT strftime(\'%Y\', date) as year FROM entries WHERE folder_id = 1 ORDER BY date ASC')
-          .then(rows => {
-            for (let i = 0; i < rows.length; i++) {
-              this.$set(this.tree, rows[i].year, {
-                label: rows[i].year,
-                icon: 'archive',
-                children: {}
-              })
-            }
-          })
-      },
-      addMonths (date) {
-        date = date || this.date
-        let year = this.$moment(date).format('YYYY')
-        this.$db.all('SELECT DISTINCT strftime(\'%m\', date) as month FROM entries WHERE DATE(date) BETWEEN DATE(\'' + year + '-01-01\') AND date(\'' + year + '-12-31\') AND folder_id = 1 ORDER BY date ASC')
-          .then(rows => {
-            for (let i = 0; i < rows.length; i++) {
-              let month = this.$moment(rows[i].month, 'MM').format('MMMM') // convert month to word format
-              this.$set(this.tree[year].children, rows[i].month, {
-                label: month,
-                icon: 'calendar',
-                children: {}
-              })
-            }
-          })
-      },
-      addEntries (date) {
-        date = date || this.date
-        let year = this.$moment(date).format('YYYY')
-        let month = this.$moment(date).format('MM')
-        let start = this.$moment(date).startOf('month').format('YYYY-MM-DD')
-        let end = this.$moment(date).endOf('month').format('YYYY-MM-DD')
-        this.$db.all('SELECT * FROM entries WHERE DATE(date) BETWEEN DATE(\'' + start + '\') AND date(\'' + end + '\') AND folder_id = 1 ORDER BY date ASC')
-          .then(rows => {
-            for (let i = 0; i < rows.length; i++) {
-              let label = this.$moment(rows[i].date).format('DD - dddd')
-              this.$set(this.tree[year].children[month].children, rows[i].date, {
-                label: label,
-                icon: 'file-text-o'
-              })
-            }
-          })
-      },
-      updateTree () {
+      /* updateTree () {
         this.$db.getEntryTree()
           .then((tree) => {
             // Set tree
@@ -347,7 +295,7 @@
             }, 100)
           })
           .catch(err => { console.error(err) })
-      },
+      }, */
       updateCalendarEntries (monthName) {
         /*
           Mark all dates with entries on the calendar

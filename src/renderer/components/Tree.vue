@@ -102,9 +102,21 @@
     props: {
       model: Object
     },
+    watch: {
+      'model.open': function () {
+        this.open = this.model.open
+      }
+    },
     computed: {
       isFolder: function () {
         return this.model.hasOwnProperty('children')
+      },
+      hasChildren: function () {
+        console.log(this.model)
+        return this.isFolder && this.model.children.length
+      },
+      isOpen: function () {
+        return this.open && this.hasChildren()
       },
       icon: function () {
         return (this.model.icon) ? 'fa-' + this.model.icon : ''
@@ -115,7 +127,7 @@
     },
     methods: {
       click: function () {
-        if (this.isFolder) {
+        if (this.hasChildren) {
           this.open = !this.open
         } else {
           console.log('entry')
