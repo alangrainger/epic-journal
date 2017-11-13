@@ -112,7 +112,11 @@
     watch: {
       date: function () {
         this.getEntryByDate(this.date)
-        this.updateCalendarEntries(this.date.substring(0, 4), this.date.substring(5, 7))
+        let newMonth = this.date.substring(0, 7)
+        if (newMonth !== this.calendarMonth) {
+          this.updateCalendarEntries(this.date.substring(0, 4), this.date.substring(5, 7))
+          this.calendarMonth = newMonth
+        }
       }
     },
     methods: {
