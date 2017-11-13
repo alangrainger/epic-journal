@@ -3,7 +3,7 @@
         <div id="wrapper">
             <div id="sidebar">
                 <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
-                <EntriesTree @update="getEntryByDate"></EntriesTree>
+                <EntriesTree @update="date = $event" :entry="entry"></EntriesTree>
             </div>
             <div id="content">
                 <Editor ref="editor" :entry="entry"></Editor>
@@ -49,12 +49,6 @@
         margin-right: 40px;
     }
 
-    #tree {
-        overflow-y: auto;
-        padding: 0 30px;
-        margin-top: 20px;
-    }
-
     #content {
         display: flex;
         flex-direction: column;
@@ -89,8 +83,7 @@
           inline: true,
           onMonthChange: (selectedDates, dateStr, instance) => {
             // Update calendar with new entry highlights
-            let month = this.$moment(instance.currentMonth + 1, 'M').format('MMMM') // from 0-11 to MMMM
-            this.updateCalendarEntries(month)
+            this.updateCalendarEntries(instance.currentYear, instance.currentMonth + 1)
           }
         },
         customStyles: '',
@@ -112,22 +105,14 @@
 
       // Set focus to editor
       this.$refs.editor.focus()
+
+      // Update calendar
+      this.updateCalendarEntries(this.date.substring(0, 4), this.date.substring(5, 7))
     },
     watch: {
       date: function () {
-        /*
-        Watch for when a new calendar date is picked, and then select the entry for that day.
-        If no entry, then create a new blank one.
-         */
-        // Update marked entries on calendar
-        let month = this.$moment(this.date).format('MMMM')
-        if (this.calendarMonth !== month) {
-          this.calendarMonth = month
-          this.updateCalendarEntries()
-        }
-
-        // Update entry
         this.getEntryByDate(this.date)
+        this.updateCalendarEntries(this.date.substring(0, 4), this.date.substring(5, 7))
       }
     },
     methods: {
@@ -146,10 +131,6 @@
           tags: []
         }
       },
-      clearEntry () {
-        this.entry = this.newEntry()
-        this.setContent(null)
-      },
       getEntryByDate (date) {
         if (this.$moment(date, this.$db.DATE_DAY).format(this.$db.DATE_DAY) !== date) {
           return false // invalid date
@@ -157,18 +138,21 @@
 
         // Check if we need to save the current entry
         this.save()
-        // And create a blank entry
-        this.clearEntry()
 
         this.date = date
-        this.entry.date = date
+        let data = this.newEntry()
         this.$db.getEntryByDate(date)
           .then((row) => {
             if (row && 'entry_id' in row && 'date' in row && 'content' in row) {
-              // If exisitng entry, then fill in existing data
-              this.entry.id = row.entry_id
-              this.entry.date = row.date
+              // If exisitng entry, then set entry object
+              data.id = row.entry_id
+              data.date = row.date
+              data.content = row.content
               this.setContent(row.content)
+              this.entry = data
+            } else {
+              this.setContent(null)
+              this.entry = this.newEntry()
             }
           })
           .catch((err) => {
@@ -201,7 +185,8 @@
             this.$db.deleteEntry(entry)
               .then(() => {
                 console.info('Empty entry ' + entry.id + ' has been pruned')
-                this.clearEntry()
+                this.setContent(null)
+                this.entry = this.newEntry()
                 this.updateTree()
               })
               .catch((error) => {
@@ -224,6 +209,7 @@
               entry.id = entryId
               console.info(this.$moment().format('HH:mm:ss') + ' created new entry', 'ID: ' + entry.id)
               this.updateTree()
+              this.updateCalendarEntries(this.entry.date.substring(0, 4), this.entry.date.substring(5, 7))
               // If the current entry hasn't already changed (through clicking the calendar etc)
               // update the ID
               if (this.date === entry.date) this.entry.id = entry.id
@@ -282,40 +268,21 @@
             }
           })
       },
-      /* updateTree () {
-        this.$db.getEntryTree()
-          .then((tree) => {
-            // Set tree
-            // this.tree = tree
-            this.updateCalendarEntries()
-            // Scroll the tree (this function is temporary)
-            setTimeout(() => {
-              let container = document.getElementById('tree')
-              if (container) container.scrollTop = container.scrollHeight
-            }, 100)
-          })
-          .catch(err => { console.error(err) })
-      }, */
-      updateCalendarEntries (monthName) {
+      updateCalendarEntries (year, month) {
         /*
           Mark all dates with entries on the calendar
          */
-        let year = this.$moment(this.date).format('YYYY')
-        let month = monthName || this.$moment(this.date).format('MMMM')
-        if (!this.tree || !this.tree[year] || !this.tree[year]['months'][month]) {
-          return // if the tree is not yet set
-        }
-        let entries = this.tree[year]['months'][month]['entries']
-        let styles = []
-        let style = ''
-        if (entries.length) {
-          for (let i = 0; i < entries.length; i++) {
-            let flatpickrDate = this.$moment(entries[i].date).format('MMMM D, YYYY')
-            styles[i] = 'span[aria-label="' + flatpickrDate + '"]'
-          }
-          style = styles.join(', ') + ' { background-color: #D0E4F8; }'
-        }
-        this.calendarStyle = style
+        let start = this.$moment(year + '-' + month, 'YYYY-M').startOf('month').format('YYYY-MM-DD')
+        let end = this.$moment(year + '-' + month, 'YYYY-M').endOf('month').format('YYYY-MM-DD')
+        this.$db.all('SELECT * FROM entries WHERE DATE(date) BETWEEN DATE(\'' + start + '\') AND date(\'' + end + '\') AND folder_id = 1 ORDER BY date ASC')
+          .then(rows => {
+            let styles = []
+            for (let i = 0; i < rows.length; i++) {
+              let flatpickrDate = this.$moment(rows[i].date).format('MMMM D, YYYY')
+              styles.push('span[aria-label="' + flatpickrDate + '"]')
+            }
+            this.calendarStyle = styles.join(', ') + ' { background-color: #D0E4F8; }'
+          })
       }
     },
     beforeDestroy: function () {

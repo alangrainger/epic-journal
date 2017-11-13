@@ -16,24 +16,6 @@
     </div>
 </template>
 
-<!--
-         <span @click="year.show = toggle(year.show)"><i v-if="year.show" class="fa fa-minus-square-o branch"></i><i
-                    v-if="!year.show" class="fa fa-plus-square-o branch"></i> <i class="fa fa-archive icon-year"></i> {{ name }}</span>
-                <ul class="tree-month" v-show="year.show">
-                    <li v-for="(month, name) in year.months">
-                    <span @click="month.show = toggle(month.show)"><i v-if="month.show"
-                                                               class="fa fa-minus-square-o branch"></i><i
-                            v-if="!month.show" class="fa fa-plus-square-o branch"></i> <i
-                            class="fa fa-calendar icon"></i> {{ name }}</span>
-
-                        <ul class="tree-entry" v-show="month.show">
-                            <li
-                                    v-for="entry in month.entries"
-                                    @click="$emit('update', entry.date)"
-                            ><span :class="isSelected(entry.date)" class="pointer"><i
-                                    class="fa fa-file-text-o icon"></i> {{ entry.value }}</span>
-                            </li>
--->
 <style scoped>
     .tree-item {
         /* font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; */
@@ -81,7 +63,6 @@
     name: 'Tree',
     data () {
       return {
-        open: false
       }
     },
     props: {
@@ -94,15 +75,18 @@
       }
     },
     computed: {
+      open: function () {
+        return this.model.isOpen
+      },
       isFolder: function () {
         return this.model.hasOwnProperty('children')
       },
       hasChildren: function () {
         return this.isFolder && this.model.children.length
       },
-      isOpen: function () {
+      /* isOpen: function () {
         return this.open && this.hasChildren()
-      },
+      }, */
       isSelected: function () {
         return (this.selected === this.model.id) ? 'selected' : null
       },

@@ -4,6 +4,15 @@
     </div>
 </template>
 
+<style scoped>
+    #tree {
+        overflow-y: auto;
+        padding: 0 10px;
+        margin-top: 20px;
+        height: 100%;
+    }
+</style>
+
 <script>
   import Tree from './Tree.vue'
 
@@ -18,25 +27,32 @@
         selected: null
       }
     },
-    props: {},
+    props: {entry: Object},
     mounted: function () {
       this.createTree()
         .then(() => {
-          this.findYear(2005)
-          // this.findYear(2017).open()
-          // this.findYear(2017).update()
+          this.expandToDate(this.$moment().format('YYYY-MM-DD'))
         })
+    },
+    watch: {
+      entry: function () {
+        this.selected = this.entry.id
+        this.expandToDate(this.entry.date)
+      }
     },
     methods: {
       expandToDate (date) {
-        let year = this.$moment(date, 'YYYY-MM-DD').format('YYYY')
-        // let month = this.$moment(date, 'YYYY-MM-DD').format('M')
+        // Expand to today
+        let year = date.substring(0, 4)
+        let month = date.substring(5, 7)
         let yearObj = this.findYear(year)
-        this.open(yearObj.open)
+        let monthObj = this.findMonth(yearObj, month)
+        monthObj.open()
       },
       open (obj) {
         obj.update()
         this.$set(obj, 'isOpen', true)
+        if (obj.parent) obj.parent.open()
       },
       close (obj) {
         this.$set(obj, 'isOpen', false)
@@ -108,6 +124,7 @@
             label: year.toString(),
             icon: 'archive',
             children: [],
+            isOpen: false,
             update: function () { vm.updateYear(this) },
             open: function () { vm.open(this) },
             close: function () { vm.close(this) }
