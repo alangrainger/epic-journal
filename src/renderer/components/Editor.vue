@@ -484,7 +484,7 @@ blockquote::after {
         for (let i = 0; i < parents.length; i++) {
           if (parents[i].className.startsWith('tag')) {
             let tagId = parents[i].className.substring(3)
-            names.push(this.tagList[tagId].name)
+            if (this.tagList[tagId]) names.push(this.tagList[tagId].name)
           }
         }
         this.statusBarTags = (names.length) ? 'Tags: ' + names.join(', ') : ''

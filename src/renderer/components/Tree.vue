@@ -1,7 +1,9 @@
 <template>
-    <div class="tree-item">
-        <div @click="click">
-            <span :class="isSelected"><i v-if="isFolder" :class="{ 'fa-minus-square-o': open, 'fa-plus-square-o': !open }" class="fa plus"></i>
+    <div class="branch">
+        <div @click="click" class="item">
+            <span :class="isSelected"><i v-if="isFolder"
+                                         :class="{ 'fa-minus-square-o': open, 'fa-plus-square-o': !open }"
+                                         class="fa plus"></i>
             <i :class="icon" :style="colour" class="fa icon"></i>
             {{model.label}}</span>
         </div>
@@ -9,18 +11,24 @@
                 v-if="isFolder"
                 v-show="open"
                 v-for="model in model.children"
+                :key="model.id"
                 :model="model"
                 :selected="selected"
+                @scrollHeight="updateScroll"
         >
         </Tree>
     </div>
 </template>
 
 <style scoped>
-    .tree-item {
+    .branch {
         /* font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; */
         padding-left: 30px;
         font-size: 16px;
+    }
+
+    .item {
+        margin: 2px 0;
     }
 
     span {
@@ -30,10 +38,6 @@
 
     .plus {
         font-size: 14px;
-    }
-
-    .tree-year {
-        margin-left: 0px;
     }
 
     .tree-month, .tree-entry {
@@ -62,8 +66,7 @@
   export default {
     name: 'Tree',
     data () {
-      return {
-      }
+      return {}
     },
     props: {
       model: Object,
@@ -75,20 +78,27 @@
       }
     },
     computed: {
-      open: function () {
-        return this.model.isOpen
+      open: {
+        get: function () {
+          return this.model.isOpen
+        },
+        set: function () { }
       },
       isFolder: function () {
         return this.model.hasOwnProperty('children')
       },
-      hasChildren: function () {
-        return this.isFolder && this.model.children.length
-      },
-      /* isOpen: function () {
-        return this.open && this.hasChildren()
-      }, */
       isSelected: function () {
-        return (this.selected === this.model.id) ? 'selected' : null
+        if (this.selected === this.model.id) {
+          if (this.$el) {
+            this.updateScroll(this.$el.getBoundingClientRect())
+          } else {
+            setTimeout(() => {
+              if (this.$el) this.updateScroll(this.$el.getBoundingClientRect())
+            }, 100) // cleanup in case tree isn't updated in that time
+            // TODO this needs to be changed to promises
+          }
+          return 'selected'
+        }
       },
       icon: function () {
         return (this.model.icon) ? 'fa-' + this.model.icon : ''
@@ -108,6 +118,9 @@
         } else {
           this.model.action()
         }
+      },
+      updateScroll: function (bounds) {
+        this.$emit('scrollHeight', bounds)
       }
     }
   }

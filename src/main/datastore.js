@@ -368,13 +368,7 @@ function Datastore () {
       if (!date) reject(new Error('No date specified'))
       db.get('SELECT * FROM entries WHERE date = ?', [date])
         .then((row) => {
-          if (row) {
-            resolve(row)
-          } else {
-            let err = new Error('No entry found with date ' + date)
-            err.number = 101
-            reject(err)
-          }
+          resolve(row)
         })
         .catch((error) => {
           reject(error)

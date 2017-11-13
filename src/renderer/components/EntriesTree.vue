@@ -1,6 +1,7 @@
 <template>
     <div id="tree" class="scrollbar">
-        <Tree v-for="model in tree" :model="model" :selected="selected"></Tree>
+        <Tree v-for="model in tree" :key="model.id" :model="model" :selected="selected"
+              @scrollHeight="updateScroll"></Tree>
     </div>
 </template>
 
@@ -35,12 +36,25 @@
         })
     },
     watch: {
-      entry: function () {
-        this.selected = this.entry.id
+      'entry.id': function () {
         this.expandToDate(this.entry.date)
+        this.selected = this.entry.id
       }
     },
     methods: {
+      updateScroll (bounds) {
+        // Get top of the tree element
+        let top = this.$el.getBoundingClientRect().top
+        let bottom = this.$el.getBoundingClientRect().bottom
+        let scroll = this.$el.scrollTop
+        let scrollDiff = 0
+        if (bounds.top < top) {
+          scrollDiff = bounds.top - top
+        } else if (bounds.bottom > bottom) {
+          scrollDiff = bounds.bottom - bottom
+        }
+        this.$el.scrollTop = scroll + scrollDiff
+      },
       expandToDate (date) {
         // Expand to today
         let year = date.substring(0, 4)
@@ -50,12 +64,14 @@
         monthObj.open()
       },
       open (obj) {
-        obj.update()
-        this.$set(obj, 'isOpen', true)
-        if (obj.parent) obj.parent.open()
+        if (!obj.isOpen) {
+          obj.update()
+          this.$set(obj, 'isOpen', true)
+          if (obj.parent) obj.parent.open()
+        }
       },
       close (obj) {
-        this.$set(obj, 'isOpen', false)
+        if (obj.isOpen) this.$set(obj, 'isOpen', false)
       },
       createTree () {
         return new Promise((resolve, reject) => {
@@ -103,6 +119,7 @@
                 }
               })
             }
+            console.debug('Updating ' + monthObj.label)
             this.$set(monthObj, 'children', children)
           })
       },
@@ -120,6 +137,7 @@
           })
           if (index === -1) index = this.tree.length // no element found, add to end
           this.tree.splice(index, 0, {
+            id: 'date' + year,
             year: year,
             label: year.toString(),
             icon: 'archive',
@@ -134,9 +152,18 @@
         // Return the year object
         return this.tree[index]
       },
-      findMonth (yearObj, month) {
+      findMonth (yearOrObj, month) {
         let vm = this
+
         // Find existing index for that month, or create new index
+        let yearObj
+        if (yearOrObj === null || isNaN(month)) {
+          return // return if no year set
+        } else if (typeof yearOrObj === 'object') {
+          yearObj = yearOrObj
+        } else {
+          yearObj = this.findYear(yearOrObj)
+        }
         month = parseInt(month)
         let array = yearObj.children
 
@@ -149,6 +176,7 @@
           })
           if (index === -1) index = array.length // no element found, add to end
           array.splice(index, 0, {
+            id: 'date' + yearObj.year + month,
             month: month,
             label: this.$moment(month, 'M').format('MMMM'), // convert month to word format,
             icon: 'calendar',
