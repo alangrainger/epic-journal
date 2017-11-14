@@ -67,8 +67,8 @@
         if (!obj.isOpen) {
           obj.update()
           this.$set(obj, 'isOpen', true)
-          if (obj.parent) obj.parent.open()
         }
+        if (obj.parent) obj.parent.open()
       },
       close (obj) {
         if (obj.isOpen) this.$set(obj, 'isOpen', false)
