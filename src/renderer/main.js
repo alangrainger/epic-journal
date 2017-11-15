@@ -52,7 +52,7 @@ electron.ipcRenderer.on('goto', (event, arg) => {
       break
     case 'random':
       if (router.currentRoute.name !== 'main') break
-      db.get('SELECT date FROM entries WHERE entry_id IN (SELECT entry_id FROM entries WHERE folder_id = 1 ORDER BY RANDOM() LIMIT 1)')
+      db.get('SELECT date FROM entries WHERE folder_id = 1 ORDER BY RANDOM() LIMIT 1')
         .then(row => {
           if (row && row.date) component.date = row.date
         })
