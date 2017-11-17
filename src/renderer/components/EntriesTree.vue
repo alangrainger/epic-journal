@@ -47,21 +47,26 @@
     },
     methods: {
       bus (data) {
-        if (data.contextMenu) {
+        if (data.contextMenu && data.contextMenu.model.type === 'entry') {
+          let item = data.contextMenu
+
           // Add right-click handler
           const {remote} = require('electron')
           const {Menu, MenuItem} = remote
 
           const menu = new Menu()
-          menu.append(new MenuItem({label: 'MenuItem1', click () { console.log('item 1 clicked') }}))
-          menu.append(new MenuItem({type: 'separator'}))
-          menu.append(new MenuItem({label: 'MenuItem2', type: 'checkbox', checked: true}))
+          menu.append(new MenuItem({label: 'Copy entry link', click () { console.log(item.model.id) }}))
 
-          let model = data.contextMenu
-          console.log(model)
-          this.$set(model, 'highlight', true)
-          model.highlight = true
-          menu.popup(remote.getCurrentWindow())
+          console.log(item)
+          item.highlight = true
+          this.$nextTick(() => {
+            // For some reason, the setTimeout is required for the above highlight to update
+            setTimeout(() => {
+              menu.popup(remote.getCurrentWindow())
+              // Process is blocked until menu is closed
+              item.highlight = false
+            }, 0)
+          })
         }
       },
       updateScroll (bounds) {

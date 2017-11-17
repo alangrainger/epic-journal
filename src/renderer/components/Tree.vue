@@ -2,8 +2,8 @@
     <div class="branch">
         <div @click="click" class="item">
             <span :class="isSelected" @contextmenu.prevent="contextMenu"><i v-if="isFolder"
-                                                                            :class="{ 'fa-minus-square-o': open, 'fa-plus-square-o': !open }"
-                                                                            class="fa plus"></i>
+                                                                                       :class="{ 'fa-minus-square-o': open, 'fa-plus-square-o': !open }"
+                                                                                       class="fa plus"></i>
             <i :class="icon" :style="colour" class="fa icon"></i>
             {{model.label}}</span>
         </div>
@@ -131,8 +131,14 @@
         this.$emit('bus', model)
       },
       contextMenu: function () {
-        // this.$store.commit('CAPTURE_EVENT', this.model)
-        this.$emit('bus', {contextMenu: this.model})
+        this.$emit('bus', {contextMenu: this})
+      },
+      select: function () {
+        this.highlight = true
+        this.$forceUpdate()
+      },
+      deselect: function () {
+        this.highlight = false
       }
     }
   }

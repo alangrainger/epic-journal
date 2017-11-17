@@ -213,7 +213,9 @@ function createWindow () {
 }
 
 app.on('ready', function () {
-  // Register custom attachment protocol for serving images from the database
+  /*
+   * Register custom attachment protocol for serving images from the database
+   */
   protocol.registerBufferProtocol('attach', (request, callback) => {
     let url = require('url')
     let id = url.parse(request.url, true).hostname
@@ -230,7 +232,7 @@ app.on('ready', function () {
         })
     }
   }, (error) => {
-    if (error) console.log(error)
+    if (error) console.error(error)
   })
 
   // Set menus
