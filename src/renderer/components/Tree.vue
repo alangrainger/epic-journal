@@ -1,9 +1,9 @@
 <template>
     <div class="branch">
         <div @click="click" class="item">
-            <span :class="isSelected"><i v-if="isFolder"
-                                         :class="{ 'fa-minus-square-o': open, 'fa-plus-square-o': !open }"
-                                         class="fa plus"></i>
+            <span :class="isSelected" @contextmenu.prevent="contextMenu"><i v-if="isFolder"
+                                                                            :class="{ 'fa-minus-square-o': open, 'fa-plus-square-o': !open }"
+                                                                            class="fa plus"></i>
             <i :class="icon" :style="colour" class="fa icon"></i>
             {{model.label}}</span>
         </div>
@@ -14,6 +14,7 @@
                 :key="model.id"
                 :model="model"
                 :selected="selected"
+                @bus="bus"
                 @scrollHeight="updateScroll"
         >
         </Tree>
@@ -66,7 +67,9 @@
   export default {
     name: 'Tree',
     data () {
-      return {}
+      return {
+        highlight: false
+      }
     },
     props: {
       model: Object,
@@ -98,6 +101,8 @@
             // TODO this needs to be changed to promises
           }
           return 'selected'
+        } else if (this.highlight) {
+          return 'selected'
         }
       },
       icon: function () {
@@ -121,6 +126,13 @@
       },
       updateScroll: function (bounds) {
         this.$emit('scrollHeight', bounds)
+      },
+      bus: function (model) {
+        this.$emit('bus', model)
+      },
+      contextMenu: function () {
+        // this.$store.commit('CAPTURE_EVENT', this.model)
+        this.$emit('bus', {contextMenu: this.model})
       }
     }
   }

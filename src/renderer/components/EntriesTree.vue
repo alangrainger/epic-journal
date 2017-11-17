@@ -1,7 +1,7 @@
 <template>
     <div id="tree" class="scrollbar">
         <Tree v-for="model in tree" :key="model.id" :model="model" :selected="selected"
-              @scrollHeight="updateScroll"></Tree>
+              @scrollHeight="updateScroll" @bus="bus"></Tree>
     </div>
 </template>
 
@@ -34,6 +34,10 @@
         .then(() => {
           this.expandToDate(this.$moment().format('YYYY-MM-DD'))
         })
+
+      this.$on('bus', section => {
+        console.log(section)
+      })
     },
     watch: {
       'entry.id': function () {
@@ -42,6 +46,24 @@
       }
     },
     methods: {
+      bus (data) {
+        if (data.contextMenu) {
+          // Add right-click handler
+          const {remote} = require('electron')
+          const {Menu, MenuItem} = remote
+
+          const menu = new Menu()
+          menu.append(new MenuItem({label: 'MenuItem1', click () { console.log('item 1 clicked') }}))
+          menu.append(new MenuItem({type: 'separator'}))
+          menu.append(new MenuItem({label: 'MenuItem2', type: 'checkbox', checked: true}))
+
+          let model = data.contextMenu
+          console.log(model)
+          this.$set(model, 'highlight', true)
+          model.highlight = true
+          menu.popup(remote.getCurrentWindow())
+        }
+      },
       updateScroll (bounds) {
         // Get top of the tree element
         let top = this.$el.getBoundingClientRect().top
@@ -111,6 +133,7 @@
                 id: row.entry_id,
                 date: row.date,
                 label: label,
+                type: 'entry',
                 parent: monthObj,
                 icon: 'file-text-o',
                 action: () => {
