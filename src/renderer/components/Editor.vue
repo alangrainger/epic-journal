@@ -160,7 +160,6 @@ blockquote::after {
         scrollCheck: '',
         scrollCheckLength: 20,
         attachments: [],
-        innerDocument: null,
         customCSS: '',
         styleList: [],
         tagList: {},
@@ -221,11 +220,9 @@ blockquote::after {
         return new Promise((resolve) => {
           tinymce.init({
             init_instance_callback: (editor) => {
+              let vm = this
               // Set the editor instance
               this.editor = editor
-              // Set the iframe document
-              let iframe = document.getElementById('editor_ifr')
-              this.innerDocument = iframe.contentDocument || iframe.contentWindow.document
               // Get initial text
               if (this.entry.content) this.setContent(this.entry.content)
               // Watch when selection changes
@@ -238,10 +235,19 @@ blockquote::after {
                 let check = this.editor.getContent()
                 check = check.substring(check.length - this.scrollCheckLength)
                 if (check !== this.scrollCheck) {
-                  this.innerDocument.body.scrollTop = this.innerDocument.body.scrollHeight
+                  editor.getBody().scrollTop = editor.getBody().scrollHeight
                 }
                 this.scrollCheck = check
               })
+              // Set entry navigation link handler
+              editor.getBody().onclick = function (e) {
+                let protocol = 'entry://'
+                if (e.target.origin === protocol) {
+                  e.preventDefault()
+                  let id = e.target.href.substring(protocol.length)
+                  vm.$router.push({name: 'main', params: {id: id}})
+                }
+              }
               // Back to main execution
               resolve()
             },

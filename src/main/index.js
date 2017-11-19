@@ -235,6 +235,20 @@ app.on('ready', function () {
     if (error) console.error(error)
   })
 
+  /*
+   * Register custom protocol for entry navigation
+   */
+  protocol.registerHttpProtocol('entry', (request) => {
+    console.log(request)
+    let url = require('url')
+    let id = url.parse(request.url, true).hostname
+    if (id) {
+      console.log('protocol ' + id)
+    }
+  }, (error) => {
+    if (error) console.error(error)
+  })
+
   // Set menus
   const menu = Menu.buildFromTemplate(template)
   Menu.setApplicationMenu(menu)

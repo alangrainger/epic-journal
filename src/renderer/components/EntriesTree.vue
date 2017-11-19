@@ -17,6 +17,9 @@
 <script>
   import Tree from './Tree.vue'
 
+  const {remote, clipboard} = require('electron')
+  const {Menu, MenuItem} = remote
+
   export default {
     name: 'EntriesTree',
     components: {
@@ -49,18 +52,19 @@
       bus (data) {
         if (data.contextMenu && data.contextMenu.model.type === 'entry') {
           let item = data.contextMenu
+          item.highlight = true
 
           // Add right-click handler
-          const {remote} = require('electron')
-          const {Menu, MenuItem} = remote
-
           const menu = new Menu()
-          menu.append(new MenuItem({label: 'Copy entry link', click () { console.log(item.model.id) }}))
-
-          console.log(item)
-          item.highlight = true
+          menu.append(new MenuItem({
+            label: 'Copy entry link',
+            click () {
+              // Send new ID to router
+              clipboard.writeHTML('<a href="entry://' + item.model.id + '">test link</a>')
+            }
+          }))
           this.$nextTick(() => {
-            // For some reason, the setTimeout is required for the above highlight to update
+            // For some reason, the setTimeout is required for the above highlight to update, even with nextTick
             setTimeout(() => {
               menu.popup(remote.getCurrentWindow())
               // Process is blocked until menu is closed

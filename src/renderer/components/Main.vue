@@ -117,6 +117,10 @@
           this.updateCalendarEntries(this.date.substring(0, 4), this.date.substring(5, 7))
           this.calendarMonth = newMonth
         }
+      },
+      '$route.params.id': function (id) {
+        // Watch for route to be updated with new entry ID
+        console.log('routed ' + id)
       }
     },
     methods: {
@@ -134,6 +138,32 @@
           content: null,
           tags: []
         }
+      },
+      getEntryById (id) {
+        if (!id) return false
+
+        // Check if we need to save the current entry
+        this.save()
+
+        let data = this.newEntry()
+        this.$db.getById('entries', id)
+          .then((row) => {
+            if (row && 'entry_id' in row && 'date' in row && 'content' in row) {
+              // If exisitng entry, then set entry object
+              this.$store.dispatch('setEntry', {
+                id: row.entry_id,
+                date: row.date,
+                content: row.content
+              })
+              this.setContent(row.content)
+              this.entry = data
+            } else {
+              // Create new entry
+              this.setContent(null)
+              this.entry = this.newEntry()
+            }
+          })
+          .catch((err) => { console.error(err) })
       },
       getEntryByDate (date) {
         if (this.$moment(date, this.$db.DATE_DAY).format(this.$db.DATE_DAY) !== date) {
@@ -283,7 +313,7 @@
          */
         let start = this.$moment(year + '-' + month, 'YYYY-M').startOf('month').format(this.$db.DATE_DAY)
         let end = this.$moment(year + '-' + month, 'YYYY-M').endOf('month').format(this.$db.DATE_DAY)
-        this.$db.all('SELECT * FROM entries WHERE DATE(date) BETWEEN DATE(\'' + start + '\') AND date(\'' + end + '\') AND folder_id = 1 ORDER BY date ASC')
+        this.$db.all('SELECT date FROM entries WHERE DATE(date) BETWEEN DATE(\'' + start + '\') AND date(\'' + end + '\') AND folder_id = 1 ORDER BY date ASC')
           .then(rows => {
             let styles = []
             for (let i = 0; i < rows.length; i++) {
