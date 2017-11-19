@@ -120,7 +120,7 @@
       },
       '$route.params.id': function (id) {
         // Watch for route to be updated with new entry ID
-        console.log('routed ' + id)
+        this.getEntryById(id)
       }
     },
     methods: {
@@ -150,12 +150,11 @@
           .then((row) => {
             if (row && 'entry_id' in row && 'date' in row && 'content' in row) {
               // If exisitng entry, then set entry object
-              this.$store.dispatch('setEntry', {
-                id: row.entry_id,
-                date: row.date,
-                content: row.content
-              })
+              data.id = row.entry_id
+              data.date = row.date
+              data.content = row.content
               this.setContent(row.content)
+              this.date = row.date
               this.entry = data
             } else {
               // Create new entry
