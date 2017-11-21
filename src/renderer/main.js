@@ -29,7 +29,7 @@ new Vue({
 
 // Set up routing
 electron.ipcRenderer.on('route', (event, arg) => {
-  if (db.connected) router.push(arg)
+  if (db.connected) router.push({name: arg})
 })
 
 // Listen for goto commands from main menu
@@ -52,10 +52,9 @@ electron.ipcRenderer.on('goto', (event, arg) => {
         })
       break
     case 'random':
-      if (router.currentRoute.name !== 'main') break
-      db.get('SELECT date FROM entries WHERE folder_id = 1 ORDER BY RANDOM() LIMIT 1')
+      db.get('SELECT entry_id FROM entries WHERE folder_id = 1 ORDER BY RANDOM() LIMIT 1')
         .then(row => {
-          if (row && row.date) component.date = row.date
+          router.push({name: 'main', params: {id: row.entry_id}})
         })
       break
     case 'next':

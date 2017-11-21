@@ -3,7 +3,7 @@
         <div id="wrapper">
             <div id="sidebar">
                 <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
-                <EntriesTree ref="entriesTree" @update="date = $event" :entry="entry"></EntriesTree>
+                <EntriesTree ref="entriesTree" :entry="entry"></EntriesTree>
             </div>
             <div id="content">
                 <Editor ref="editor" :entry="entry"></Editor>
@@ -92,8 +92,13 @@
       }
     },
     mounted: function () {
-      // Load existing entry if there is one
-      this.getEntryByDate(this.date)
+      // Load specified entry if there is one
+      if (this.$route.params.id) {
+        this.getEntryById(this.$route.params.id)
+      } else {
+        // Load today's entry if there is one
+        this.getEntryByDate(this.date)
+      }
 
       // Autosave entry
       this.autosaveTimer = setInterval(() => {

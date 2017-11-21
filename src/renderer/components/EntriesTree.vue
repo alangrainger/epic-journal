@@ -52,6 +52,7 @@
       bus (data) {
         if (data.contextMenu && data.contextMenu.model.type === 'entry') {
           let item = data.contextMenu
+          let vm = this
           item.highlight = true
 
           // Add right-click handler
@@ -60,7 +61,11 @@
             label: 'Copy entry link',
             click () {
               // Send new ID to router
-              clipboard.writeHTML('<a href="entry://' + item.model.id + '">test link</a>')
+              vm.$db.getById('entries', item.model.id)
+                .then((row) => {
+                  let date = vm.$moment(row.date).format('dddd Do MMMM')
+                  clipboard.writeHTML('<a href="entry://' + item.model.id + '">' + date + '</a>')
+                })
             }
           }))
           this.$nextTick(() => {
@@ -146,8 +151,8 @@
                 parent: monthObj,
                 icon: 'file-text-o',
                 action: () => {
-                  this.$emit('update', row.date)
                   this.selected = row.entry_id
+                  this.$router.push({name: 'main', params: {id: row.entry_id}})
                 }
               })
             }
