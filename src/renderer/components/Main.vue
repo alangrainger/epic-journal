@@ -150,11 +150,11 @@
         // Check if we need to save the current entry
         this.save()
 
-        let data = this.newEntry()
         this.$db.getById('entries', id)
           .then((row) => {
             if (row && 'entry_id' in row && 'date' in row && 'content' in row) {
               // If exisitng entry, then set entry object
+              let data = this.newEntry()
               data.id = row.entry_id
               data.date = row.date
               data.content = row.content
@@ -198,35 +198,32 @@
       },
       save () {
         if (!this.$refs.editor.editor) return // editor hasn't loaded
-        let entryToSave = this.entry
         let liveContent = this.getContent()
-        if (entryToSave.content === liveContent) {
+        if (this.entry.content === liveContent) {
           return // entry has not changed - no need to save
         } else {
-          entryToSave.content = liveContent
+          this.entry.content = liveContent
         }
+
+        let entryToSave = this.entry
 
         // Save tags in DB
         this.updateTags(entryToSave)
 
-        if (!entryToSave.content || entryToSave.content === '<p><br></p>') {
-          /* Entry is empty
-             If it exists, then prune it from DB
-             '<p><br></p>' is the minimum content for an empty Quill editor */
+        if (!entryToSave.content) {
+          // Entry is empty. If it exists, then prune it from DB
           if (entryToSave.id) {
             this.$db.deleteEntry(entryToSave)
               .then(() => {
                 console.debug('Empty entry ' + entryToSave.id + ' has been pruned')
-                this.setContent(null)
+                this.entry = this.newEntry()
                 if (entryToSave.date) {
+                  // Update tree and calendar
                   let year = entryToSave.date.substring(0, 4)
                   let month = entryToSave.date.substring(5, 7)
-                  // Update month in tree
                   this.$refs.entriesTree.findMonth(year, month).update()
-                  // Update calendar
                   this.updateCalendarEntries(year, month)
                 }
-                this.entry = this.newEntry()
               })
               .catch((error) => {
                 console.error(error)
@@ -247,15 +244,14 @@
             .then((entryId) => {
               entryToSave.id = entryId
               console.debug(this.$moment().format('HH:mm:ss') + ' created new entry', 'ID: ' + entryToSave.id)
+              // If the current visible entry hasn't already changed (e.g. through clicking the calendar)
+              // then update the ID
+              if (this.date === entryToSave.date) this.entry.id = entryToSave.id
+              // Update tree and calendar
               let year = entryToSave.date.substring(0, 4)
               let month = entryToSave.date.substring(5, 7)
-              // Update month in tree
               this.$refs.entriesTree.findMonth(year, month).update()
-              // Update calendar
               this.updateCalendarEntries(year, month)
-              // If the current visible entry hasn't already changed (through clicking the calendar etc)
-              // update the ID
-              if (this.date === entryToSave.date) this.entry.id = entryToSave.id
             })
             .catch((err) => {
               console.error(err)

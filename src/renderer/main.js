@@ -40,9 +40,10 @@ electron.ipcRenderer.on('goto', (event, arg) => {
   switch (arg) {
     case 'today':
       if (router.currentRoute.name !== 'main') {
-        router.push('main')
+        router.push({name: 'main'})
+      } else {
+        component.date = moment().format(db.DATE_DAY)
       }
-      component.date = moment().format(db.DATE_DAY)
       break
     case 'previous':
       if (router.currentRoute.name !== 'main') break
