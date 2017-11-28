@@ -82,6 +82,8 @@ h4 {
 
 hr { margin: 2em 0; }
 
+a { cursor: pointer; }
+
 blockquote {
     display: block;
     background: #fff;
@@ -195,6 +197,8 @@ blockquote::after {
 
           // Add tags and templates to menus
           this.addMenus()
+          // Add keyboard shortcuts
+          this.addKeyboardShortcuts()
         })
         .catch(err => console.error(err))
     },
@@ -409,11 +413,26 @@ blockquote::after {
           text: 'Apply Tag',
           menu: this.tagContextItems
         })
+      },
+      addKeyboardShortcuts () {
         for (let i = 1; i <= 4; i++) {
           this.editor.addShortcut('ctrl+alt+' + i, 'Heading ' + i, () => { this.editor.formatter.apply('h' + i) })
         }
         this.editor.addShortcut('ctrl+shift+l', 'Bulleted list', () => { this.editor.execCommand('InsertUnorderedList') })
         this.editor.addShortcut('ctrl+shift+n', 'Numbered list', () => { this.editor.execCommand('InsertOrderedList') })
+        // Clear formatting: Ctrl + Space
+        this.editor.addShortcut('ctrl+32', 'Clear formatting', () => {
+          console.log('a')
+          let selection = this.editor.selection.getSel()
+          let node = this.editor.selection.getNode()
+          if (selection.type === 'Caret') {
+            // Nothing is currently selected, so let's select the current node
+            this.editor.selection.select(node)
+          }
+          let cursorLocation = this.editor.selection.getEnd()
+          this.editor.execCommand('RemoveFormat')
+          this.editor.selection.setCursorLocation(cursorLocation)
+        })
       },
       insertImage (callback) {
         let vm = this
