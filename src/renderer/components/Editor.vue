@@ -420,6 +420,8 @@ blockquote::after {
         }
         this.editor.addShortcut('ctrl+shift+l', 'Bulleted list', () => { this.editor.execCommand('InsertUnorderedList') })
         this.editor.addShortcut('ctrl+shift+n', 'Numbered list', () => { this.editor.execCommand('InsertOrderedList') })
+        // Horizontal rule: Ctrl + hyphen
+        this.editor.addShortcut('ctrl+189', 'Horizontal rule', () => { this.editor.execCommand('InsertHorizontalRule') })
         // Clear formatting: Ctrl + Space
         this.editor.addShortcut('ctrl+32', 'Clear formatting', () => {
           console.log('a')
