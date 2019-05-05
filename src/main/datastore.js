@@ -26,7 +26,7 @@ function Datastore () {
 
   this.openDatabase = function (password) {
     return new Promise(function (resolve, reject) {
-      let sqlite3 = require('win-sqlcipher')
+      let sqlite3 = require('@journeyapps/sqlcipher').verbose()
 
       let filename = global['config'].get('journal')
       password = password.replace(/'/g, '\'\'') // escape single quotes with two single quotes

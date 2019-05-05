@@ -44,11 +44,29 @@ I'll be working towards feature parity with The Journal, but the next things I'm
 
 ### Windows
 
-- `yarn install`
+It's quite difficult to get win-sqlcipher to work. Here are the steps that worked for me:
 
-- `yarn run dev`
+First, you need the right library files in your system directory. I got the DLL files from [DB Browser for SQLite](http://sqlitebrowser.org/) Windows build.
 
-- `yarn run build`
+I've shared them here. Copy them to your System32 folder:
+
+https://drive.google.com/file/d/0BwEyNB4Ss8kjLWVDVHFCVkRLT2s/view?usp=sharing
+
+**My build environment:**
+
+- Windows 10
+- Node 8.7.0
+- NPM 5.3.0 (this is important, you will get an error on a newer version. You can use [npm-windows-upgrade](https://www.npmjs.com/package/npm-windows-upgrade) to easily switch this)
+- windows-build-tools 1.3.2
+- electron 1.7.9
+- win-sqlcipher 0.0.4
+
+**Steps:**
+
+1. Copy DLLs to System32
+1. Install Windows Build Tools if you don't have them - `npm install -g windows-build-tools`
+1. npm install
+1. `.\node_modules\.bin\electrion-rebuild`
 
 ### MacOS / Linux
 
@@ -60,10 +78,4 @@ To build on MacOS / Linux, you will need to make two changes:
 
 1. In `src/main/datastore.js`, replace 'win-sqlcipher' with 'unix-sqlcipher'.
 
-Then build as above:
-
-- `yarn install`
-
-- `yarn run dev`
-
-- `yarn run build`
+Then build as normal.

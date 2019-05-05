@@ -16,9 +16,9 @@ export default new Router({
       component: require('@/components/Intro').default
     },
     {
-      path: '/main/:id?',
-      name: 'main',
-      component: require('@/components/Main').default
+      path: '/home/:id?',
+      name: 'home',
+      component: require('@/components/Home').default
     },
     {
       path: '/tags',

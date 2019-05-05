@@ -77,7 +77,7 @@
         this.message = 'loading...'
         db.openDatabase(password)
           .then(() => {
-            router.push('main')
+            router.push('home')
           })
           .catch((error) => {
             let vm = this
