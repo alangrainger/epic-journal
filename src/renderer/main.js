@@ -39,14 +39,14 @@ electron.ipcRenderer.on('goto', (event, arg) => {
 
   switch (arg) {
     case 'today':
-      if (router.currentRoute.name !== 'main') {
-        router.push({name: 'main'})
+      if (router.currentRoute.name !== 'home') {
+        router.push({name: 'home'})
       } else {
         component.date = moment().format(db.DATE_DAY)
       }
       break
     case 'previous':
-      if (router.currentRoute.name !== 'main') break
+      if (router.currentRoute.name !== 'home') break
       db.get('SELECT date FROM entries WHERE DATE(date) < DATE(?) ORDER BY date DESC LIMIT 1', component.date)
         .then(row => {
           if (row && row.date) component.date = row.date
@@ -55,11 +55,11 @@ electron.ipcRenderer.on('goto', (event, arg) => {
     case 'random':
       db.get('SELECT entry_id FROM entries WHERE folder_id = 1 ORDER BY RANDOM() LIMIT 1')
         .then(row => {
-          router.push({name: 'main', params: {id: row.entry_id}})
+          router.push({name: 'home', params: {id: row.entry_id}})
         })
       break
     case 'next':
-      if (router.currentRoute.name !== 'main') break
+      if (router.currentRoute.name !== 'home') break
       db.get('SELECT date FROM entries WHERE DATE(date) > DATE(?) ORDER BY date ASC LIMIT 1', component.date)
         .then(row => {
           if (row && row.date) component.date = row.date
