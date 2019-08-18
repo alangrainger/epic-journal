@@ -8,8 +8,4 @@ npm-debug.log
 npm-debug.log.*
 thumbs.db
 !.gitkeep
-/yarn-error.log
-.idea/
-testing.db
-package-lock.json
 yarn.lock
