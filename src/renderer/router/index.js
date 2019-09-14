@@ -7,8 +7,33 @@ export default new Router({
   routes: [
     {
       path: '/',
-      name: 'landing-page',
-      component: require('@/components/LandingPage').default
+      name: 'password',
+      component: require('@/components/Password').default
+    },
+    {
+      path: '/intro',
+      name: 'intro',
+      component: require('@/components/Intro').default
+    },
+    {
+      path: '/home/:id?',
+      name: 'home',
+      component: require('@/components/Home').default
+    },
+    {
+      path: '/tags',
+      name: 'tags',
+      component: require('@/components/Tags').default
+    },
+    {
+      path: '/styles',
+      name: 'styles',
+      component: require('@/components/Styles').default
+    },
+    {
+      path: '/templates',
+      name: 'templates',
+      component: require('@/components/Templates').default
     },
     {
       path: '*',

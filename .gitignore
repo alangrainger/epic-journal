@@ -9,3 +9,7 @@ npm-debug.log.*
 thumbs.db
 !.gitkeep
 yarn.lock
+.idea/workspace.xml
+.idea/workspace.xml
+src/main/index old version.js
+src/main/index.dev (2).js
