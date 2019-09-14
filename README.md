@@ -3,6 +3,18 @@
 A free cross-platform encrypted daily journal / diary app, with full CSS styling. It is built with Sqlite3 and 
 SQLcipher with AES 256 CBC encryption.
 
+### ⭐⭐⭐ Update 2019-09-14 ⭐⭐⭐
+
+I released the first version of Epic Journal in Nov 2017 after one month's coding experience.
+As you can imagine, it was a bit rough around the edges...
+
+I've been working on [a business project](https://www.easycrypto.nz/) since then and only just getting back into it now.
+However I'm coming back with 2 years of coding experience, so this time it's serious! 🚀 
+
+I've upgraded all the bits of framework to the latest versions and I've switched to @journeyapps/sqlcipher so we can now
+ build for MacOS and Linux without any issues.
+
+### Download
 Download the [latest release here](https://github.com/alangrainger/epic-journal/releases/latest).
 
 [![Screenshot](screenshot-small.jpg)](screenshot.jpg?raw=true)
