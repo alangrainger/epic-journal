@@ -1,7 +1,7 @@
 <template>
     <div id="editorContainer">
         <div :id="id"></div>
-        <div id="statusbar">{{ statusBarTags }}<span style="float:right">{{ wordCount }} </span></div>
+        <div id="statusbar">ID: {{ $root.entryId }} {{ $route.fullPath }} {{ statusBarTags }}<span style="float:right">{{ wordCount }} </span></div>
     </div>
 </template>
 

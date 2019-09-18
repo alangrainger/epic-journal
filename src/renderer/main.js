@@ -19,7 +19,10 @@ Vue.config.productionTip = false
 let vm = new Vue({
   components: {App},
   router,
-  template: '<App/>'
+  template: '<App/>',
+  data: {
+    entryId: null // entry ID
+  }
 }).$mount('#app')
 
 // Set up routing
@@ -50,7 +53,7 @@ electron.ipcRenderer.on('goto', async (event, arg) => {
       let rows = await db.all('SELECT entry_id FROM entries WHERE folder_id = 1 ORDER BY RANDOM() LIMIT 2')
       for (let row of rows) {
         // Loop through and route to the entry which ISN'T the current entry
-        if (row.entry_id !== vm.$route.params.id) {
+        if (row.entry_id !== vm.$root.entryId) {
           router.push({name: 'home', params: {id: row.entry_id}})
           return
         }
