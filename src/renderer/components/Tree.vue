@@ -2,8 +2,8 @@
     <div class="branch">
         <div @click="click" class="item">
             <span :class="isSelected" @contextmenu.prevent="contextMenu"><i v-if="isFolder"
-                                                                                       :class="{ 'fa-minus-square-o': open, 'fa-plus-square-o': !open }"
-                                                                                       class="fa plus"></i>
+                                                                            :class="{ 'fa-minus-square-o': open, 'fa-plus-square-o': !open }"
+                                                                            class="fa plus"></i>
             <i :class="icon" :style="colour" class="fa icon"></i>
             {{model.label}}</span>
         </div>
@@ -64,82 +64,82 @@
 </style>
 
 <script>
-  export default {
-    name: 'Tree',
-    data () {
-      return {
-        highlight: false
-      }
-    },
-    props: {
-      model: Object,
-      selected: Number
-    },
-    watch: {
-      'model.isOpen': function () {
-        this.open = this.model.isOpen
-      }
-    },
-    computed: {
-      open: {
-        get: function () {
-          return this.model.isOpen
-        },
-        set: function () { }
+export default {
+  name: 'Tree',
+  data () {
+    return {
+      highlight: false
+    }
+  },
+  props: {
+    model: Object,
+    selected: Number
+  },
+  watch: {
+    'model.isOpen': function () {
+      this.open = this.model.isOpen
+    }
+  },
+  computed: {
+    open: {
+      get: function () {
+        return this.model.isOpen
       },
-      isFolder: function () {
-        return this.model.hasOwnProperty('children')
-      },
-      isSelected: function () {
-        if (this.selected === this.model.id) {
-          if (this.$el) {
-            this.updateScroll(this.$el.getBoundingClientRect())
-          } else {
-            setTimeout(() => {
-              if (this.$el) this.updateScroll(this.$el.getBoundingClientRect())
-            }, 100) // cleanup in case tree isn't updated in that time
-            // TODO this needs to be changed to promises
-          }
-          return 'selected'
-        } else if (this.highlight) {
-          return 'selected'
-        }
-      },
-      icon: function () {
-        return (this.model.icon) ? 'fa-' + this.model.icon : ''
-      },
-      colour: function () {
-        if (this.model.colour) return {color: this.model.colour}
-      }
+      set: function () { }
     },
-    methods: {
-      click: function () {
-        if (this.isFolder) {
-          if (this.open) {
-            this.model.close()
-          } else {
-            this.model.open()
-          }
+    isFolder: function () {
+      return this.model.hasOwnProperty('children')
+    },
+    isSelected: function () {
+      if (this.selected === this.model.id) {
+        if (this.$el) {
+          this.updateScroll(this.$el.getBoundingClientRect())
         } else {
-          this.model.action()
+          setTimeout(() => {
+            if (this.$el) this.updateScroll(this.$el.getBoundingClientRect())
+          }, 100) // cleanup in case tree isn't updated in that time
+          // TODO this needs to be changed to promises
         }
-      },
-      updateScroll: function (bounds) {
-        this.$emit('scrollHeight', bounds)
-      },
-      bus: function (model) {
-        this.$emit('bus', model)
-      },
-      contextMenu: function () {
-        this.$emit('bus', {contextMenu: this})
-      },
-      select: function () {
-        this.highlight = true
-        this.$forceUpdate()
-      },
-      deselect: function () {
-        this.highlight = false
+        return 'selected'
+      } else if (this.highlight) {
+        return 'selected'
       }
+    },
+    icon: function () {
+      return (this.model.icon) ? 'fa-' + this.model.icon : ''
+    },
+    colour: function () {
+      if (this.model.colour) return {color: this.model.colour}
+    }
+  },
+  methods: {
+    click: function () {
+      if (this.isFolder) {
+        if (this.open) {
+          this.model.close()
+        } else {
+          this.model.open()
+        }
+      } else {
+        this.model.action()
+      }
+    },
+    updateScroll: function (bounds) {
+      this.$emit('scrollHeight', bounds)
+    },
+    bus: function (model) {
+      this.$emit('bus', model)
+    },
+    contextMenu: function () {
+      this.$emit('bus', {contextMenu: this})
+    },
+    select: function () {
+      this.highlight = true
+      this.$forceUpdate()
+    },
+    deselect: function () {
+      this.highlight = false
     }
   }
+}
 </script>

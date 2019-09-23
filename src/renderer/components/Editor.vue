@@ -226,7 +226,7 @@ export default {
       return new Promise((resolve) => {
         tinymce.init({
           init_instance_callback: (editor) => {
-            let vm = this
+            // let vm = this
             // Set the editor instance
             this.editor = editor
             // Get initial text
@@ -245,13 +245,10 @@ export default {
               }
               this.scrollCheck = check
             })
-            // Set entry navigation link handler
+            // Open entry links immediately without ctrl+click
             editor.getBody().onclick = function (e) {
-              let protocol = 'entry://'
-              if (e.target.origin === protocol) {
-                e.preventDefault()
-                let id = e.target.href.substring(protocol.length)
-                vm.$router.push({name: 'home', params: {id: id}})
+              if (e.target.origin === 'entry://') {
+                window.location.href = e.target.href
               }
             }
             // Back to main execution

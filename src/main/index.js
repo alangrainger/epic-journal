@@ -95,19 +95,19 @@ let template = [
       },
       {
         label: 'Go to Journal',
-        click: () => { mainWindow.webContents.send('route', 'main') }
+        click: () => { mainWindow.webContents.send('route', {name: 'main'}) }
       },
       {
         label: 'Edit Templates',
-        click: () => { mainWindow.webContents.send('route', 'templates') }
+        click: () => { mainWindow.webContents.send('route', {name: 'templates'}) }
       },
       {
         label: 'Edit Tags',
-        click: () => { mainWindow.webContents.send('route', 'tags') }
+        click: () => { mainWindow.webContents.send('route', {name: 'tags'}) }
       },
       {
         label: 'Edit Styles',
-        click: () => { mainWindow.webContents.send('route', 'styles') }
+        click: () => { mainWindow.webContents.send('route', {name: 'styles'}) }
       }
     ]
   },
@@ -185,9 +185,8 @@ function createWindow () {
    * Initial window options
    */
   mainWindow = new BrowserWindow({
-    height: 563,
-    useContentSize: true,
-    width: 1000
+    width: config.get('window.width') || 1154,
+    height: config.get('window.height') || 808
   })
 
   mainWindow.loadURL(winURL)
@@ -215,6 +214,18 @@ app.on('ready', () => {
         .catch((err) => {
           console.error(err)
         })
+    }
+  }, (error) => {
+    if (error) console.error(error)
+  })
+
+  /*
+   * Register custom protocol for entry navigation
+   */
+  protocol.registerHttpProtocol('entry', (request) => {
+    let matches = request.url.match(/entry:\/\/(\d+)/)
+    if (matches && matches.length) {
+      mainWindow.webContents.send('route', {name: 'home', params: {id: matches[1]}})
     }
   }, (error) => {
     if (error) console.error(error)

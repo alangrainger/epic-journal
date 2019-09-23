@@ -111,7 +111,7 @@ export default {
     this.updateCalendarEntries(this.date.substring(0, 4), this.date.substring(5, 7))
   },
   watch: {
-    date: function () {
+    date () {
       this.getEntryByDate(this.date)
       let newMonth = this.date.substring(0, 7)
       if (newMonth !== this.calendarMonth) {
@@ -119,7 +119,7 @@ export default {
         this.calendarMonth = newMonth
       }
     },
-    '$route.params.id': function (id) {
+    '$route.params.id' (id) {
       // Watch for route to be updated with new entry ID
       this.getEntryById(id)
     },
@@ -181,7 +181,7 @@ export default {
         .then((row) => {
           if (row && 'entry_id' in row && 'date' in row && 'content' in row) {
             // If exisitng entry, route to ID
-            if (row.entry_id !== this.$route.params.id) this.$router.push({name: 'home', params: {id: row.entry_id}})
+            if (row.entry_id !== this.$root.entryId) this.$router.push({name: 'home', params: {id: row.entry_id}})
           } else {
             // Create new entry
             this.setContent(null)

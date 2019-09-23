@@ -27,7 +27,7 @@ let vm = new Vue({
 
 // Set up routing
 electron.ipcRenderer.on('route', (event, arg) => {
-  if (db.connected) router.push({name: arg})
+  if (db.connected) router.push(arg)
 })
 
 // Listen for goto commands from main menu
