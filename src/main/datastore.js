@@ -459,6 +459,13 @@ function Datastore () {
     })
   }
 
+  /**
+   * Add an attachment into the database
+   *
+   * @param {string} mimetype - MIME type of the file
+   * @param {buffer} data - Attachment data stream
+   * @returns {Promise<unknown>}
+   */
   this.addAttachment = function (mimetype, data) {
     return new Promise(function (resolve, reject) {
       let created = moment().format(DATE_SQL)

@@ -1,6 +1,6 @@
 'use strict'
 
-import { app, BrowserWindow, dialog, Menu, shell } from 'electron'
+import { app, BrowserWindow, dialog, Menu, protocol, shell } from 'electron'
 import promiseIpc from 'electron-promise-ipc'
 
 import config from '../electron-store'
@@ -198,6 +198,28 @@ function createWindow () {
 }
 
 app.on('ready', () => {
+  /*
+   * Register custom attachment protocol for serving images from the database
+   */
+  protocol.registerBufferProtocol('attach', (request, callback) => {
+    let url = require('url')
+    let id = url.parse(request.url, true).hostname
+    if (id) {
+      db.getAttachment(id)
+        .then((row) => {
+          if (row) {
+            // eslint-disable-next-line
+            callback({mimeType: row.mime_type, data: row.data})
+          }
+        })
+        .catch((err) => {
+          console.error(err)
+        })
+    }
+  }, (error) => {
+    if (error) console.error(error)
+  })
+
   // Set menus
   const menu = Menu.buildFromTemplate(template)
   Menu.setApplicationMenu(menu)
