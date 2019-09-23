@@ -42,7 +42,10 @@ export default {
     return {
       editorId: 'editor',
       editor: '',
-      data: {},
+      data: {
+        id: null,
+        content: ''
+      },
       lastContent: null,
       scrollCheck: '',
       scrollCheckLength: 20,
@@ -91,10 +94,11 @@ export default {
     /**
      * Load data from DB if available, or create blank entry
      */
-    loadFromDb () {
+    async loadFromDb () {
+      console.log('Loading from DB')
       let content = ''
       try {
-        let data = this.$db.getById(this.table, this.id)
+        let data = await this.$db.getById(this.table, this.id)
         if (data) {
           this.data = data
           content = data.content // 'content' column from DB
@@ -126,16 +130,18 @@ export default {
     save () {
       if (!this.editor) return // editor hasn't loaded
       let liveContent = this.editor.getContent()
-      if (this.entry.content === liveContent) {
+      if (this.data.content === liveContent) {
         return // entry has not changed - no need to save
       } else {
-        this.entry.content = liveContent
+        console.log(liveContent)
+        console.log(this.data.content)
+        this.data.content = liveContent
       }
 
-      let entryToSave = this.entry
+      let entryToSave = this.data
 
       // Save tags in DB
-      this.updateTags(entryToSave)
+      // this.updateTags(entryToSave)
 
       if (!entryToSave.content) {
         // Entry is empty. If it exists, then prune it from DB
@@ -143,7 +149,7 @@ export default {
           this.$db.deleteEntry(entryToSave)
             .then(() => {
               console.debug('Empty entry ' + entryToSave.id + ' has been pruned')
-              this.entry = this.newEntry()
+              this.data = this.newEntry()
               this.$router.push({name: 'home'}) // change the route
               if (entryToSave.date) {
                 // Update tree and calendar
@@ -175,7 +181,7 @@ export default {
             // If the current visible entry hasn't already changed (e.g. through clicking the calendar)
             // then update the ID
             if (this.date === entryToSave.date) {
-              this.entry.id = entryToSave.id
+              this.data.id = entryToSave.id
               this.$router.push({name: 'home', params: {id: entryToSave.id}}) // change the route
             }
             // Update tree and calendar
@@ -197,7 +203,7 @@ export default {
             // Set the editor instance
             this.editor = editor
             // Get initial text
-            this.loadContent()
+            this.loadFromDb()
             // Watch when selection changes
             editor.on('NodeChange', (event) => { this.nodeChange(event) })
             // Update word count
