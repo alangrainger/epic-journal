@@ -21,6 +21,7 @@ let vm = new Vue({
   router,
   template: '<App/>',
   data: {
+    date: moment().format(db.DATE_DAY), // default to today's date
     entryId: null // entry ID
   }
 }).$mount('#app')

@@ -6,7 +6,7 @@
                 <EntriesTree ref="entriesTree" :entry="entry"></EntriesTree>
             </div>
             <div id="content">
-                <Editor ref="editor" :entry="entry"></Editor>
+                <Editor ref="editor" table="entries" :id="$root.entryId"></Editor>
             </div>
             <div v-html="'<style>' + calendarStyle + '</style>'" style="display:none"></div>
             <div v-html="'<style>' + customStyles + '</style>'" style="display:none"></div>

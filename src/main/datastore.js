@@ -1,7 +1,7 @@
 import moment from 'moment'
 import config from '../electron-store'
 
-const SCHEMA_VERSION = 6
+const SCHEMA_VERSION = 7
 
 const DATE_SQL = 'YYYY-MM-DD HH:mm:ss'
 const DATE_DAY = 'YYYY-MM-DD'
@@ -17,13 +17,6 @@ function Datastore () {
 
   let sql = false
   let db = this
-
-  // ID translation array
-  const primaryKeys = {
-    entries: 'entry_id',
-    templates: 'template_id',
-    tags: 'tag_id'
-  }
 
   this.openDatabase = function (password) {
     return new Promise(function (resolve, reject) {
@@ -150,7 +143,7 @@ function Datastore () {
         values.push(data[key])
       }
 
-      db.run('UPDATE ' + table + ' SET ' + columns.join(', ') + ' WHERE ' + primaryKeys[table] + ' = ' + id, values)
+      db.run('UPDATE ' + table + ' SET ' + columns.join(', ') + ' WHERE id = ' + id, values)
         .then(result => {
           resolve(result.changes)
         })
@@ -159,11 +152,9 @@ function Datastore () {
   }
   this.delete = function (table, id) {
     return new Promise(function (resolve, reject) {
-      // Reject if bad table name
-      if (!primaryKeys.hasOwnProperty(table)) reject(new Error('Invalid table specified for delete'))
       // Reject if ID not an integer
-      if (!parseInt(Number(id))) reject(new Error('Invalid ID specified for delete'))
-      db.run('DELETE FROM ' + table + ' WHERE ' + primaryKeys[table] + ' = ' + id)
+      if (!parseInt(id, 10)) reject(new Error('Invalid ID specified for delete'))
+      db.run('DELETE FROM ' + table + ' WHERE id = ?', [id])
         .then(result => {
           resolve(result.changes)
         })
@@ -180,13 +171,13 @@ function Datastore () {
       // Folders
       db.run(
         'CREATE TABLE IF NOT EXISTS folders(' +
-        'folder_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+        'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
         'name TEXT, ' +
         'type TEXT);')
         .then(() => {
           return db.run(
             'CREATE TABLE IF NOT EXISTS entries(' +
-            'entry_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+            'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
             'folder_id INTEGER, ' +
             'date TEXT, ' + // YYYY-MM-DD
             'created TEXT, ' +
@@ -201,7 +192,7 @@ function Datastore () {
         .then(() => {
           return db.run(
             'CREATE TABLE IF NOT EXISTS tags(' +
-            'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+            'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
             'name TEXT, ' +
             'type TEXT, ' +
             'style TEXT);')
@@ -223,7 +214,7 @@ function Datastore () {
         .then(() => {
           return db.run(
             'CREATE TABLE IF NOT EXISTS attachments(' +
-            'attachment_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+            'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
             'created TEXT, ' +
             'mime_type TEXT, ' +
             'data BLOB);')
@@ -231,7 +222,7 @@ function Datastore () {
         .then(() => {
           return db.run(
             'CREATE TABLE IF NOT EXISTS styles(' +
-            'style_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+            'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
             'name TEXT, ' +
             'type TEXT, ' +
             'element TEXT, ' +
@@ -241,7 +232,7 @@ function Datastore () {
         .then(() => {
           return db.run(
             'CREATE TABLE IF NOT EXISTS templates(' +
-            'template_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+            'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
             'name TEXT, ' +
             'created TEXT, ' +
             'modified TEXT, ' +
@@ -253,46 +244,52 @@ function Datastore () {
         })
     })
   }
-  const updateTables = function () {
-    return new Promise(function (resolve, reject) {
+  const updateTables = async () => {
+    try {
       // Get DB version
-      db.get('PRAGMA user_version;')
-        .then((row) => {
-          let version = row.user_version
-          if (!version) {
-            // New database
-            db.run('PRAGMA user_version = ' + SCHEMA_VERSION)
-          } else if (version < SCHEMA_VERSION) {
-            console.log('Outdated database schema, updating...')
-            if (version < 5) {
-              /*
-              Tag table was updated to include style and a style-type of inline or block
-               */
-              db.run('DROP TABLE tags')
-                .then(() => {
-                  db.run(
-                    'CREATE TABLE IF NOT EXISTS tags(' +
-                    'tag_id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-                    'name TEXT, ' +
-                    'type TEXT, ' +
-                    'style TEXT);')
-                })
-            }
-            if (version <= 6) {
-              /*
-              Multicolumn index_date added
-               */
-              db.run('DROP INDEX IF EXISTS index_date')
-                .then(() => {
-                  db.run('CREATE INDEX index_date ON entries(date, folder_id)')
-                })
-            }
-            db.run('PRAGMA user_version = ' + SCHEMA_VERSION)
-          }
-          resolve()
-        })
-        .catch(err => reject(err))
-    })
+      let row = await db.get('PRAGMA user_version;')
+      let version = row.user_version
+      if (!version) {
+        // New database
+        await db.run('PRAGMA user_version = ' + SCHEMA_VERSION)
+      } else if (version < SCHEMA_VERSION) {
+        console.log('Outdated database schema, updating...')
+        if (version < 5) {
+          /*
+          Tag table was updated to include style and a style-type of inline or block
+           */
+          await db.run('DROP TABLE tags')
+          await db.run(
+            'CREATE TABLE IF NOT EXISTS tags(' +
+            'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+            'name TEXT, ' +
+            'type TEXT, ' +
+            'style TEXT);')
+        }
+        if (version <= 6) {
+          /*
+          Multicolumn index_date added
+           */
+          await db.run('DROP INDEX IF EXISTS index_date')
+          await db.run('CREATE INDEX index_date ON entries(date, folder_id)')
+        }
+        if (version < 7) {
+          /*
+          Updating all tables to have standard 'id' fields, instead of unique ones
+           */
+          await db.run('ALTER TABLE attachments RENAME COLUMN attachment_id TO id;')
+          await db.run('ALTER TABLE entries RENAME COLUMN entry_id TO id;')
+          await db.run('ALTER TABLE folders RENAME COLUMN folder_id TO id;')
+          await db.run('ALTER TABLE styles RENAME COLUMN style_id TO id;')
+          await db.run('ALTER TABLE tags RENAME COLUMN tag_id TO id;')
+          await db.run('ALTER TABLE templates RENAME COLUMN template_id TO id;')
+        }
+        await db.run('PRAGMA user_version = ' + SCHEMA_VERSION)
+      }
+    } catch (e) {
+      console.log('Error updating database schema')
+      console.log(e)
+    }
   }
 
   const createDefaultData = function () {
@@ -333,7 +330,7 @@ function Datastore () {
   this.updateEntry = function (entry) {
     return new Promise(function (resolve, reject) {
       let modified = moment().format(DATE_SQL)
-      db.run('UPDATE entries SET modified = ?, content = ? WHERE entry_id = ?', [modified, entry.content, entry.id])
+      db.run('UPDATE entries SET modified = ?, content = ? WHERE id = ?', [modified, entry.content, entry.id])
         .then((ret) => {
           if (ret.changes) {
             resolve(ret.changes)
@@ -351,7 +348,7 @@ function Datastore () {
     return new Promise(function (resolve, reject) {
       // Delete from the database if the entry is blank
       if (entry.id && Number.isInteger(entry.id)) {
-        db.run('DELETE FROM entries WHERE entry_id = ?', [entry.id])
+        db.run('DELETE FROM entries WHERE id = ?', [entry.id])
           .then((ret) => {
             if (ret.changes) {
               resolve(ret.changes)
@@ -379,12 +376,17 @@ function Datastore () {
     })
   }
 
+  /**
+   * Get an entry from DB
+   *
+   * @param {string} table - Table name
+   * @param {number} id - Entry ID
+   * @returns {Promise<unknown>}
+   */
   this.getById = function (table, id) {
     return new Promise(function (resolve, reject) {
       if (!table) reject(new Error('No table specified'))
-
-      if (!primaryKeys.hasOwnProperty(table)) reject(new Error('Invalid table specified in getById'))
-      db.get('SELECT * FROM ' + table + ' WHERE ' + primaryKeys[table] + ' = ?', [id])
+      db.get('SELECT * FROM ' + table + ' WHERE id = ?', [id])
         .then((row) => {
           resolve(row)
         })
@@ -406,7 +408,7 @@ function Datastore () {
   this.getEntryTree = function () {
     return new Promise(function (resolve, reject) {
       let tree = {}
-      db.all('SELECT entry_id, date FROM entries ORDER BY date ASC')
+      db.all('SELECT id, date FROM entries ORDER BY date ASC')
         .then((rows) => {
           for (let i = 0; i < rows.length; i++) {
             /*
@@ -485,7 +487,7 @@ function Datastore () {
 
   this.getAttachment = function (id) {
     return new Promise(function (resolve, reject) {
-      db.get('SELECT * FROM attachments WHERE attachment_id = ?', [id])
+      db.get('SELECT * FROM attachments WHERE id = ?', [id])
         .then((row) => {
           resolve(row)
         })

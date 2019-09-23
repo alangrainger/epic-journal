@@ -1,135 +1,18 @@
 <template>
     <div id="editorContainer">
-        <div :id="id"></div>
+        <div :id="editorId"></div>
         <div id="statusbar">ID: {{ $root.entryId }} {{ $route.fullPath }} {{ statusBarTags }}<span style="float:right">{{ wordCount }} </span></div>
     </div>
 </template>
 
-<style>
-    body {
-        background: #FDFDFD;
-    }
-
-    #editorContainer {
-        display: flex;
-        flex-direction: column;
-        flex-grow: 1;
-        background: white;
-    }
-
-    /* Styles to force TinyMCE to flex */
-
-    .mce-tinymce,
-    .mce-tinymce > .mce-stack-layout,
-    .mce-tinymce > .mce-stack-layout > .mce-edit-area,
-    #editor_ifr {
-        display: flex !important;
-        flex-direction: column;
-        flex-grow: 1;
-    }
-
-    #statusbar {
-        font-size: 12px;
-        background: #f0f0f0;
-        padding: 3px 6px;
-        color: #404040;
-    }
-</style>
-
 <script>
 import { nativeImage } from 'electron'
+import fs from 'fs'
+import path from 'path'
 
 let tinymce = require('tinymce')
 tinymce.baseURL = 'static/tinymce'
 
-let defaultCSS = `
-body {
-    font-family: Segoe UI, sans-serif !important;
-    padding: 12px 14px 4px 14px;
-}
-
-p {
-    font-size: 13pt;
-    margin: 0 0 0.8em 0;
-    padding: 0;
-}
-
-li {
-    font-size: 13pt;
-}
-
-h1 {
-    font-size: 20pt;
-    margin-bottom: 0.7em;
-}
-
-h2 {
-    font-size: 18pt;
-    font-weight: normal;
-    margin: 1em 0 0.7em 0;
-}
-
-h3 {
-    font-size: 16pt;
-    font-weight: normal;
-    font-style: italic;
-    margin: 1em 0 0.7em 0;
-}
-
-h4 {
-    font-size: 13pt;
-    font-weight: bold;
-    margin: 1em 0 0.3em 0;
-}
-
-hr { margin: 2em 0; }
-
-a { cursor: pointer; }
-
-blockquote {
-    display: block;
-    background: #fff;
-    padding: 16px 24px 16px 46px;
-    margin: 1.3em 0;
-    position: relative;
-
-    /*Font*/
-    font-family: Georgia, serif;
-    font-size: 13pt;
-    line-height: 1.4;
-    color: #666;
-    text-align: justify;
-
-    /*Borders - (Optional)*/
-    border-left: 15px solid #c76c0c;
-    border-right: 2px solid #c76c0c;
-
-    /*Box Shadow - (Optional)*/
-    -moz-box-shadow: 2px 2px 15px #e6e6e6;
-    -webkit-box-shadow: 2px 2px 15px #e6e6e6;
-    box-shadow: 2px 2px 15px #e6e6e6;
-}
-
-blockquote::before {
-    content: "\\201C"; /*Unicode for Left Double Quote*/
-
-    /*Font*/
-    font-family: Georgia, serif;
-    font-size: 60px;
-    font-weight: bold;
-    color: #999;
-
-    /*Positioning*/
-    position: absolute;
-    left: 10px;
-    top: 5px;
-}
-
-blockquote::after {
-    /*Reset to make sure*/
-    content: "";
-}
-  `
 let scrollbarCSS = `
 /* Scrollbars */
 ::-webkit-scrollbar-track
@@ -152,15 +35,15 @@ let scrollbarCSS = `
 
 export default {
   props: {
-    value: String,
-    entry: {
-      type: Object
-    }
+    id: Number,
+    table: String
   },
   data () {
     return {
-      id: 'editor',
+      editorId: 'editor',
       editor: '',
+      data: {},
+      lastContent: null,
       scrollCheck: '',
       scrollCheckLength: 20,
       attachments: [],
@@ -171,40 +54,57 @@ export default {
       tinymce: '',
       templates: [],
       statusBarTags: '',
-      wordCount: 'Words: 0'
+      wordCount: 'Words: 0',
+      autosaveTimer: null
     }
   },
-  mounted: function () {
+  watch: {
+    id () { this.loadFromDb() },
+    table () { this.loadFromDb() }
+  },
+  async mounted () {
     // Get custom dropdown styles before initialising the editor
-    this.getStyles()
-      .then(() => {
-        // Initialise the editor
-        return this.createEditor()
-      })
-      .then(() => {
-        // Get custom CSS
-        return this.getCustomCSS()
-      })
-      .then(() => {
-        // Get templates
-        return this.getTemplates()
-      })
-      .then(() => {
-        // Get tags
-        return this.getTags()
-      })
-      .then(() => {
-        // Inject the custom stylesheet
-        this.editor.dom.addStyle(this.customCSS)
+    await this.getStyles()
+    // Initialise the editor
+    await this.createEditor()
+    // Get custom CSS
+    await this.getCustomCSS()
+    // Get templates
+    await this.getTemplates()
+    // Get tags
+    await this.getTags()
+    // Inject the custom stylesheet
+    this.editor.dom.addStyle(this.customCSS)
+    // Add tags and templates to menus
+    this.addMenus()
+    // Add keyboard shortcuts
+    this.addKeyboardShortcuts()
 
-        // Add tags and templates to menus
-        this.addMenus()
-        // Add keyboard shortcuts
-        this.addKeyboardShortcuts()
-      })
-      .catch(err => console.error(err))
+    // Autosave entry
+    this.autosaveTimer = setInterval(() => {
+      this.save()
+    }, 3000) // every 3 seconds
+    // Save entry on close
+    window.addEventListener('unload', this.save)
   },
   methods: {
+    /**
+     * Load data from DB if available, or create blank entry
+     */
+    loadFromDb () {
+      let content = ''
+      try {
+        let data = this.$db.getById(this.table, this.id)
+        if (data) {
+          this.data = data
+          content = data.content // 'content' column from DB
+        }
+      } catch (e) {
+        console.log('Error loading DB content')
+        console.log(e)
+      }
+      this.setContent(content)
+    },
     focus () {
       if (this.editor) this.editor.focus()
     },
@@ -216,10 +116,77 @@ export default {
     setContent (content, focus = true) {
       if (this.editor) {
         if (!content) content = '' // if empty, set to a string, TinyMCE expects this
+        this.lastContent = content
         this.editor.setContent(content)
         if (focus) this.editor.focus()
         this.updateWordCount()
         this.scrollCheck = this.editor.getContent().substring(this.editor.getContent().length - this.scrollCheckLength)
+      }
+    },
+    save () {
+      if (!this.editor) return // editor hasn't loaded
+      let liveContent = this.editor.getContent()
+      if (this.entry.content === liveContent) {
+        return // entry has not changed - no need to save
+      } else {
+        this.entry.content = liveContent
+      }
+
+      let entryToSave = this.entry
+
+      // Save tags in DB
+      this.updateTags(entryToSave)
+
+      if (!entryToSave.content) {
+        // Entry is empty. If it exists, then prune it from DB
+        if (entryToSave.id) {
+          this.$db.deleteEntry(entryToSave)
+            .then(() => {
+              console.debug('Empty entry ' + entryToSave.id + ' has been pruned')
+              this.entry = this.newEntry()
+              this.$router.push({name: 'home'}) // change the route
+              if (entryToSave.date) {
+                // Update tree and calendar
+                let year = entryToSave.date.substring(0, 4)
+                let month = entryToSave.date.substring(5, 7)
+                this.$refs.entriesTree.findMonth(year, month).update()
+                this.updateCalendarEntries(year, month)
+              }
+            })
+            .catch((error) => {
+              console.error(error)
+            })
+        }
+      } else if (entryToSave.id) {
+        // Entry ID already exists, update existing entry
+        this.$db.updateEntry(entryToSave)
+          .then(() => {
+            console.debug(this.$moment().format('HH:mm:ss') + ' saved entry for ' + entryToSave.date, 'ID: ' + entryToSave.id)
+          })
+          .catch(() => {
+            console.error('FAILED TO SAVE ENTRY')
+          })
+      } else {
+        // No existing entry, so create new entry
+        this.$db.createNewEntry(entryToSave)
+          .then((entryId) => {
+            entryToSave.id = entryId
+            console.debug(this.$moment().format('HH:mm:ss') + ' created new entry', 'ID: ' + entryToSave.id)
+            // If the current visible entry hasn't already changed (e.g. through clicking the calendar)
+            // then update the ID
+            if (this.date === entryToSave.date) {
+              this.entry.id = entryToSave.id
+              this.$router.push({name: 'home', params: {id: entryToSave.id}}) // change the route
+            }
+            // Update tree and calendar
+            let year = entryToSave.date.substring(0, 4)
+            let month = entryToSave.date.substring(5, 7)
+            this.$refs.entriesTree.findMonth(year, month).update()
+            this.updateCalendarEntries(year, month)
+          })
+          .catch((err) => {
+            console.error(err)
+          })
       }
     },
     createEditor () {
@@ -230,10 +197,11 @@ export default {
             // Set the editor instance
             this.editor = editor
             // Get initial text
-            if (this.entry.content) this.setContent(this.entry.content)
+            this.loadContent()
             // Watch when selection changes
             editor.on('NodeChange', (event) => { this.nodeChange(event) })
             // Update word count
+            // Can't use 'Change' event for this, as it doesn't fire very often
             editor.on('KeyUp', () => {
               this.updateWordCount()
 
@@ -263,7 +231,7 @@ export default {
           image_description: false,
           image_title: true,
           image_dimensions: false,
-          selector: '#' + this.id,
+          selector: '#' + this.editorId,
           statusbar: false,
           resize: false,
           branding: false,
@@ -374,6 +342,7 @@ export default {
           .then((stored) => {
             if (!stored) {
               // If it's empty, add the default CSS
+              let defaultCSS = fs.readFileSync(path.resolve(__dirname, 'default-styles.css'), 'utf8')
               this.customCSS += defaultCSS
               this.$db.setOption(name, defaultCSS)
                 .then(resolve())
@@ -528,7 +497,42 @@ export default {
       tinymce.remove()
     } catch (err) {
       // TinyMCE throws an error each time, but the function works as expected. Not sure what the problem is.
+      console.log(err)
     }
+    this.save()
+    window.removeEventListener('unload', this.save)
+    clearInterval(this.autosaveTimer)
   }
 }
 </script>
+
+<style>
+    body {
+        background: #FDFDFD;
+    }
+
+    #editorContainer {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        background: white;
+    }
+
+    /* Styles to force TinyMCE to flex */
+
+    .mce-tinymce,
+    .mce-tinymce > .mce-stack-layout,
+    .mce-tinymce > .mce-stack-layout > .mce-edit-area,
+    #editor_ifr {
+        display: flex !important;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+
+    #statusbar {
+        font-size: 12px;
+        background: #f0f0f0;
+        padding: 3px 6px;
+        color: #404040;
+    }
+</style>
