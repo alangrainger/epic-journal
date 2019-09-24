@@ -6,6 +6,10 @@ const SCHEMA_VERSION = 7
 const DATE_SQL = 'YYYY-MM-DD HH:mm:ss'
 const DATE_DAY = 'YYYY-MM-DD'
 
+const now = function () {
+  return moment().format(DATE_SQL)
+}
+
 function Datastore () {
   this.DATE_DAY = DATE_DAY
   this.DATE_SQL = DATE_SQL
@@ -310,57 +314,43 @@ function Datastore () {
       })
   }
 
-  this.createNewEntry = function (data) {
-    return new Promise(function (resolve, reject) {
-      let created = moment().format(DATE_SQL)
-      db.run('INSERT INTO entries (folder_id, date, created, modified, content) VALUES (?, ?, ?, ?, ?)', ['1', data.date, created, created, data.content])
-        .then((ret) => {
-          if (ret.lastID) {
-            resolve(ret.lastID)
-          } else {
-            reject(new Error('Entry was not created'))
-          }
-        })
-        .catch((error) => {
-          reject(error)
-        })
-    })
+  this.createEntry = async (entry) => {
+    try {
+      if (entry.table.match(/\W/)) return false // invalid characters in table name
+      let res = await db.run(`INSERT INTO ${entry.table} (folder_id, date, created, modified, content) VALUES (?, ?, ?, ?, ?)`, [entry.folder_id, entry.date, now(), now(), entry.content])
+      // res.changes contains the number of rows deleted
+      return res && res.lastID ? res.lastID : false
+    } catch (e) {
+      console.log(e)
+      return false
+    }
   }
 
-  this.updateEntry = function (entry) {
-    return new Promise(function (resolve, reject) {
-      let modified = moment().format(DATE_SQL)
-      db.run('UPDATE entries SET modified = ?, content = ? WHERE id = ?', [modified, entry.content, entry.id])
-        .then((ret) => {
-          if (ret.changes) {
-            resolve(ret.changes)
-          } else {
-            reject(new Error('Entry was not updated'))
-          }
-        })
-        .catch((error) => {
-          reject(error)
-        })
-    })
+  this.updateEntry = async (entry) => {
+    try {
+      if (entry.table.match(/\W/)) return false // invalid characters in table name
+      if (parseInt(entry.id, 10) !== entry.id) return false // invalid characters in ID
+      let res = await db.run(`UPDATE ${entry.table} SET modified = ?, content = ? WHERE id = ?`, [now(), entry.content, entry.id])
+      console.log(res)
+      // res.changes contains the number of rows deleted
+      return res && res.changes
+    } catch (e) {
+      console.log(e)
+      return false
+    }
   }
 
-  this.deleteEntry = function (entry) {
-    return new Promise(function (resolve, reject) {
-      // Delete from the database if the entry is blank
-      if (entry.id && Number.isInteger(entry.id)) {
-        db.run('DELETE FROM entries WHERE id = ?', [entry.id])
-          .then((ret) => {
-            if (ret.changes) {
-              resolve(ret.changes)
-            } else {
-              reject(new Error('Entry was not deleted'))
-            }
-          })
-          .catch((error) => {
-            reject(error)
-          })
-      }
-    })
+  this.deleteEntry = async (entry) => {
+    try {
+      if (entry.table.match(/\W/)) return false // invalid characters in table name
+      if (parseInt(entry.id, 10) !== entry.id) return false // invalid characters in ID
+      let res = await db.run(`DELETE FROM ${entry.table} WHERE id = ?`, [entry.id])
+      // res.changes contains the number of rows deleted
+      return res && res.changes
+    } catch (e) {
+      console.log(e)
+      return false
+    }
   }
 
   this.getEntryByDate = function (date) {

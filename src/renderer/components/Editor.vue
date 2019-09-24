@@ -36,16 +36,16 @@ let scrollbarCSS = `
 export default {
   props: {
     id: Number,
-    table: String
+    table: {
+      type: String,
+      required: true
+    }
   },
   data () {
     return {
       editorId: 'editor',
       editor: '',
-      data: {
-        id: null,
-        content: ''
-      },
+      entry: this.newEntry(),
       lastContent: null,
       scrollCheck: '',
       scrollCheckLength: 20,
@@ -91,16 +91,33 @@ export default {
     window.addEventListener('unload', this.save)
   },
   methods: {
+    newEntry () {
+      return {
+        queue: [], // autosave queue
+        id: null,
+        table: this.table,
+        folder_id: 1,
+        date: this.$moment(this.date).format(this.$db.DATE_DAY),
+        content: '',
+        tags: []
+      }
+    },
     /**
      * Load data from DB if available, or create blank entry
      */
     async loadFromDb () {
+      if (!this.id || !this.table) return
+      // Save the current entry before continuing
+      if (!await this.save()) return // couldn't save
       console.log('Loading from DB')
       let content = ''
       try {
-        let data = await this.$db.getById(this.table, this.id)
+        let table = this.table
+        let data = await this.$db.getById(table, this.id)
         if (data) {
-          this.data = data
+          data.table = table
+          this.entry = data
+          console.log(data)
           content = data.content // 'content' column from DB
         }
       } catch (e) {
@@ -127,73 +144,50 @@ export default {
         this.scrollCheck = this.editor.getContent().substring(this.editor.getContent().length - this.scrollCheckLength)
       }
     },
-    save () {
-      if (!this.editor) return // editor hasn't loaded
+    async save () {
+      if (!this.editor) return false // editor hasn't loaded
       let liveContent = this.editor.getContent()
-      if (this.data.content === liveContent) {
-        return // entry has not changed - no need to save
-      } else {
-        console.log(liveContent)
-        console.log(this.data.content)
-        this.data.content = liveContent
+      if (this.entry.content === liveContent) {
+        return true // entry has not changed - no need to save
       }
 
-      let entryToSave = this.data
+      console.log('Saving this entry')
 
-      // Save tags in DB
-      // this.updateTags(entryToSave)
+      this.entry.content = liveContent // store the content to compare next time
+      let entry = JSON.parse(JSON.stringify(this.entry)) // take a clone
 
-      if (!entryToSave.content) {
-        // Entry is empty. If it exists, then prune it from DB
-        if (entryToSave.id) {
-          this.$db.deleteEntry(entryToSave)
-            .then(() => {
-              console.debug('Empty entry ' + entryToSave.id + ' has been pruned')
-              this.data = this.newEntry()
-              this.$router.push({name: 'home'}) // change the route
-              if (entryToSave.date) {
-                // Update tree and calendar
-                let year = entryToSave.date.substring(0, 4)
-                let month = entryToSave.date.substring(5, 7)
-                this.$refs.entriesTree.findMonth(year, month).update()
-                this.updateCalendarEntries(year, month)
-              }
-            })
-            .catch((error) => {
-              console.error(error)
-            })
+      if (!this.entry.content) {
+        // Empty entry - prune from DB
+        if (this.entry.id) {
+          console.log(`Pruning entry ${entry.id}`)
+          if (await this.$db.deleteEntry(entry)) {
+            console.log('Entry deleted')
+            this.entry = this.newEntry()
+            this.$emit('deleted')
+          } else {
+            return false
+          }
         }
-      } else if (entryToSave.id) {
+      } else if (this.entry.id) {
         // Entry ID already exists, update existing entry
-        this.$db.updateEntry(entryToSave)
-          .then(() => {
-            console.debug(this.$moment().format('HH:mm:ss') + ' saved entry for ' + entryToSave.date, 'ID: ' + entryToSave.id)
-          })
-          .catch(() => {
-            console.error('FAILED TO SAVE ENTRY')
-          })
+        console.log(`Updating entry ${entry.id}`)
+        if (await this.$db.updateEntry(entry)) {
+          console.log('Entry saved')
+          this.$emit('updated')
+        } else {
+          return false
+        }
       } else {
         // No existing entry, so create new entry
-        this.$db.createNewEntry(entryToSave)
-          .then((entryId) => {
-            entryToSave.id = entryId
-            console.debug(this.$moment().format('HH:mm:ss') + ' created new entry', 'ID: ' + entryToSave.id)
-            // If the current visible entry hasn't already changed (e.g. through clicking the calendar)
-            // then update the ID
-            if (this.date === entryToSave.date) {
-              this.data.id = entryToSave.id
-              this.$router.push({name: 'home', params: {id: entryToSave.id}}) // change the route
-            }
-            // Update tree and calendar
-            let year = entryToSave.date.substring(0, 4)
-            let month = entryToSave.date.substring(5, 7)
-            this.$refs.entriesTree.findMonth(year, month).update()
-            this.updateCalendarEntries(year, month)
-          })
-          .catch((err) => {
-            console.error(err)
-          })
+        console.log(`Creating new entry`)
+        entry.id = await this.$db.createEntry(entry)
+        if (!entry.id) return false
+        if (!this.entry.id) this.entry.id = entry.id
+        this.$emit('created')
       }
+      console.log(`Saved ${entry.id}`)
+
+      return true
     },
     createEditor () {
       return new Promise((resolve) => {

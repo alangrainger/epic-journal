@@ -6,7 +6,7 @@
                 <EntriesTree ref="entriesTree" :entry="entry"></EntriesTree>
             </div>
             <div id="content">
-                <Editor ref="editor" table="entries" :id="23"></Editor>
+                <Editor ref="editor" table="entries" :id="35" @created="updateTree" @deleted="updateTree"></Editor>
             </div>
             <div v-html="'<style>' + calendarStyle + '</style>'" style="display:none"></div>
             <div v-html="'<style>' + customStyles + '</style>'" style="display:none"></div>
@@ -97,12 +97,12 @@ export default {
     }
 
     // Autosave entry
-    this.autosaveTimer = setInterval(() => {
+    /* this.autosaveTimer = setInterval(() => {
       this.save()
-    }, 3000) // every 3 seconds
+    }, 3000) // every 3 seconds */
 
     // Save entry on close
-    window.addEventListener('unload', this.save)
+    // window.addEventListener('unload', this.save)
 
     // Set focus to editor
     this.$refs.editor.focus()
@@ -143,11 +143,19 @@ export default {
         tags: []
       }
     },
+    updateTree () {
+      // Update tree and calendar
+      let date = this.$refs.editor.entry.date
+      let year = date.substring(0, 4)
+      let month = date.substring(5, 7)
+      this.$refs.entriesTree.findMonth(year, month).update()
+      this.updateCalendarEntries(year, month)
+    },
     getEntryById (id) {
       if (!id) return false
 
       // Check if we need to save the current entry
-      this.save()
+      // this.save()
 
       this.$db.getById('entries', id)
         .then((row) => {
@@ -174,7 +182,7 @@ export default {
       }
 
       // Check if we need to save the current entry
-      this.save()
+      // this.save()
 
       this.date = date
       this.$db.getEntryByDate(date)
@@ -323,7 +331,7 @@ export default {
     }
   },
   beforeDestroy: function () {
-    this.save()
+    // this.save()
     window.removeEventListener('unload', this.save)
     clearInterval(this.autosaveTimer)
   }
