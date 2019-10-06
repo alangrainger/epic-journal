@@ -2,11 +2,12 @@
     <div id="main">
         <div id="wrapper">
             <div id="sidebar">
+                <pre>{{date}}</pre>
                 <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
-                <EntriesTree ref="entriesTree" :entry="entry"></EntriesTree>
+                <EntriesTree ref="entriesTree" :selected="entryId"></EntriesTree>
             </div>
             <div id="content">
-                <Editor ref="editor" table="entries" :id="34" @created="updateTree" @deleted="updateTree"></Editor>
+                <Editor ref="editor" table="entries" :id="entryId" @created="updateTree" @deleted="updateTree"></Editor>
             </div>
             <div v-html="'<style>' + calendarStyle + '</style>'" style="display:none"></div>
             <div v-html="'<style>' + customStyles + '</style>'" style="display:none"></div>
@@ -68,7 +69,7 @@ export default {
   data () {
     return {
       date: this.$moment().format(this.$db.DATE_DAY),
-      entry: this.newEntry(),
+      entryId: null,
       autosaveTimer: '',
       calendarMonth: null,
       calendarStyle: '',
@@ -87,15 +88,11 @@ export default {
       editor: null
     }
   },
-  mounted: function () {
-    // Load specified entry if there is one
-    if (this.$route.params.id) {
-      this.getEntryById(this.$route.params.id)
-    } else {
-      // Load today's entry if there is one
-      this.getEntryByDate(this.date)
+  mounted () {
+    if (!this.$route.params.date) {
+      // If we don't have an entry ID requested, try today's date
+      this.getEntryByDate(this.$moment().format(this.$db.DATE_DAY))
     }
-
     // Autosave entry
     /* this.autosaveTimer = setInterval(() => {
       this.save()
@@ -112,158 +109,64 @@ export default {
   },
   watch: {
     date () {
-      this.getEntryByDate(this.date)
-      let newMonth = this.date.substring(0, 7)
-      if (newMonth !== this.calendarMonth) {
-        this.updateCalendarEntries(this.date.substring(0, 4), this.date.substring(5, 7))
-        this.calendarMonth = newMonth
-      }
+      this.goToDate(this.date)
     },
-    '$route.params.id' (id) {
-      // Watch for route to be updated with new entry ID
-      this.getEntryById(id)
+    /**
+     * Watch for route to be updated with new entry ID
+     * and set that as the local ID
+     */
+    '$route.params.date' () {
+      this.getEntryByDate(this.$route.params.date)
     },
-    'entry.id' () {
-      this.$root.entryId = this.entry.id
+    entryId () {
+      console.log(this.entryId)
+      // this.getEntryById(this.entryId)
     }
   },
   methods: {
-    getContent () {
-      return this.$refs.editor.getContent()
+    goToDate (date) {
+      if (
+        this.$moment(date).format(this.$db.DATE_DAY) === date && // valid date format
+        this.$route.params.date !== date // not the current route
+      ) {
+        this.$router.push({name: 'home', params: {date: date}})
+      }
     },
-    setContent (content) {
-      this.entry.content = content
-      if (this.$refs.editor) this.$refs.editor.setContent(content)
-    },
-    newEntry () {
+    newEntry (date) {
       return {
         id: null,
-        date: this.$moment(this.date).format(this.$db.DATE_DAY),
-        content: null,
+        date: date,
+        table: 'entries',
+        folder_id: 1,
+        content: '',
         tags: []
       }
     },
     updateTree () {
       // Update tree and calendar
-      let date = this.$refs.editor.entry.date
-      console.log(date)
-      let year = date.substring(0, 4)
-      let month = date.substring(5, 7)
+      let year = this.date.substring(0, 4)
+      let month = this.date.substring(5, 7)
       this.$refs.entriesTree.findMonth(year, month).update()
       this.updateCalendarEntries(year, month)
     },
-    getEntryById (id) {
-      if (!id) return false
-
-      // Check if we need to save the current entry
-      // this.save()
-
-      this.$db.getById('entries', id)
-        .then((row) => {
-          if (row && 'id' in row && 'date' in row && 'content' in row) {
-            // If exisitng entry, then set entry object
-            let data = this.newEntry()
-            data.id = row.id
-            data.date = row.date
-            data.content = row.content
-            this.setContent(row.content)
-            this.date = row.date
-            this.entry = data
-          } else {
-            // Create new entry
-            this.setContent(null)
-            this.entry = this.newEntry()
-          }
-        })
-        .catch((err) => { console.error(err) })
-    },
-    getEntryByDate (date) {
-      if (this.$moment(date, this.$db.DATE_DAY).format(this.$db.DATE_DAY) !== date) {
-        return false // invalid date
-      }
-
-      // Check if we need to save the current entry
-      // this.save()
-
-      this.date = date
-      this.$db.getEntryByDate(date)
-        .then((row) => {
-          if (row && 'id' in row && 'date' in row && 'content' in row) {
-            // If exisitng entry, route to ID
-            if (row.id !== this.$root.entryId) this.$router.push({name: 'home', params: {id: row.id}})
-          } else {
-            // Create new entry
-            this.setContent(null)
-            this.entry = this.newEntry()
-          }
-        })
-        .catch((err) => { console.error(err) })
-    },
-    save () {
-      if (!this.$refs.editor.editor) return // editor hasn't loaded
-      let liveContent = this.getContent()
-      if (this.entry.content === liveContent) {
-        return // entry has not changed - no need to save
+    async getEntryByDate (date) {
+      if (!date) date = this.$moment().format(this.$db.DATE_DAY)
+      let entry = await this.$db.getEntryByDate(date)
+      if (entry) {
+        this.entryId = entry.id
       } else {
-        this.entry.content = liveContent
-      }
-
-      let entryToSave = this.entry
-
-      // Save tags in DB
-      this.updateTags(entryToSave)
-
-      if (!entryToSave.content) {
-        // Entry is empty. If it exists, then prune it from DB
-        if (entryToSave.id) {
-          this.$db.deleteEntry(entryToSave)
-            .then(() => {
-              console.debug('Empty entry ' + entryToSave.id + ' has been pruned')
-              this.entry = this.newEntry()
-              this.$router.push({name: 'home'}) // change the route
-              if (entryToSave.date) {
-                // Update tree and calendar
-                let year = entryToSave.date.substring(0, 4)
-                let month = entryToSave.date.substring(5, 7)
-                this.$refs.entriesTree.findMonth(year, month).update()
-                this.updateCalendarEntries(year, month)
-              }
-            })
-            .catch((error) => {
-              console.error(error)
-            })
+        // No existing entry found, create a new entry
+        console.log(`Creating new entry`)
+        entry = this.newEntry(date)
+        let id = await this.$db.createEntry(entry)
+        if (!id) {
+          console.log('ERROR CREATING ENTRY')
+          return
         }
-      } else if (entryToSave.id) {
-        // Entry ID already exists, update existing entry
-        this.$db.updateEntry(entryToSave)
-          .then(() => {
-            console.debug(this.$moment().format('HH:mm:ss') + ' saved entry for ' + entryToSave.date, 'ID: ' + entryToSave.id)
-          })
-          .catch(() => {
-            console.error('FAILED TO SAVE ENTRY')
-          })
-      } else {
-        // No existing entry, so create new entry
-        this.$db.createNewEntry(entryToSave)
-          .then((entryId) => {
-            entryToSave.id = entryId
-            console.debug(this.$moment().format('HH:mm:ss') + ' created new entry', 'ID: ' + entryToSave.id)
-            // If the current visible entry hasn't already changed (e.g. through clicking the calendar)
-            // then update the ID
-            if (this.date === entryToSave.date) {
-              this.entry.id = entryToSave.id
-              this.$router.push({name: 'home', params: {id: entryToSave.id}}) // change the route
-            }
-            // Update tree and calendar
-            let year = entryToSave.date.substring(0, 4)
-            let month = entryToSave.date.substring(5, 7)
-            this.$refs.entriesTree.findMonth(year, month).update()
-            this.updateCalendarEntries(year, month)
-          })
-          .catch((err) => {
-            console.error(err)
-          })
+        this.entryId = id
       }
+      this.date = entry.date
+      this.updateTree()
     },
     updateTags (entry) {
       if (!entry.id) return

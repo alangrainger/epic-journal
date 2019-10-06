@@ -1,5 +1,6 @@
 <template>
     <div id="tree" class="scrollbar">
+        <pre>{{selected}} asdf</pre>
         <Tree v-for="model in tree" :key="model.id" :model="model" :selected="selected"
               @scrollHeight="updateScroll" @bus="bus"></Tree>
     </div>
@@ -25,13 +26,12 @@ export default {
   components: {
     Tree
   },
+  props: ['selected'],
   data () {
     return {
-      tree: [],
-      selected: null
+      tree: []
     }
   },
-  props: {entry: Object},
   mounted: function () {
     this.createTree()
       .then(() => {
@@ -43,9 +43,23 @@ export default {
     })
   },
   watch: {
-    'entry.id': function () {
-      this.expandToDate(this.entry.date)
-      this.selected = this.entry.id
+    /**
+     * Watch for selected entry ID to change, then expand calendar to that date
+     */
+    selected: {
+      async handler () {
+        let date = this.$moment()
+        if (this.selected) {
+          try {
+            let entry = await this.$db.getById('entries', this.selected)
+            if (entry) date = this.$moment(entry.date)
+          } catch (e) {
+            // nothing
+          }
+        }
+        this.expandToDate(date.format(this.$db.DATE_SQL))
+      },
+      immediate: true
     }
   },
   methods: {
@@ -151,9 +165,7 @@ export default {
               parent: monthObj,
               icon: 'file-text-o',
               action: () => {
-                console.log(row.id)
-                this.selected = row.id
-                if (this.$route.params.id !== row.id) this.$router.push({name: 'home', params: {id: row.id}})
+                this.$router.push({name: 'home', params: {date: row.date}})
               }
             })
           }

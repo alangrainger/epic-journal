@@ -376,12 +376,13 @@ function Datastore () {
   this.getById = function (table, id) {
     return new Promise(function (resolve, reject) {
       if (!table) reject(new Error('No table specified'))
+      table = table.replace(/\W/g, '')
       db.get('SELECT * FROM ' + table + ' WHERE id = ?', [id])
         .then((row) => {
           resolve(row)
         })
         .catch((error) => {
-          console.log(error)
+          reject(error)
         })
     })
   }

@@ -106,25 +106,24 @@ export default {
      * Load data from DB if available, or create blank entry
      */
     async loadFromDb () {
-      if (!this.id || !this.table) return
+      if (!this.table) return
       // Save the current entry before continuing
       if (!await this.save()) return // couldn't save
-      console.log('Loading from DB')
-      let content = ''
+      console.log(`Loading ID ${this.id} from DB`)
       try {
         let table = this.table
         let data = await this.$db.getById(table, this.id)
         if (data) {
           data.table = table
           this.entry = data
-          console.log(data)
-          content = data.content // 'content' column from DB
+        } else {
+          this.entry = this.newEntry()
         }
       } catch (e) {
         console.log('Error loading DB content')
         console.log(e)
       }
-      this.setContent(content)
+      this.setContent(this.entry.content)
     },
     focus () {
       if (this.editor) this.editor.focus()
@@ -160,13 +159,13 @@ export default {
         // Empty entry - prune from DB
         if (this.entry.id) {
           console.log(`Pruning entry ${entry.id}`)
-          /* if (await this.$db.deleteEntry(entry)) {
+          if (await this.$db.deleteEntry(entry)) {
             console.log('Entry deleted')
             this.entry = this.newEntry()
             this.$emit('deleted')
           } else {
             return false
-          } */
+          }
         }
       } else if (this.entry.id) {
         // Entry ID already exists, update existing entry
@@ -177,13 +176,6 @@ export default {
         } else {
           return false
         }
-      } else {
-        // No existing entry, so create new entry
-        console.log(`Creating new entry`)
-        entry.id = await this.$db.createEntry(entry)
-        if (!entry.id) return false
-        if (!this.entry.id) this.entry.id = entry.id
-        this.$emit('created')
       }
       console.log(`Saved ${entry.id}`)
 

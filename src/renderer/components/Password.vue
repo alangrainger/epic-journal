@@ -56,7 +56,6 @@
 
 <script>
   import { remote } from 'electron'
-  import router from '../router'
 
   let db = remote.getGlobal('db')
 
@@ -81,7 +80,7 @@
         this.message = 'loading...'
         db.openDatabase(password)
           .then(() => {
-            router.push('home')
+            this.$router.push({name: 'home'})
           })
           .catch((error) => {
             let vm = this
