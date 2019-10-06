@@ -144,15 +144,16 @@ export default {
             let row = rows[i]
             let label = this.$moment(row.date, 'YYYY-MM-DD').format('DD - dddd')
             children.push({
-              id: row.entry_id,
+              id: row.id,
               date: row.date,
               label: label,
               type: 'entry',
               parent: monthObj,
               icon: 'file-text-o',
               action: () => {
-                this.selected = row.entry_id
-                if (this.$route.params.id !== row.entry_id) this.$router.push({name: 'home', params: {id: row.entry_id}})
+                console.log(row.id)
+                this.selected = row.id
+                if (this.$route.params.id !== row.id) this.$router.push({name: 'home', params: {id: row.id}})
               }
             })
           }

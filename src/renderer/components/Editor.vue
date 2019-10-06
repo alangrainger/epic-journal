@@ -160,13 +160,13 @@ export default {
         // Empty entry - prune from DB
         if (this.entry.id) {
           console.log(`Pruning entry ${entry.id}`)
-          if (await this.$db.deleteEntry(entry)) {
+          /* if (await this.$db.deleteEntry(entry)) {
             console.log('Entry deleted')
             this.entry = this.newEntry()
             this.$emit('deleted')
           } else {
             return false
-          }
+          } */
         }
       } else if (this.entry.id) {
         // Entry ID already exists, update existing entry

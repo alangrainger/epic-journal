@@ -6,7 +6,7 @@
                 <EntriesTree ref="entriesTree" :entry="entry"></EntriesTree>
             </div>
             <div id="content">
-                <Editor ref="editor" table="entries" :id="35" @created="updateTree" @deleted="updateTree"></Editor>
+                <Editor ref="editor" table="entries" :id="34" @created="updateTree" @deleted="updateTree"></Editor>
             </div>
             <div v-html="'<style>' + calendarStyle + '</style>'" style="display:none"></div>
             <div v-html="'<style>' + customStyles + '</style>'" style="display:none"></div>
@@ -146,6 +146,7 @@ export default {
     updateTree () {
       // Update tree and calendar
       let date = this.$refs.editor.entry.date
+      console.log(date)
       let year = date.substring(0, 4)
       let month = date.substring(5, 7)
       this.$refs.entriesTree.findMonth(year, month).update()
@@ -159,10 +160,10 @@ export default {
 
       this.$db.getById('entries', id)
         .then((row) => {
-          if (row && 'entry_id' in row && 'date' in row && 'content' in row) {
+          if (row && 'id' in row && 'date' in row && 'content' in row) {
             // If exisitng entry, then set entry object
             let data = this.newEntry()
-            data.id = row.entry_id
+            data.id = row.id
             data.date = row.date
             data.content = row.content
             this.setContent(row.content)
@@ -187,9 +188,9 @@ export default {
       this.date = date
       this.$db.getEntryByDate(date)
         .then((row) => {
-          if (row && 'entry_id' in row && 'date' in row && 'content' in row) {
+          if (row && 'id' in row && 'date' in row && 'content' in row) {
             // If exisitng entry, route to ID
-            if (row.entry_id !== this.$root.entryId) this.$router.push({name: 'home', params: {id: row.entry_id}})
+            if (row.id !== this.$root.entryId) this.$router.push({name: 'home', params: {id: row.id}})
           } else {
             // Create new entry
             this.setContent(null)

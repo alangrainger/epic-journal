@@ -51,11 +51,11 @@ electron.ipcRenderer.on('goto', async (event, arg) => {
     let row = await db.get('SELECT COUNT(*) AS count FROM entries WHERE folder_id = 1')
     if (row.count >= 2) {
       // Loop through until we find an entry that's not the current entry
-      let rows = await db.all('SELECT entry_id FROM entries WHERE folder_id = 1 ORDER BY RANDOM() LIMIT 2')
+      let rows = await db.all('SELECT id FROM entries WHERE folder_id = 1 ORDER BY RANDOM() LIMIT 2')
       for (let row of rows) {
         // Loop through and route to the entry which ISN'T the current entry
-        if (row.entry_id !== vm.$root.entryId) {
-          router.push({name: 'home', params: {id: row.entry_id}})
+        if (row.id !== vm.$root.entryId) {
+          router.push({name: 'home', params: {id: row.id}})
           return
         }
       }
