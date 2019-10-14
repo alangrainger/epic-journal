@@ -16,7 +16,7 @@ export default new Router({
       component: require('@/components/Intro').default
     },
     {
-      path: '/home/:date?',
+      path: '/home/:date',
       name: 'home',
       component: require('@/components/Home').default
     },

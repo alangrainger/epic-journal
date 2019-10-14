@@ -4,10 +4,11 @@
             <div id="sidebar">
                 <pre>{{date}}</pre>
                 <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
+                <pre>{{entryId}}</pre>
                 <EntriesTree ref="entriesTree" :selected="entryId"></EntriesTree>
             </div>
             <div id="content">
-                <Editor ref="editor" table="entries" :id="entryId" @created="updateTree" @deleted="updateTree"></Editor>
+                <Editor ref="editor" :table="table" :id="entryId" @created="updateTree" @close="onClose"></Editor>
             </div>
             <div v-html="'<style>' + calendarStyle + '</style>'" style="display:none"></div>
             <div v-html="'<style>' + customStyles + '</style>'" style="display:none"></div>
@@ -70,6 +71,7 @@ export default {
     return {
       date: this.$moment().format(this.$db.DATE_DAY),
       entryId: null,
+      table: 'entries',
       autosaveTimer: '',
       calendarMonth: null,
       calendarStyle: '',
@@ -89,21 +91,6 @@ export default {
     }
   },
   mounted () {
-    if (!this.$route.params.date) {
-      // If we don't have an entry ID requested, try today's date
-      this.getEntryByDate(this.$moment().format(this.$db.DATE_DAY))
-    }
-    // Autosave entry
-    /* this.autosaveTimer = setInterval(() => {
-      this.save()
-    }, 3000) // every 3 seconds */
-
-    // Save entry on close
-    // window.addEventListener('unload', this.save)
-
-    // Set focus to editor
-    this.$refs.editor.focus()
-
     // Update calendar
     this.updateCalendarEntries(this.date.substring(0, 4), this.date.substring(5, 7))
   },
@@ -111,19 +98,18 @@ export default {
     date () {
       this.goToDate(this.date)
     },
-    /**
-     * Watch for route to be updated with new entry ID
-     * and set that as the local ID
-     */
-    '$route.params.date' () {
-      this.getEntryByDate(this.$route.params.date)
-    },
-    entryId () {
-      console.log(this.entryId)
-      // this.getEntryById(this.entryId)
+    '$route.params.date': {
+      handler () {
+        this.getEntryByDate(this.$route.params.date)
+      },
+      immediate: true
     }
   },
   methods: {
+    async onClose (data) {
+      // Prune empty current entry from the database on entry change
+      if (await this.$db.deleteEntry({id: data.id, table: this.table}, true)) console.log(`Pruned empty entry ${data.id}`)
+    },
     goToDate (date) {
       if (
         this.$moment(date).format(this.$db.DATE_DAY) === date && // valid date format
@@ -136,7 +122,7 @@ export default {
       return {
         id: null,
         date: date,
-        table: 'entries',
+        table: this.table,
         folder_id: 1,
         content: '',
         tags: []
@@ -223,7 +209,7 @@ export default {
        */
       let start = this.$moment(year + '-' + month, 'YYYY-M').startOf('month').format(this.$db.DATE_DAY)
       let end = this.$moment(year + '-' + month, 'YYYY-M').endOf('month').format(this.$db.DATE_DAY)
-      this.$db.all('SELECT date FROM entries WHERE DATE(date) BETWEEN DATE(\'' + start + '\') AND date(\'' + end + '\') AND folder_id = 1 ORDER BY date ASC')
+      this.$db.all(`SELECT date FROM ${this.table} WHERE DATE(date) BETWEEN DATE('${start}') AND date('${end}') AND folder_id = 1 ORDER BY date ASC`)
         .then(rows => {
           let styles = []
           for (let i = 0; i < rows.length; i++) {

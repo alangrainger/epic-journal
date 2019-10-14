@@ -165,7 +165,7 @@ export default {
               parent: monthObj,
               icon: 'file-text-o',
               action: () => {
-                this.$router.push({name: 'home', params: {date: row.date}})
+                if (this.$route.params.date !== row.date) this.$router.push({name: 'home', params: {date: row.date}})
               }
             })
           }

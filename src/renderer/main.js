@@ -41,7 +41,7 @@ electron.ipcRenderer.on('goto', async (event, arg) => {
   let component = router.currentRoute.matched[0].instances.default
 
   if (arg === 'today') {
-    await router.push({name: 'home'})
+    await router.push({name: 'home', params: {date: moment().format(db.DATE_DAY)}})
   } else if (arg === 'previous') {
     if (router.currentRoute.name !== 'home') return
     let row = await db.get('SELECT date FROM entries WHERE DATE(date) < DATE(?) ORDER BY date DESC LIMIT 1', component.date)

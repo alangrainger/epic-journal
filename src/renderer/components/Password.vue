@@ -80,7 +80,7 @@
         this.message = 'loading...'
         db.openDatabase(password)
           .then(() => {
-            this.$router.push({name: 'home'})
+            this.$router.push({name: 'home', params: {date: this.$moment().format(this.$db.DATE_DAY)}})
           })
           .catch((error) => {
             let vm = this

@@ -340,11 +340,12 @@ function Datastore () {
     }
   }
 
-  this.deleteEntry = async (entry) => {
+  this.deleteEntry = async (entry, onlyIfEmpty = false) => {
     try {
       if (entry.table.match(/\W/)) return false // invalid characters in table name
       if (parseInt(entry.id, 10) !== entry.id) return false // invalid characters in ID
-      let res = await db.run(`DELETE FROM ${entry.table} WHERE id = ?`, [entry.id])
+      let ifEmpty = onlyIfEmpty ? ' AND (content = "" OR content IS NULL)' : ''
+      let res = await db.run(`DELETE FROM ${entry.table} WHERE id = ? ${ifEmpty}`, [entry.id])
       // res.changes contains the number of rows deleted
       return res && res.changes
     } catch (e) {

@@ -106,9 +106,13 @@ export default {
      * Load data from DB if available, or create blank entry
      */
     async loadFromDb () {
-      if (!this.table) return
+      if (!this.id || !this.table) return
       // Save the current entry before continuing
       if (!await this.save()) return // couldn't save
+      if (this.entry.id && this.id !== this.entry.id) {
+        // We're changing to a different entry
+        this.$emit('close', {id: this.entry.id})
+      }
       console.log(`Loading ID ${this.id} from DB`)
       try {
         let table = this.table
@@ -116,6 +120,7 @@ export default {
         if (data) {
           data.table = table
           this.entry = data
+          this.$emit('open', {id: data.id})
         } else {
           this.entry = this.newEntry()
         }
@@ -144,7 +149,7 @@ export default {
       }
     },
     async save () {
-      if (!this.editor) return false // editor hasn't loaded
+      if (!this.editor || !this.id) return false // editor hasn't loaded
       let liveContent = this.editor.getContent()
       if (this.entry.content === liveContent) {
         return true // entry has not changed - no need to save
@@ -155,24 +160,11 @@ export default {
       this.entry.content = liveContent // store the content to compare next time
       let entry = JSON.parse(JSON.stringify(this.entry)) // take a clone
 
-      if (!this.entry.content) {
-        // Empty entry - prune from DB
-        if (this.entry.id) {
-          console.log(`Pruning entry ${entry.id}`)
-          if (await this.$db.deleteEntry(entry)) {
-            console.log('Entry deleted')
-            this.entry = this.newEntry()
-            this.$emit('deleted')
-          } else {
-            return false
-          }
-        }
-      } else if (this.entry.id) {
-        // Entry ID already exists, update existing entry
+      if (this.entry.id) {
         console.log(`Updating entry ${entry.id}`)
         if (await this.$db.updateEntry(entry)) {
           console.log('Entry saved')
-          this.$emit('updated')
+          this.$emit('update', {id: entry.id})
         } else {
           return false
         }
@@ -484,14 +476,15 @@ export default {
       }
     }
   },
-  beforeDestroy: function () {
+  async beforeDestroy () {
     try {
       tinymce.remove()
     } catch (err) {
       // TinyMCE throws an error each time, but the function works as expected. Not sure what the problem is.
       console.log(err)
     }
-    this.save()
+    await this.save()
+    this.$emit('close', {id: this.entry.id})
     window.removeEventListener('unload', this.save)
     clearInterval(this.autosaveTimer)
   }
