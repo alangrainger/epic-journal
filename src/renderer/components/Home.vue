@@ -8,7 +8,7 @@
                 <EntriesTree ref="entriesTree" :selected="entryId"></EntriesTree>
             </div>
             <div id="content">
-                <Editor ref="editor" :table="table" :id="entryId" @created="updateTree" @close="onClose"></Editor>
+                <Editor ref="editor" :template="template" :table="table" :id="entryId" @created="updateTree" @close="onClose"></Editor>
             </div>
             <div v-html="'<style>' + calendarStyle + '</style>'" style="display:none"></div>
             <div v-html="'<style>' + customStyles + '</style>'" style="display:none"></div>
@@ -90,6 +90,18 @@ export default {
       editor: null
     }
   },
+  computed: {
+    template () {
+      return {
+        id: null,
+        date: this.$route.params.date,
+        table: this.table,
+        folder_id: 1,
+        content: '',
+        tags: []
+      }
+    }
+  },
   mounted () {
     // Update calendar
     this.updateCalendarEntries(this.date.substring(0, 4), this.date.substring(5, 7))
@@ -142,14 +154,15 @@ export default {
         this.entryId = entry.id
       } else {
         // No existing entry found, create a new entry
-        console.log(`Creating new entry`)
+        /* console.log(`Creating new entry`)
         entry = this.newEntry(date)
         let id = await this.$db.createEntry(entry)
         if (!id) {
           console.log('ERROR CREATING ENTRY')
           return
         }
-        this.entryId = id
+        this.entryId = id */
+        this.entryId = null
       }
       this.date = entry.date
       this.updateTree()

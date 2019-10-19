@@ -39,6 +39,10 @@ export default {
     table: {
       type: String,
       required: true
+    },
+    template: {
+      type: Object,
+      required: true
     }
   },
   data () {
@@ -92,23 +96,16 @@ export default {
   },
   methods: {
     newEntry () {
-      return {
-        queue: [], // autosave queue
-        id: null,
-        table: this.table,
-        folder_id: 1,
-        date: this.$moment(this.date).format(this.$db.DATE_DAY),
-        content: '',
-        tags: []
-      }
+      // Clone the template
+      return JSON.parse(JSON.stringify(this.template))
     },
     /**
      * Load data from DB if available, or create blank entry
      */
     async loadFromDb () {
-      if (!this.id || !this.table) return
+      if (!this.table) return
       // Save the current entry before continuing
-      if (!await this.save()) return // couldn't save
+      if (this.id && !await this.save()) return // couldn't save
       if (this.entry.id && this.id !== this.entry.id) {
         // We're changing to a different entry
         this.$emit('close', {id: this.entry.id})
@@ -122,7 +119,8 @@ export default {
           this.entry = data
           this.$emit('open', {id: data.id})
         } else {
-          this.entry = this.newEntry()
+          console.log('creating new entry')
+          // this.entry = this.newEntry()
         }
       } catch (e) {
         console.log('Error loading DB content')
