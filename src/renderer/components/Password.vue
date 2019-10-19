@@ -56,7 +56,6 @@
 
 <script>
   import { remote } from 'electron'
-  import router from '../router'
 
   let db = remote.getGlobal('db')
 
@@ -69,6 +68,10 @@
     },
     mounted: function () {
       document.getElementById('password').focus()
+      if (process.env.NODE_ENV === 'development') {
+        this.password = 'test'
+        this.submit()
+      }
     },
     methods: {
       submit () {
@@ -77,7 +80,7 @@
         this.message = 'loading...'
         db.openDatabase(password)
           .then(() => {
-            router.push('home')
+            this.$router.push({name: 'home', params: {date: this.$moment().format(this.$db.DATE_DAY)}})
           })
           .catch((error) => {
             let vm = this
