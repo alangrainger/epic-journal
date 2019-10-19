@@ -119,7 +119,6 @@ export default {
         if (!content) content = '' // if empty, set to a string, TinyMCE expects this
         this.lastContent = content
         this.editor.setContent(content)
-        console.log(content)
         if (focus) this.editor.focus()
         this.updateWordCount()
         this.scrollCheck = this.editor.getContent().substring(this.editor.getContent().length - this.scrollCheckLength)
@@ -147,7 +146,6 @@ export default {
         }
       } else {
         // Create new entry
-        console.log(entry.content)
         if (entry.content !== '') { // but only if there's some content
           let id = await this.$db.createEntry(entry)
           if (!id) {

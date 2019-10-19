@@ -5,7 +5,7 @@
                 <pre>{{date}}</pre>
                 <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
                 <pre>{{entryId}}</pre>
-                <EntriesTree ref="entriesTree" :selected="entryId"></EntriesTree>
+                <EntriesTree ref="entriesTree" :selected="$route.params.date"></EntriesTree>
             </div>
             <div id="content">
                 <Editor ref="editor"

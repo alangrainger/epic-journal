@@ -73,7 +73,7 @@ export default {
   },
   props: {
     model: Object,
-    selected: Number
+    selected: String
   },
   watch: {
     'model.isOpen': function () {
@@ -91,7 +91,7 @@ export default {
       return this.model.hasOwnProperty('children')
     },
     isSelected: function () {
-      if (this.selected === this.model.id) {
+      if (this.selected === this.model.date) {
         if (this.$el) {
           this.updateScroll(this.$el.getBoundingClientRect())
         } else {

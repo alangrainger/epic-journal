@@ -48,16 +48,7 @@ export default {
      */
     selected: {
       async handler () {
-        let date = this.$moment()
-        if (this.selected) {
-          try {
-            let entry = await this.$db.getById('entries', this.selected)
-            if (entry) date = this.$moment(entry.date)
-          } catch (e) {
-            // nothing
-          }
-        }
-        this.expandToDate(date.format(this.$db.DATE_SQL))
+        this.expandToDate(this.$moment(this.selected).format(this.$db.DATE_SQL))
       },
       immediate: true
     }
