@@ -9,9 +9,6 @@
             </div>
             <div id="content">
                 <Editor ref="editor"
-                        :template="template"
-                        :table="table"
-                        :id="entryId"
                         @update="updateTree"
                         @close="onClose"></Editor>
             </div>
@@ -149,10 +146,9 @@ export default {
       if (!date) date = this.$moment().format(this.$db.DATE_DAY)
       let entry = await this.$db.getEntryByDate(date)
       if (entry) {
-        this.entryId = entry.id
+        await this.$refs.editor.load(this.table, entry.id)
       } else {
-        this.entryId = null
-        await this.$refs.editor.new()
+        await this.$refs.editor.new(this.template)
       }
       this.date = entry.date
       this.updateTree()

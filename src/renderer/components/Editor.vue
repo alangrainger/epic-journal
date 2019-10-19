@@ -34,22 +34,11 @@ let scrollbarCSS = `
     `
 
 export default {
-  props: {
-    id: Number,
-    table: {
-      type: String,
-      required: true
-    },
-    template: {
-      type: Object,
-      required: true
-    }
-  },
   data () {
     return {
       editorId: 'editor',
       editor: '',
-      entry: this.newEntry(),
+      entry: null,
       lastContent: null,
       scrollCheck: '',
       scrollCheckLength: 20,
@@ -64,10 +53,6 @@ export default {
       wordCount: 'Words: 0',
       autosaveTimer: null
     }
-  },
-  watch: {
-    id () { this.loadFromDb() },
-    table () { this.loadFromDb() }
   },
   async mounted () {
     // Get custom dropdown styles before initialising the editor
@@ -95,38 +80,31 @@ export default {
     window.addEventListener('unload', this.save)
   },
   methods: {
-    newEntry () {
-      // Clone the template
-      return JSON.parse(JSON.stringify(this.template))
+    async new (template) {
+      await this.save()
+      console.log('Creating blank entry')
+      this.entry = JSON.parse(JSON.stringify(template))
+      this.setContent(null)
     },
-    /**
-     * Load data from DB if available, or create blank entry
-     */
-    async loadFromDb () {
-      if (!this.table) return
-      // Save the current entry before continuing
-      if (this.id && !await this.save()) return // couldn't save
-      if (this.entry.id && this.id !== this.entry.id) {
+    async load (table, id) {
+      await this.save()
+      if (this.entry && this.entry.id && id !== this.entry.id) {
         // We're changing to a different entry
         this.$emit('close', {id: this.entry.id})
       }
-      console.log(`Loading ID ${this.id} from DB`)
       try {
-        let table = this.table
-        let data = await this.$db.getById(table, this.id)
+        let data = await this.$db.getById(table, id)
         if (data) {
           data.table = table
           this.entry = data
+          console.log(`Loading ID ${id} from DB`)
           this.$emit('open', {id: data.id})
-        } else {
-          console.log('creating new entry')
-          // this.entry = this.newEntry()
+          this.setContent(data.content)
         }
       } catch (e) {
         console.log('Error loading DB content')
         console.log(e)
       }
-      this.setContent(this.entry.content)
     },
     focus () {
       if (this.editor) this.editor.focus()
@@ -141,33 +119,46 @@ export default {
         if (!content) content = '' // if empty, set to a string, TinyMCE expects this
         this.lastContent = content
         this.editor.setContent(content)
+        console.log(content)
         if (focus) this.editor.focus()
         this.updateWordCount()
         this.scrollCheck = this.editor.getContent().substring(this.editor.getContent().length - this.scrollCheckLength)
       }
     },
     async save () {
-      if (!this.editor || !this.id) return false // editor hasn't loaded
+      if (!this.editor) return false // editor hasn't loaded
       let liveContent = this.editor.getContent()
       if (this.entry.content === liveContent) {
         return true // entry has not changed - no need to save
       }
 
-      console.log('Saving this entry')
-
       this.entry.content = liveContent // store the content to compare next time
       let entry = JSON.parse(JSON.stringify(this.entry)) // take a clone
 
-      if (this.entry.id) {
+      console.log(`Saving entry ${entry.id}`)
+
+      if (entry.id) {
         console.log(`Updating entry ${entry.id}`)
         if (await this.$db.updateEntry(entry)) {
-          console.log('Entry saved')
           this.$emit('update', {id: entry.id})
+          console.log(`Saved ${entry.id}`)
         } else {
           return false
         }
+      } else {
+        // Create new entry
+        console.log(entry.content)
+        if (entry.content !== '') { // but only if there's some content
+          let id = await this.$db.createEntry(entry)
+          if (!id) {
+            console.log('ERROR CREATING ENTRY')
+            return
+          }
+          this.$emit('update', {id: id})
+          console.log(`Created db entry ${id}`)
+          this.entry.id = id
+        }
       }
-      console.log(`Saved ${entry.id}`)
 
       return true
     },
@@ -179,7 +170,7 @@ export default {
             // Set the editor instance
             this.editor = editor
             // Get initial text
-            this.loadFromDb()
+            if (this.entry) this.editor.setContent(this.entry.content)
             // Watch when selection changes
             editor.on('NodeChange', (event) => { this.nodeChange(event) })
             // Update word count
@@ -374,7 +365,6 @@ export default {
       this.editor.addShortcut('ctrl+189', 'Horizontal rule', () => { this.editor.execCommand('InsertHorizontalRule') })
       // Clear formatting: Ctrl + Space
       this.editor.addShortcut('ctrl+32', 'Clear formatting', () => {
-        console.log('a')
         let selection = this.editor.selection.getSel()
         let node = this.editor.selection.getNode()
         if (selection.type === 'Caret') {
@@ -475,14 +465,16 @@ export default {
     }
   },
   async beforeDestroy () {
+    if (this.entry) {
+      await this.save()
+      this.$emit('close', {id: this.entry.id})
+    }
     try {
       tinymce.remove()
     } catch (err) {
       // TinyMCE throws an error each time, but the function works as expected. Not sure what the problem is.
       console.log(err)
     }
-    await this.save()
-    this.$emit('close', {id: this.entry.id})
     window.removeEventListener('unload', this.save)
     clearInterval(this.autosaveTimer)
   }
