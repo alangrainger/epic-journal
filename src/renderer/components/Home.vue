@@ -8,7 +8,12 @@
                 <EntriesTree ref="entriesTree" :selected="entryId"></EntriesTree>
             </div>
             <div id="content">
-                <Editor ref="editor" :template="template" :table="table" :id="entryId" @created="updateTree" @close="onClose"></Editor>
+                <Editor ref="editor"
+                        :template="template"
+                        :table="table"
+                        :id="entryId"
+                        @update="updateTree"
+                        @close="onClose"></Editor>
             </div>
             <div v-html="'<style>' + calendarStyle + '</style>'" style="display:none"></div>
             <div v-html="'<style>' + customStyles + '</style>'" style="display:none"></div>
@@ -120,7 +125,10 @@ export default {
   methods: {
     async onClose (data) {
       // Prune empty current entry from the database on entry change
-      if (await this.$db.deleteEntry({id: data.id, table: this.table}, true)) console.log(`Pruned empty entry ${data.id}`)
+      if (await this.$db.deleteEntry({id: data.id, table: this.table}, true)) {
+        console.log(`Pruned empty entry ${data.id}`)
+        this.updateTree()
+      }
     },
     goToDate (date) {
       if (
@@ -128,16 +136,6 @@ export default {
         this.$route.params.date !== date // not the current route
       ) {
         this.$router.push({name: 'home', params: {date: date}})
-      }
-    },
-    newEntry (date) {
-      return {
-        id: null,
-        date: date,
-        table: this.table,
-        folder_id: 1,
-        content: '',
-        tags: []
       }
     },
     updateTree () {
@@ -153,16 +151,8 @@ export default {
       if (entry) {
         this.entryId = entry.id
       } else {
-        // No existing entry found, create a new entry
-        /* console.log(`Creating new entry`)
-        entry = this.newEntry(date)
-        let id = await this.$db.createEntry(entry)
-        if (!id) {
-          console.log('ERROR CREATING ENTRY')
-          return
-        }
-        this.entryId = id */
         this.entryId = null
+        await this.$refs.editor.new()
       }
       this.date = entry.date
       this.updateTree()
