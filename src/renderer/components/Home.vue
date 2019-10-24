@@ -4,9 +4,10 @@
             <div id="sidebar">
                 <pre>{{date}}</pre>
                 <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
-                <pre>{{entryId}}</pre>
                 <EntriesTree ref="entriesTree" :selected="$route.params.date"></EntriesTree>
             </div>
+            <a @click="folder = 1">Folder 1</a>
+            <a @click="folder = 2">Folder 2</a>
             <div id="content">
                 <Editor ref="editor"
                         @update="updateTree"
@@ -73,6 +74,7 @@ export default {
     return {
       date: this.$moment().format(this.$db.DATE_DAY),
       entryId: null,
+      folder: 1,
       table: 'entries',
       autosaveTimer: '',
       calendarMonth: null,
@@ -98,7 +100,7 @@ export default {
         id: null,
         date: this.$route.params.date,
         table: this.table,
-        folder_id: 1,
+        folder_id: this.folder,
         content: '',
         tags: []
       }
@@ -112,11 +114,11 @@ export default {
     date () {
       this.goToDate(this.date)
     },
-    '$route.params.date': {
-      handler () {
-        this.getEntryByDate(this.$route.params.date)
-      },
-      immediate: true
+    '$route.params.date' () {
+      this.getEntryByDate(this.$route.params.date)
+    },
+    folder () {
+      this.getEntryByDate(this.$route.params.date)
     }
   },
   methods: {
@@ -144,7 +146,7 @@ export default {
     },
     async getEntryByDate (date) {
       if (!date) date = this.$moment().format(this.$db.DATE_DAY)
-      let entry = await this.$db.getEntryByDate(date)
+      let entry = await this.$db.getEntryByDate(date, this.folder)
       if (entry) {
         await this.$refs.editor.load(this.table, entry.id)
       } else {

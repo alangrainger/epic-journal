@@ -354,10 +354,10 @@ function Datastore () {
     }
   }
 
-  this.getEntryByDate = function (date) {
+  this.getEntryByDate = function (date, folder) {
     return new Promise(function (resolve, reject) {
       if (!date) reject(new Error('No date specified'))
-      db.get('SELECT * FROM entries WHERE date = ?', [date])
+      db.get('SELECT * FROM entries WHERE date = ? AND folder_id = ?', [date, folder])
         .then((row) => {
           resolve(row)
         })
