@@ -62,7 +62,8 @@
     "moment": "^2.24.0",
     "os-locale": "^2.1.0",
     "tinymce": "^4.9.4",
-    "vue-flatpickr-component": "^4.0.0"
+    "vue-flatpickr-component": "^4.0.0",
+    "buefy": "^0.8.6"
   },
   "devDependencies": {
     "ajv": "^6.5.0",

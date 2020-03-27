@@ -5,6 +5,9 @@ import App from './App'
 import router from './router'
 import moment from 'moment'
 import config from '../electron-store'
+import Buefy from 'buefy'
+import 'buefy/dist/buefy.css'
+Vue.use(Buefy)
 
 let db = electron.remote.getGlobal('db')
 

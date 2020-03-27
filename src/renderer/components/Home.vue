@@ -6,9 +6,12 @@
                 <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
                 <EntriesTree ref="entriesTree" :selected="$route.params.date"></EntriesTree>
             </div>
-            <a @click="folder = 1">Folder 1</a>
-            <a @click="folder = 2">Folder 2</a>
             <div id="content">
+                <b-tabs type="is-boxed" @change="folder = folders[$event]">
+                    <b-tab-item label="Pictures" icon="google-photos"></b-tab-item>
+                    <b-tab-item label="Music" icon="library-music"></b-tab-item>
+                    <b-tab-item label="Videos" icon="video"></b-tab-item>
+                </b-tabs>
                 <Editor ref="editor"
                         @update="updateTree"
                         @close="onClose"></Editor>
@@ -75,6 +78,7 @@ export default {
       date: this.$moment().format(this.$db.DATE_DAY),
       entryId: null,
       folder: 1,
+      folders: [1, 2, 3],
       table: 'entries',
       autosaveTimer: '',
       calendarMonth: null,
@@ -145,6 +149,8 @@ export default {
       this.updateCalendarEntries(year, month)
     },
     async getEntryByDate (date) {
+      console.log(this.folder)
+      console.log(date)
       if (!date) date = this.$moment().format(this.$db.DATE_DAY)
       let entry = await this.$db.getEntryByDate(date, this.folder)
       if (entry) {
