@@ -1,6 +1,8 @@
 import moment from 'moment'
 import config from '../electron-store'
 
+const sqlite3 = require('@journeyapps/sqlcipher').verbose()
+
 const SCHEMA_VERSION = 7
 
 const DATE_SQL = 'YYYY-MM-DD HH:mm:ss'
@@ -14,76 +16,73 @@ function Datastore () {
   this.DATE_DAY = DATE_DAY
   this.DATE_SQL = DATE_SQL
 
-  this.table = []
-  this.table.entries = 'entries'
-  this.table.tags = 'tags'
+  this.table = {
+    entries: 'entries',
+    tags: 'tags'
+  }
   this.connected = false
 
   let sql = false
   let db = this
 
-  this.openDatabase = function (password) {
-    return new Promise(function (resolve, reject) {
-      let sqlite3 = require('@journeyapps/sqlcipher').verbose()
+  this.openDatabase = async (password) => {
+    const filename = config.get('journal')
+    password = password.replace(/'/g, '\'\'') // escape single quotes with two single quotes
 
-      let filename = config.get('journal')
-
-      password = password.replace(/'/g, '\'\'') // escape single quotes with two single quotes
-
-      // Create/connect database
-      new Promise(function (resolve, reject) {
-        sql = new sqlite3.Database(filename, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, function (err) {
-          if (err) {
-            reject(err)
-          } else {
-            resolve()
-          }
-        })
-      })
-        .then(() => { return db.run('PRAGMA cipher_compatibility = 3') })
-        .then(() => { return db.run('PRAGMA KEY = \'' + password + '\'') })
-        .then(() => { return db.run('PRAGMA CIPHER = \'aes-256-cbc\'') })
-        // Test DB read/write
-        .then(() => { return db.run('CREATE TABLE IF NOT EXISTS test (id INTEGER)') })
-        .then(() => { return db.run('DROP TABLE test') })
-        // Check database schema version
-        .then(() => {
-          return new Promise((resolve, reject) => {
-            db.get('PRAGMA user_version;')
-              .then((row) => {
-                let version = row.user_version
-                if (!version || version < SCHEMA_VERSION) {
-                  // Database is new or out of date
-                  createTables()
-                    .then(() => { return updateTables() })
-                    .then(() => { resolve() })
-                    .catch(err => { reject(err) })
-                } else {
-                  resolve()
-                }
-              })
-              .catch(err => { reject(err) })
+    // Create/connect database
+    try {
+      sql = await db.connect(filename)
+      await db.run('PRAGMA cipher_compatibility = 3')
+      await db.run('PRAGMA KEY = \'' + password + '\'')
+      await db.run('PRAGMA CIPHER = \'aes-256-cbc\'')
+      // Test DB read/write
+      await db.run('CREATE TABLE IF NOT EXISTS test (id INTEGER)')
+      await db.run('DROP TABLE test')
+      // Check database schema version
+      await new Promise((resolve, reject) => {
+        db.get('PRAGMA user_version;')
+          .then((row) => {
+            let version = row.user_version
+            if (!version || version < SCHEMA_VERSION) {
+              // Database is new or out of date
+              createTables()
+                .then(() => { return updateTables() })
+                .then(() => { resolve() })
+                .catch(err => { reject(err) })
+            } else {
+              resolve()
+            }
           })
-        })
-        .then(() => {
-          createDefaultData()
-          db.connected = true
-          resolve() // back to main execution
-        })
-        .catch((err) => {
-          sql.close()
-          console.log('Fatal error: Database not writeable. Please check your password, check if your database file is locked, and restart the app.')
-          reject(err)
-        })
-    })
+          .catch(err => { reject(err) })
+      })
+      // Create default data if needed
+      createDefaultData()
+      // All complete
+      db.connected = true
+    } catch (e) {
+      if (sql) sql.close()
+      console.log('Fatal error: Database not writeable. Please check your password, check if your database file is locked, and restart the app.')
+      throw new Error(e)
+    }
   }
 
+  this.connect = function (filename) {
+    return new Promise((resolve, reject) => {
+      const instance = new sqlite3.Database(filename, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(instance)
+        }
+      })
+    })
+  }
   /*
    *
    * Promise wrappers for built-in Sqlite3 functions
    *
    */
-  this.run = function (query, parameters = []) {
+  this.run = (query, parameters = []) => {
     return new Promise(function (resolve, reject) {
       if (!sql) { reject(new Error('run: Database object not created')) }
       sql.run(query, parameters, function (error) {
