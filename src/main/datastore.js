@@ -338,7 +338,7 @@ function Datastore () {
    * Get an entry from DB
    *
    * @param {string} table - Table name
-   * @param {number} id - Entry ID
+   * @param {number|string} id - Entry ID
    * @returns {Promise<unknown>}
    */
   this.getById = function (table, id) {

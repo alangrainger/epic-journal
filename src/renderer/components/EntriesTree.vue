@@ -1,6 +1,6 @@
 <template>
   <div id="tree" class="scrollbar">
-    <pre>{{ selected }} asdf</pre>
+    <pre>{{ $moment().format('Do') }}</pre>
     <Tree
       v-for="model in tree"
       :key="model.id"
@@ -54,11 +54,9 @@ export default {
       immediate: true
     }
   },
-  mounted: function () {
-    this.createTree()
-      .then(() => {
-        this.expandToDate(this.$moment().format('YYYY-MM-DD'))
-      })
+  async mounted () {
+    await this.createTree()
+    this.expandToDate(this.$moment().format('YYYY-MM-DD'))
 
     this.$on('bus', section => {
       console.log(section)
@@ -125,55 +123,57 @@ export default {
     close (obj) {
       if (obj.isOpen) this.$set(obj, 'isOpen', false)
     },
-    createTree () {
-      return new Promise((resolve, reject) => {
+    async createTree () {
+      try {
         // Get all root years
-        this.$db.all('SELECT DISTINCT strftime(\'%Y\', date) as year FROM entries WHERE folder_id = 1 ORDER BY date ASC')
-          .then(rows => {
-            rows.forEach(row => {
-              this.findYear(row.year)
-            })
-            resolve()
-          })
-          .catch(err => reject(err))
-      })
+        let rows = await this.$db.all('SELECT DISTINCT strftime(\'%Y\', date) as year FROM entries WHERE folder_id = 1 ORDER BY date ASC')
+        rows.forEach(row => {
+          this.findYear(row.year)
+        })
+      } catch (e) {
+        console.log(e)
+      }
     },
-    updateYear (yearObj) {
+    async updateYear (yearObj) {
       let year = yearObj.year
       // Get months for that year
-      this.$db.all('SELECT DISTINCT strftime(\'%m\', date) as month FROM entries WHERE DATE(date) BETWEEN DATE(\'' + year + '-01-01\') AND date(\'' + year + '-12-31\') AND folder_id = 1 ORDER BY date ASC')
-        .then(rows => {
-          rows.forEach(row => {
-            this.findMonth(yearObj, row.month)
-          })
+      try {
+        let rows = await this.$db.all('SELECT DISTINCT strftime(\'%m\', date) as month FROM entries WHERE DATE(date) BETWEEN DATE(\'' + year + '-01-01\') AND date(\'' + year + '-12-31\') AND folder_id = 1 ORDER BY date ASC')
+        rows.forEach(row => {
+          this.findMonth(yearObj, row.month)
         })
+      } catch (e) {
+        console.log(e)
+      }
     },
-    updateMonth (monthObj) {
+    async updateMonth (monthObj) {
       let yearObj = monthObj.parent
       let start = this.$moment(yearObj.year + '-' + monthObj.month, 'YYYY-M').startOf('month').format('YYYY-MM-DD')
       let end = this.$moment(yearObj.year + '-' + monthObj.month, 'YYYY-M').endOf('month').format('YYYY-MM-DD')
       // Get entries for that month
-      this.$db.all(`SELECT * FROM entries WHERE DATE(date) BETWEEN DATE('${start}') AND date('${end}') AND folder_id = 1 ORDER BY date ASC`)
-        .then(rows => {
-          let children = []
-          for (let i = 0; i < rows.length; i++) {
-            let row = rows[i]
-            let label = this.$moment(row.date, 'YYYY-MM-DD').format('DD - dddd')
-            children.push({
-              id: row.id,
-              date: row.date,
-              label: label,
-              type: 'entry',
-              parent: monthObj,
-              icon: 'file-text-o',
-              action: () => {
-                if (this.$route.params.date !== row.date) this.$router.push({ name: 'home', params: { date: row.date } })
-              }
-            })
-          }
-          console.debug('Updating ' + monthObj.label)
-          this.$set(monthObj, 'children', children)
-        })
+      try {
+        let rows = await this.$db.all(`SELECT * FROM entries WHERE DATE(date) BETWEEN DATE('${start}') AND date('${end}') AND folder_id = 1 ORDER BY date ASC`)
+        let children = []
+        for (let i = 0; i < rows.length; i++) {
+          let row = rows[i]
+          let label = this.$moment(row.date, 'YYYY-MM-DD').format('DD - dddd')
+          children.push({
+            id: row.id,
+            date: row.date,
+            label: label,
+            type: 'entry',
+            parent: monthObj,
+            icon: 'file-text-o',
+            action: () => {
+              if (this.$route.params.date !== row.date) this.$router.push({ name: 'home', params: { date: row.date } })
+            }
+          })
+        }
+        console.debug('Updating ' + monthObj.label)
+        this.$set(monthObj, 'children', children)
+      } catch (e) {
+        console.log(e)
+      }
     },
     findYear (year) {
       let vm = this

@@ -3,8 +3,11 @@ import Vue from 'vue'
 
 import App from './App'
 import router from './router'
-import moment from 'dayjs'
 import config from '../electron-store'
+import moment from 'dayjs'
+
+const advancedFormat = require('dayjs/plugin/advancedFormat')
+moment.extend(advancedFormat)
 
 let db = electron.remote.getGlobal('db')
 
@@ -31,8 +34,8 @@ let vm = new Vue({
 }).$mount('#app')
 
 // Set up routing
-electron.ipcRenderer.on('route', (event, arg) => {
-  if (db.connected) router.push(arg)
+electron.ipcRenderer.on('route', async (event, arg) => {
+  if (db.connected) await router.push(arg)
 })
 
 // Listen for goto commands from main menu

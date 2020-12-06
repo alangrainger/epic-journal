@@ -2,7 +2,6 @@
   <div id="main">
     <div id="wrapper">
       <div id="sidebar">
-        <pre>{{ date }}</pre>
         <flat-pickr v-model="date" :config="calConfig" />
         <pre>{{ entryId }}</pre>
         <EntriesTree ref="entriesTree" :selected="$route.params.date" />

@@ -220,12 +220,20 @@ app.on('ready', () => {
   })
 
   /*
-   * Register custom protocol for entry navigation
+   * Register custom protocol for entry navigation.
+   * When a user clicks on an entry://n custom URL, it will navigate to the entry with ID n.
    */
-  protocol.registerHttpProtocol('entry', (request) => {
+  protocol.registerHttpProtocol('entry', async (request) => {
+    // Get the entry ID
     let matches = request.url.match(/entry:\/\/(\d+)/)
     if (matches && matches.length) {
-      mainWindow.webContents.send('route', { name: 'home', params: { id: matches[1] } })
+      // Find the date for that entry
+      try {
+        let entry = await db.getById('entries', matches[1])
+        mainWindow.webContents.send('route', { name: 'home', params: { date: entry.date } })
+      } catch (e) {
+        console.log(e)
+      }
     }
   }, (error) => {
     if (error) console.error(error)

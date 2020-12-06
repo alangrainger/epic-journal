@@ -1,4 +1,5 @@
 <template>
+  <!-- A recursive tree child component -->
   <div class="branch">
     <div class="item" @click="click">
       <span :class="isSelected" @contextmenu.prevent="contextMenu">
