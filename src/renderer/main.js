@@ -3,7 +3,7 @@ import Vue from 'vue'
 
 import App from './App'
 import router from './router'
-import moment from 'moment'
+import moment from 'dayjs'
 import config from '../electron-store'
 
 let db = electron.remote.getGlobal('db')

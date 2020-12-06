@@ -1,4 +1,4 @@
-import moment from 'moment'
+import moment from 'dayjs'
 import config from '../electron-store'
 
 const sqlite3 = require('@journeyapps/sqlcipher').verbose()
@@ -425,7 +425,7 @@ function Datastore () {
    *
    * @param {string} mimetype - MIME type of the file
    * @param {buffer} data - Attachment data stream
-   * @returns {Promise<unknown>}
+   * @returns {Promise<Number>}
    */
   this.addAttachment = function (mimetype, data) {
     return new Promise(function (resolve, reject) {

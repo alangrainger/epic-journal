@@ -78,22 +78,26 @@ export default {
     }
   },
   methods: {
-    submit () {
+    async submit () {
       let password = this.password
       this.password = ''
       this.message = 'loading...'
-      db.openDatabase(password)
-        .then(() => {
-          this.$router.push({ name: 'home', params: { date: this.$moment().format(this.$db.DATE_DAY) } })
+      try {
+        await db.openDatabase(password)
+        await this.$router.push({
+          name: 'home',
+          params: {
+            date: this.$moment().format(this.$db.DATE_DAY)
+          }
         })
-        .catch((error) => {
-          let vm = this
-          vm.message = 'Incorrect password. Please try again.'
-          setTimeout(function () {
-            vm.message = ''
-          }, 3500)
-          console.error(error)
-        })
+      } catch (e) {
+        let vm = this
+        vm.message = 'Incorrect password. Please try again.'
+        setTimeout(function () {
+          vm.message = ''
+        }, 3500)
+        console.log(e)
+      }
     }
   }
 }

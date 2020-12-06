@@ -59,7 +59,7 @@
     "vue": "^2.5.16",
     "vue-electron": "^1.0.6",
     "vue-router": "^3.0.1",
-    "moment": "^2.24.0",
+    "dayjs": "^1.9.7",
     "os-locale": "^2.1.0",
     "tinymce": "^4.9.4",
     "vue-flatpickr-component": "^4.0.0"
