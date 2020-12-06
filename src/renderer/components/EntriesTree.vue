@@ -1,6 +1,6 @@
 <template>
   <div id="tree" class="scrollbar">
-    <pre>{{ $moment().format('Do') }}</pre>
+    <!-- Call the recursive Tree.vue component to build the tree -->
     <Tree
       v-for="model in tree"
       :key="model.id"
@@ -11,15 +11,6 @@
     />
   </div>
 </template>
-
-<style scoped>
-    #tree {
-        overflow-y: auto;
-        padding: 0 10px;
-        margin-top: 20px;
-        height: 100%;
-    }
-</style>
 
 <script>
 import Tree from './Tree.vue'
@@ -244,3 +235,12 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+    #tree {
+        overflow-y: auto;
+        padding: 0 10px;
+        margin-top: 20px;
+        height: 100%;
+    }
+</style>
