@@ -39,24 +39,15 @@ function Datastore () {
       await db.run('CREATE TABLE IF NOT EXISTS test (id INTEGER)')
       await db.run('DROP TABLE test')
       // Check database schema version
-      await new Promise((resolve, reject) => {
-        db.get('PRAGMA user_version;')
-          .then((row) => {
-            let version = row.user_version
-            if (!version || version < SCHEMA_VERSION) {
-              // Database is new or out of date
-              createTables()
-                .then(() => { return updateTables() })
-                .then(() => { resolve() })
-                .catch(err => { reject(err) })
-            } else {
-              resolve()
-            }
-          })
-          .catch(err => { reject(err) })
-      })
+      let row = await db.get('PRAGMA user_version;')
+      let version = row.user_version
+      if (!version || version < SCHEMA_VERSION) {
+        // Database is new or out of date
+        await createTables()
+        await updateTables()
+      }
       // Create default data if needed
-      createDefaultData()
+      await createDefaultData()
       // All complete
       db.connected = true
     } catch (e) {
@@ -169,83 +160,64 @@ function Datastore () {
    * END PROMISE WRAPPERS
    */
 
-  const createTables = function () {
-    return new Promise(function (resolve, reject) {
+  const createTables = async () => {
+    try {
       // Folders
-      db.run(
+      await db.run(
         'CREATE TABLE IF NOT EXISTS folders(' +
         'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
         'name TEXT, ' +
         'type TEXT);')
-        .then(() => {
-          return db.run(
-            'CREATE TABLE IF NOT EXISTS entries(' +
-            'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-            'folder_id INTEGER, ' +
-            'date TEXT, ' + // YYYY-MM-DD
-            'created TEXT, ' +
-            'modified TEXT, ' +
-            'content TEXT, ' +
-            'FOREIGN KEY (folder_id) REFERENCES folders (folder_id));')
-        })
-        .then(() => {
-          return db.run(
-            'CREATE INDEX IF NOT EXISTS index_date ON entries(date, folder_id)')
-        })
-        .then(() => {
-          return db.run(
-            'CREATE TABLE IF NOT EXISTS tags(' +
-            'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-            'name TEXT, ' +
-            'type TEXT, ' +
-            'style TEXT);')
-        })
-        .then(() => {
-          return db.run(
-            'CREATE TABLE IF NOT EXISTS entry_tags(' +
-            'entry_id INTEGER, ' +
-            'tag_id INTEGER, ' +
-            'FOREIGN KEY (entry_id) REFERENCES entries (entry_id), ' +
-            'FOREIGN KEY (tag_id) REFERENCES tags (tag_id));')
-        })
-        .then(() => {
-          return db.run(
-            'CREATE TABLE IF NOT EXISTS options(' +
-            'name TEXT PRIMARY KEY, ' +
-            'value TEXT);')
-        })
-        .then(() => {
-          return db.run(
-            'CREATE TABLE IF NOT EXISTS attachments(' +
-            'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-            'created TEXT, ' +
-            'mime_type TEXT, ' +
-            'data BLOB);')
-        })
-        .then(() => {
-          return db.run(
-            'CREATE TABLE IF NOT EXISTS styles(' +
-            'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-            'name TEXT, ' +
-            'type TEXT, ' +
-            'element TEXT, ' +
-            'class_name TEXT, ' +
-            'style TEXT);')
-        })
-        .then(() => {
-          return db.run(
-            'CREATE TABLE IF NOT EXISTS templates(' +
-            'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-            'name TEXT, ' +
-            'created TEXT, ' +
-            'modified TEXT, ' +
-            'content TEXT)')
-        })
-        .then(() => { resolve() })
-        .catch((err) => {
-          reject(err)
-        })
-    })
+      await db.run(
+        'CREATE TABLE IF NOT EXISTS entries(' +
+        'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+        'folder_id INTEGER, ' +
+        'date TEXT, ' + // YYYY-MM-DD
+        'created TEXT, ' +
+        'modified TEXT, ' +
+        'content TEXT, ' +
+        'FOREIGN KEY (folder_id) REFERENCES folders (folder_id));')
+      await db.run('CREATE INDEX IF NOT EXISTS index_date ON entries(date, folder_id)')
+      await db.run(
+        'CREATE TABLE IF NOT EXISTS tags(' +
+        'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+        'name TEXT, ' +
+        'type TEXT, ' +
+        'style TEXT);')
+      await db.run(
+        'CREATE TABLE IF NOT EXISTS entry_tags(' +
+        'entry_id INTEGER, ' +
+        'tag_id INTEGER, ' +
+        'FOREIGN KEY (entry_id) REFERENCES entries (entry_id), ' +
+        'FOREIGN KEY (tag_id) REFERENCES tags (tag_id));')
+      await db.run(
+        'CREATE TABLE IF NOT EXISTS options(' +
+        'name TEXT PRIMARY KEY, ' +
+        'value TEXT);')
+      await db.run(
+        'CREATE TABLE IF NOT EXISTS attachments(' +
+        'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+        'created TEXT, ' +
+        'mime_type TEXT, ' +
+        'data BLOB);')
+      await db.run(
+        'CREATE TABLE IF NOT EXISTS styles(' +
+        'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+        'name TEXT, ' +
+        'type TEXT, ' +
+        'element TEXT, ' +
+        'class_name TEXT, ' +
+        'style TEXT);')
+      await db.run(
+        'CREATE TABLE IF NOT EXISTS templates(' +
+        'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+        'name TEXT, ' +
+        'created TEXT, ' +
+        'modified TEXT, ' +
+        'content TEXT)')
+    } catch (e) {
+      throw new Error(e)
+    }
   }
   const updateTables = async () => {
     try {
@@ -295,22 +267,18 @@ function Datastore () {
     }
   }
 
-  const createDefaultData = function () {
-    db.get('SELECT * FROM folders')
-      .then((result) => {
-        if (result) {
-          // Table exists, do nothing
-        } else {
-          // Create default data
-          db.run('INSERT INTO folders (name, type) VALUES (?, ?)', ['Journal', 'journal'])
-            .catch((err) => {
-              console.log('Error inserting default data', err)
-            })
-        }
-      })
-      .catch((err) => {
-        console.log('Error in createDefaultData', err)
-      })
+  const createDefaultData = async () => {
+    try {
+      let result = await db.get('SELECT * FROM folders')
+      if (result) {
+        // Table exists, do nothing
+      } else {
+        // Create default data
+        await db.run('INSERT INTO folders (name, type) VALUES (?, ?)', ['Journal', 'journal'])
+      }
+    } catch (err) {
+      console.log('Error in createDefaultData', err)
+    }
   }
 
   this.createEntry = async (entry) => {

@@ -70,7 +70,7 @@ export default {
       password: ''
     }
   },
-  mounted: function () {
+  mounted () {
     document.getElementById('password').focus()
     if (process.env.NODE_ENV === 'development') {
       this.password = 'test'
