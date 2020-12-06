@@ -86,7 +86,8 @@ function Datastore () {
         if (error) {
           reject(error)
         } else {
-          resolve()
+          // Return the raw SQLite result
+          resolve(this)
         }
       })
     })
@@ -133,6 +134,9 @@ function Datastore () {
         .catch(err => { reject(err) })
     })
   }
+  /*
+   * END PROMISE WRAPPERS
+   */
 
   /**
    * Update a row with an object of columns => values.
@@ -194,10 +198,6 @@ function Datastore () {
     }
     return 0
   }
-
-  /*
-   * END PROMISE WRAPPERS
-   */
 
   const createTables = async () => {
     try {
@@ -274,11 +274,11 @@ function Datastore () {
            */
           await datastore.run('DROP TABLE tags')
           await datastore.run(
-            'CREATE TABLE IF NOT EXISTS tags(' +
-            'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-            'name TEXT, ' +
-            'type TEXT, ' +
-            'style TEXT);')
+            `CREATE TABLE IF NOT EXISTS tags(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            type TEXT,
+            style TEXT);`)
         }
         if (version <= 6) {
           /*
@@ -320,11 +320,23 @@ function Datastore () {
     }
   }
 
+  /**
+   * Insert a new journal entry row
+   *
+   * @param {Object} entry - An object with the following properties:
+   * @param {string} entry.table - The table to insert into
+   * @param {number|string} entry.folder_id - Folder ID for the entry
+   * @param {string} entry.date - The date in YYYY-MM-DD format
+   * @param {string} entry.content - The body content
+   *
+   * @returns {Promise<boolean|number>}
+   * Returns false on error, otherwise returns the ID of the newly created row
+   */
   this.createEntry = async (entry) => {
     try {
       if (entry.table.match(/\W/)) return false // invalid characters in table name
-      let res = await datastore.run(`INSERT INTO ${entry.table} (folder_id, date, created, modified, content) VALUES (?, ?, ?, ?, ?)`, [entry.folder_id, entry.date, now(), now(), entry.content])
-      // res.changes contains the number of rows deleted
+      let res = await datastore.run(`INSERT INTO ${entry.table} (folder_id, date, created, modified, content) VALUES (?, ?, ?, ?, ?)`,
+        [entry.folder_id, entry.date, now(), now(), entry.content])
       return res && res.lastID ? res.lastID : false
     } catch (e) {
       console.log(e)
