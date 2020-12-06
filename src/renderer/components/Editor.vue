@@ -1,8 +1,10 @@
 <template>
-    <div id="editorContainer">
-        <div :id="editorId"></div>
-        <div id="statusbar">ID: {{ $root.entryId }} {{ $route.fullPath }} {{ statusBarTags }}<span style="float:right">{{ wordCount }} </span></div>
+  <div id="editorContainer">
+    <div :id="editorId" />
+    <div id="statusbar">
+      ID: {{ $root.entryId }} {{ $route.fullPath }} {{ statusBarTags }}<span style="float:right">{{ wordCount }} </span>
     </div>
+  </div>
 </template>
 
 <script>
@@ -79,6 +81,20 @@ export default {
     // Save entry on close
     window.addEventListener('unload', this.save)
   },
+  async beforeDestroy () {
+    if (this.entry) {
+      await this.save()
+      this.$emit('close', { id: this.entry.id })
+    }
+    try {
+      tinymce.remove()
+    } catch (err) {
+      // TinyMCE throws an error each time, but the function works as expected. Not sure what the problem is.
+      console.log(err)
+    }
+    window.removeEventListener('unload', this.save)
+    clearInterval(this.autosaveTimer)
+  },
   methods: {
     async new (template) {
       await this.save()
@@ -90,7 +106,7 @@ export default {
       await this.save()
       if (this.entry && this.entry.id && id !== this.entry.id) {
         // We're changing to a different entry
-        this.$emit('close', {id: this.entry.id})
+        this.$emit('close', { id: this.entry.id })
       }
       try {
         let data = await this.$db.getById(table, id)
@@ -98,7 +114,7 @@ export default {
           data.table = table
           this.entry = data
           console.log(`Loading ID ${id} from DB`)
-          this.$emit('open', {id: data.id})
+          this.$emit('open', { id: data.id })
           this.setContent(data.content)
         }
       } catch (e) {
@@ -139,7 +155,7 @@ export default {
       if (entry.id) {
         console.log(`Updating entry ${entry.id}`)
         if (await this.$db.updateEntry(entry)) {
-          this.$emit('update', {id: entry.id})
+          this.$emit('update', { id: entry.id })
           console.log(`Saved ${entry.id}`)
         } else {
           return false
@@ -152,7 +168,7 @@ export default {
             console.log('ERROR CREATING ENTRY')
             return
           }
-          this.$emit('update', {id: id})
+          this.$emit('update', { id: id })
           console.log(`Created db entry ${id}`)
           this.entry.id = id
         }
@@ -239,7 +255,7 @@ export default {
     getTags () {
       return new Promise((resolve, reject) => {
         // Get tags
-        this.$db.getAll('tags', {orderBy: 'name ASC'})
+        this.$db.getAll('tags', { orderBy: 'name ASC' })
           .then((rows) => {
             for (let i = 0; i < rows.length; i++) {
               let tag = rows[i]
@@ -416,10 +432,10 @@ export default {
                   if (mimeType === 'image/jpg' || mimeType === 'image/jpeg') {
                     // JPG
                     mimeType = 'image/jpeg' // standardise mime type
-                    if (resize) fileData = image.resize({width: width}).toJPEG(65)
+                    if (resize) fileData = image.resize({ width: width }).toJPEG(65)
                   } else if (mimeType === 'image/png') {
                     // PNG
-                    if (resize) fileData = image.resize({width: width}).toPNG()
+                    if (resize) fileData = image.resize({ width: width }).toPNG()
                   }
                   // Return the resized data
                   return fileData
@@ -461,20 +477,6 @@ export default {
         this.wordCount = 'Words: ' + this.editor.plugins.wordcount.getCount()
       }
     }
-  },
-  async beforeDestroy () {
-    if (this.entry) {
-      await this.save()
-      this.$emit('close', {id: this.entry.id})
-    }
-    try {
-      tinymce.remove()
-    } catch (err) {
-      // TinyMCE throws an error each time, but the function works as expected. Not sure what the problem is.
-      console.log(err)
-    }
-    window.removeEventListener('unload', this.save)
-    clearInterval(this.autosaveTimer)
   }
 }
 </script>

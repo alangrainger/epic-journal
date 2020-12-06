@@ -1,16 +1,24 @@
 <template>
-    <div id="container">
-        <div id="inner">
-            <h1>Welcome to Epic Journal</h1>
-            <p>Click the Create button below to create a new journal. Choose a folder and then
-                type the desired filename.
-                You can also choose an existing journal.</p>
-            <p>The next screen will come up with a password. Type any password you like and press
-                Enter.</p>
-            <button @click="create">CREATE</button>
-            <button @click="open">OPEN EXISTING</button>
-        </div>
+  <div id="container">
+    <div id="inner">
+      <h1>Welcome to Epic Journal</h1>
+      <p>
+        Click the Create button below to create a new journal. Choose a folder and then
+        type the desired filename.
+        You can also choose an existing journal.
+      </p>
+      <p>
+        The next screen will come up with a password. Type any password you like and press
+        Enter.
+      </p>
+      <button @click="create">
+        CREATE
+      </button>
+      <button @click="open">
+        OPEN EXISTING
+      </button>
     </div>
+  </div>
 </template>
 
 <style scoped>

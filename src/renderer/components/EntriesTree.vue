@@ -1,9 +1,15 @@
 <template>
-    <div id="tree" class="scrollbar">
-        <pre>{{selected}} asdf</pre>
-        <Tree v-for="model in tree" :key="model.id" :model="model" :selected="selected"
-              @scrollHeight="updateScroll" @bus="bus"></Tree>
-    </div>
+  <div id="tree" class="scrollbar">
+    <pre>{{ selected }} asdf</pre>
+    <Tree
+      v-for="model in tree"
+      :key="model.id"
+      :model="model"
+      :selected="selected"
+      @scrollHeight="updateScroll"
+      @bus="bus"
+    />
+  </div>
 </template>
 
 <style scoped>
@@ -18,29 +24,24 @@
 <script>
 import Tree from './Tree.vue'
 
-const {remote, clipboard} = require('electron')
-const {Menu, MenuItem} = remote
+const { remote, clipboard } = require('electron')
+const { Menu, MenuItem } = remote
 
 export default {
   name: 'EntriesTree',
   components: {
     Tree
   },
-  props: ['selected'],
+  props: {
+    selected: {
+      type: String,
+      required: true
+    }
+  },
   data () {
     return {
       tree: []
     }
-  },
-  mounted: function () {
-    this.createTree()
-      .then(() => {
-        this.expandToDate(this.$moment().format('YYYY-MM-DD'))
-      })
-
-    this.$on('bus', section => {
-      console.log(section)
-    })
   },
   watch: {
     /**
@@ -52,6 +53,16 @@ export default {
       },
       immediate: true
     }
+  },
+  mounted: function () {
+    this.createTree()
+      .then(() => {
+        this.expandToDate(this.$moment().format('YYYY-MM-DD'))
+      })
+
+    this.$on('bus', section => {
+      console.log(section)
+    })
   },
   methods: {
     bus (data) {
@@ -156,7 +167,7 @@ export default {
               parent: monthObj,
               icon: 'file-text-o',
               action: () => {
-                if (this.$route.params.date !== row.date) this.$router.push({name: 'home', params: {date: row.date}})
+                if (this.$route.params.date !== row.date) this.$router.push({ name: 'home', params: { date: row.date } })
               }
             })
           }

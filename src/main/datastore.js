@@ -418,7 +418,7 @@ function Datastore () {
 
             tree[year]['show'] = true
             tree[year]['months'][month]['show'] = true
-            tree[year]['months'][month]['entries'].push({date: row.date, value: day})
+            tree[year]['months'][month]['entries'].push({ date: row.date, value: day })
           }
           resolve(tree)
         })

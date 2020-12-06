@@ -1,26 +1,25 @@
 module.exports = {
   root: true,
-  parser: 'babel-eslint',
-  parserOptions: {
-    sourceType: 'module'
-  },
   env: {
-    browser: true,
     node: true
   },
-  extends: 'standard',
-  globals: {
-    __static: true
-  },
-  plugins: [
-    'html'
+  extends: [
+    'plugin:vue/essential',
+    'plugin:vue/strongly-recommended',
+    '@vue/standard'
   ],
-  'rules': {
-    // allow paren-less arrow functions
-    'arrow-parens': 0,
-    // allow async-await
-    'generator-star-spacing': 0,
-    // allow debugger during development
-    'no-debugger': process.env.NODE_ENV === 'production' ? 2 : 0
+  parserOptions: {
+    ecmaVersion: 6,
+    parser: 'babel-eslint',
+  },
+  rules: {
+    indent: ['error', 2],
+    quotes: ['error', 'single'],
+    'vue/max-attributes-per-line': ['error', {
+      singleline: 4,
+      multiline: 1
+    }],
+    'vue/attributes-order': 'error',
+    'vue/order-in-components': 'error'
   }
 }

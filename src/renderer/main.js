@@ -17,9 +17,8 @@ Vue.config.productionTip = false
 
 /* eslint-disable no-new */
 let vm = new Vue({
-  components: {App},
+  components: { App },
   router,
-  template: '<App/>',
   data: {
     date: moment().format(db.DATE_DAY), // default to today's date
     entryId: null, // entry ID
@@ -27,7 +26,8 @@ let vm = new Vue({
       id: null,
       table: null
     }
-  }
+  },
+  template: '<App/>'
 }).$mount('#app')
 
 // Set up routing
@@ -41,7 +41,7 @@ electron.ipcRenderer.on('goto', async (event, arg) => {
   let component = router.currentRoute.matched[0].instances.default
 
   if (arg === 'today') {
-    await router.push({name: 'home', params: {date: moment().format(db.DATE_DAY)}})
+    await router.push({ name: 'home', params: { date: moment().format(db.DATE_DAY) } })
   } else if (arg === 'previous') {
     if (router.currentRoute.name !== 'home') return
     let row = await db.get('SELECT date FROM entries WHERE DATE(date) < DATE(?) ORDER BY date DESC LIMIT 1', component.date)
@@ -55,7 +55,7 @@ electron.ipcRenderer.on('goto', async (event, arg) => {
       for (let row of rows) {
         // Loop through and route to the entry which ISN'T the current entry
         if (row.id !== vm.$root.entryId) {
-          await router.push({name: 'home', params: {id: row.id}})
+          await router.push({ name: 'home', params: { id: row.id } })
           return
         }
       }
@@ -71,10 +71,10 @@ electron.ipcRenderer.on('goto', async (event, arg) => {
 
 if (!config.get('journal')) {
   // No existing journal, send them to the intro screen
-  router.push({name: 'intro'})
+  router.push({ name: 'intro' })
 } else if (vm.$route.name !== 'password') {
   // Send them to the login screen
-  router.push({name: 'password'})
+  router.push({ name: 'password' })
 }
 
 function goFullscreen () {
