@@ -56,6 +56,12 @@ function Datastore () {
     }
   }
 
+  /**
+   * Open an existing database file or create a new one, and return the database instance
+   *
+   * @param {string} filename - The full path to the database file to open or create
+   * @returns {Promise<unknown>}
+   */
   this.connect = function (filename) {
     return new Promise((resolve, reject) => {
       const instance = new sqlite3.Database(filename, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
@@ -128,32 +134,65 @@ function Datastore () {
     })
   }
 
-  this.update = function (table, data, id) {
-    return new Promise(function (resolve, reject) {
-      let columns = []
-      let values = []
-      for (let key in data) {
-        columns.push(key + ' = ?')
-        values.push(data[key])
+  /**
+   * Update a row with an object of columns => values.
+   *
+   * @example
+   * // Update date and content of row 1 in the 'entries' table
+   * update(
+   *   'entries',
+   *   {
+   *     date: '2020-01-01',
+   *     content: 'Test update'
+   *   },
+   *   1
+   * )
+   *
+   * @param {String} table - The name of the table
+   * @param {Object} data - An object containing columns => values
+   * @param {Number|String} id - The ID of the row to update
+   *
+   * @returns {Promise<Number>}
+   * Returns the number of rows changed
+   */
+  this.update = async (table, data, id) => {
+    if (table && data && id) {
+      try {
+        let columns = []
+        let values = []
+        for (let key of Object.keys(data)) {
+          columns.push(key + ' = ?')
+          values.push(data[key])
+        }
+        values.push(id)
+        const result = await datastore.run('UPDATE ' + table + ' SET ' + columns.join(', ') + ' WHERE id = ?', values)
+        const changes = parseInt(result.changes)
+        if (!isNaN(changes)) return changes
+      } catch (e) {
+        console.log(e)
       }
-
-      datastore.run('UPDATE ' + table + ' SET ' + columns.join(', ') + ' WHERE id = ' + id, values)
-        .then(result => {
-          resolve(result.changes)
-        })
-        .catch(err => { reject(err) })
-    })
+    }
+    return 0
   }
-  this.delete = function (table, id) {
-    return new Promise(function (resolve, reject) {
-      // Reject if ID not an integer
-      if (!parseInt(id, 10)) reject(new Error('Invalid ID specified for delete'))
-      datastore.run('DELETE FROM ' + table + ' WHERE id = ?', [id])
-        .then(result => {
-          resolve(result.changes)
-        })
-        .catch(err => { reject(err) })
-    })
+
+  /**
+   * Delete a row from a table by ID
+   *
+   * @param {string} table - Table name
+   * @param {Number} id - Row ID
+   * @returns {Promise<number>}
+   */
+  this.delete = async (table, id) => {
+    // Reject if ID not an integer
+    if (!Number.isInteger(id)) throw new Error('Invalid ID specified for delete')
+    try {
+      const result = await datastore.run('DELETE FROM ' + table + ' WHERE id = ?', [id])
+      const changes = parseInt(result.changes)
+      if (!isNaN(changes)) return changes
+    } catch (e) {
+      console.log(e)
+    }
+    return 0
   }
 
   /*
