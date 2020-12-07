@@ -92,6 +92,14 @@ function Datastore () {
       })
     })
   }
+  /**
+   * Fetch a row from the database, using a prepared statement SQL format and its parameters
+   *
+   * @param {string} query - SQL query
+   * @param {array} parameters - Parameters for the prepared statement
+   * @returns {Promise<unknown>}
+   * Returns 'undefined' if no matching row is found
+   */
   this.get = function (query, parameters) {
     return new Promise(function (resolve, reject) {
       if (!datastore.dbHandle) { reject(new Error('get: Database object not created')) }
@@ -344,12 +352,20 @@ function Datastore () {
     }
   }
 
+  /**
+   * Update the content of an existing entry
+   *
+   * @param {Object} entry - An object with the following properties:
+   * @param {string} entry.table - The table where the the entry is stored
+   * @param {number|string} entry.id - ID of the entry to update
+   * @param {string} entry.content - The body content
+   *
+   * @returns {Promise<boolean>}
+   */
   this.updateEntry = async (entry) => {
     try {
       if (entry.table.match(/\W/)) return false // invalid characters in table name
-      if (parseInt(entry.id, 10) !== entry.id) return false // invalid characters in ID
       let res = await datastore.run(`UPDATE ${entry.table} SET modified = ?, content = ? WHERE id = ?`, [now(), entry.content, entry.id])
-      console.log(res)
       // res.changes contains the number of rows deleted
       return res && res.changes
     } catch (e) {
@@ -372,17 +388,21 @@ function Datastore () {
     }
   }
 
-  this.getEntryByDate = function (date) {
-    return new Promise(function (resolve, reject) {
-      if (!date) reject(new Error('No date specified'))
-      datastore.get('SELECT * FROM entries WHERE date = ?', [date])
-        .then((row) => {
-          resolve(row)
-        })
-        .catch((error) => {
-          reject(error)
-        })
-    })
+  /**
+   * Fetch a journal entry by date
+   *
+   * @param {string} date - Date in YYYY-MM-DD format
+   * @returns {Promise<unknown|boolean>}
+   * Returns the matching row, or 'undefined' if no row found
+   */
+  this.getEntryByDate = async (date) => {
+    if (!date) throw new Error('No date specified')
+    try {
+      return datastore.get('SELECT * FROM entries WHERE date = ?', [date])
+    } catch (e) {
+      console.log(e)
+    }
+    return false
   }
 
   /**
