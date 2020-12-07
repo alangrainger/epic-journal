@@ -79,6 +79,25 @@ function Datastore () {
    * https://github.com/mapbox/node-sqlite3/wiki/API
    *
    */
+  /**
+   * Execute a prepared SQL query with optional array of placeholder parameters
+   * https://github.com/mapbox/node-sqlite3/wiki/API#databaserunsql-param--callback
+   *
+   * @example
+   * // Example UPDATE command
+   * run('UPDATE entries SET content = ? WHERE id = ?', ['example', 1])
+   *
+   * // Example return value - only ONE of these will contain valid information
+   * {
+   *   lastID: 23 // The ID of the inserted row on an INSERT statement
+   *   changes: 6 // The number of rows affected by an UPDATE or DELETE statement
+   * }
+   * @param {string} query - The SQL query, with ? for placeholders to be filled from 'parameters' array
+   * @param {array} [parameters] - The array of parameters to use in the query
+   *
+   * @returns {Promise<unknown>}
+   * Returns false on failure, otherwise an object with 'lastID' and 'changes' properties.
+   */
   this.run = (query, parameters = []) => {
     return new Promise(function (resolve, reject) {
       if (!datastore.dbHandle) { reject(new Error('run: Database object not created')) }
@@ -96,11 +115,11 @@ function Datastore () {
    * Fetch a row from the database, using a prepared statement SQL format and its parameters
    *
    * @param {string} query - SQL query
-   * @param {array} parameters - Parameters for the prepared statement
+   * @param {array} [parameters] - Parameters for the prepared statement
    * @returns {Promise<unknown>}
    * Returns 'undefined' if no matching row is found
    */
-  this.get = function (query, parameters) {
+  this.get = function (query, parameters = []) {
     return new Promise(function (resolve, reject) {
       if (!datastore.dbHandle) { reject(new Error('get: Database object not created')) }
       datastore.dbHandle.get(query, parameters, function (err, row) {
@@ -112,7 +131,7 @@ function Datastore () {
       })
     })
   }
-  this.all = function (query, parameters) {
+  this.all = function (query, parameters = []) {
     return new Promise(function (resolve, reject) {
       if (!datastore.dbHandle) { reject(new Error('all: Database object not created')) }
       datastore.dbHandle.all(query, parameters, function (err, rows) {
@@ -124,23 +143,25 @@ function Datastore () {
       })
     })
   }
-  this.insert = function (table, data) {
-    return new Promise(function (resolve, reject) {
+  this.insert = async (table, data) => {
+    try {
+      if (table.match(/\W/)) return false // invalid characters in table name
       let columns = []
       let values = []
       let placeholders = []
-      for (let key in data) {
-        columns.push(key)
+      // Turn the data object into two arrays - column names, and placeholders (ie string '?')
+      for (let key of Object.keys(data)) {
+        columns.push('`' + key + '`')
         values.push(data[key])
         placeholders.push('?')
       }
-
-      datastore.run('INSERT INTO ' + table + ' (' + columns.join(', ') + ') VALUES (' + placeholders.join(', ') + ')', values)
-        .then((result) => {
-          resolve(result ? result.lastID : false)
-        })
-        .catch(err => { reject(err) })
-    })
+      // Insert the row
+      let result = await datastore.run('INSERT INTO ' + table + ' (' + columns.join(', ') + ') VALUES (' + placeholders.join(', ') + ')', values)
+      return result ? result.lastID : false
+    } catch (e) {
+      console.log(e)
+    }
+    return false
   }
   /*
    * END PROMISE WRAPPERS
