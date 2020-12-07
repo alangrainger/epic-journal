@@ -3,7 +3,7 @@ import config from '../electron-store'
 
 const sqlite3 = require('@journeyapps/sqlcipher').verbose()
 
-const SCHEMA_VERSION = 7
+const SCHEMA_VERSION = 8
 
 const DATE_SQL = 'YYYY-MM-DD HH:mm:ss'
 const DATE_DAY = 'YYYY-MM-DD'
@@ -84,7 +84,7 @@ function Datastore () {
       if (!datastore.dbHandle) { reject(new Error('run: Database object not created')) }
       datastore.dbHandle.run(query, parameters, function (error) {
         if (error) {
-          reject(error)
+          resolve(false)
         } else {
           // Return the raw SQLite result
           resolve(this)
@@ -105,7 +105,7 @@ function Datastore () {
       if (!datastore.dbHandle) { reject(new Error('get: Database object not created')) }
       datastore.dbHandle.get(query, parameters, function (err, row) {
         if (err) {
-          reject(err)
+          resolve(false)
         } else {
           resolve(row)
         }
@@ -117,7 +117,7 @@ function Datastore () {
       if (!datastore.dbHandle) { reject(new Error('all: Database object not created')) }
       datastore.dbHandle.all(query, parameters, function (err, rows) {
         if (err) {
-          reject(err)
+          resolve(false)
         } else {
           resolve(rows)
         }
@@ -136,8 +136,8 @@ function Datastore () {
       }
 
       datastore.run('INSERT INTO ' + table + ' (' + columns.join(', ') + ') VALUES (' + placeholders.join(', ') + ')', values)
-        .then(result => {
-          resolve(result.lastID)
+        .then((result) => {
+          resolve(result ? result.lastID : false)
         })
         .catch(err => { reject(err) })
     })
@@ -215,16 +215,20 @@ function Datastore () {
         'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
         'name TEXT, ' +
         'type TEXT);')
+      // Entries
       await datastore.run(
-        'CREATE TABLE IF NOT EXISTS entries(' +
-        'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-        'folder_id INTEGER, ' +
-        'date TEXT, ' + // YYYY-MM-DD
-        'created TEXT, ' +
-        'modified TEXT, ' +
-        'content TEXT, ' +
-        'FOREIGN KEY (folder_id) REFERENCES folders (folder_id));')
-      await datastore.run('CREATE INDEX IF NOT EXISTS index_date ON entries(date, folder_id)')
+        `CREATE TABLE IF NOT EXISTS entries(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        folder_id INTEGER,
+        \`date\` TEXT,
+        created TEXT,
+        modified TEXT,
+        deleted TEXT,
+        content TEXT,
+        FOREIGN KEY (folder_id) REFERENCES folders (folder_id));`)
+      await datastore.run('CREATE INDEX IF NOT EXISTS index_date ON entries(`date`, folder_id)')
+      await datastore.run('CREATE INDEX entries_deleted ON entries(deleted)')
+      // Tags
       await datastore.run(
         'CREATE TABLE IF NOT EXISTS tags(' +
         'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
@@ -255,13 +259,16 @@ function Datastore () {
         'element TEXT, ' +
         'class_name TEXT, ' +
         'style TEXT);')
+      // Templates
       await datastore.run(
-        'CREATE TABLE IF NOT EXISTS templates(' +
-        'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-        'name TEXT, ' +
-        'created TEXT, ' +
-        'modified TEXT, ' +
-        'content TEXT)')
+        `CREATE TABLE IF NOT EXISTS templates(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        \`name\` TEXT,
+        created TEXT,
+        modified TEXT,
+        deleted TEXT,
+        content TEXT)`)
+      await datastore.run('CREATE INDEX templates_deleted ON templates(deleted)')
     } catch (e) {
       throw new Error(e)
     }
@@ -293,7 +300,7 @@ function Datastore () {
           Multicolumn index_date added
            */
           await datastore.run('DROP INDEX IF EXISTS index_date')
-          await datastore.run('CREATE INDEX index_date ON entries(date, folder_id)')
+          await datastore.run('CREATE INDEX index_date ON entries(`date`, folder_id)')
         }
         if (version < 7) {
           /*
@@ -305,6 +312,15 @@ function Datastore () {
           await datastore.run('ALTER TABLE styles RENAME COLUMN style_id TO id;')
           await datastore.run('ALTER TABLE tags RENAME COLUMN tag_id TO id;')
           await datastore.run('ALTER TABLE templates RENAME COLUMN template_id TO id;')
+        }
+        if (version < 8) {
+          /*
+          Add a deleted column to the entries table to soft-delete entries
+           */
+          await datastore.run('ALTER TABLE entries ADD deleted TEXT;') // date YYYY-MM-DD
+          await datastore.run('CREATE INDEX entries_deleted ON entries(deleted)')
+          await datastore.run('ALTER TABLE templates ADD deleted TEXT;') // date YYYY-MM-DD
+          await datastore.run('CREATE INDEX templates_deleted ON templates(deleted)')
         }
         await datastore.run('PRAGMA user_version = ' + SCHEMA_VERSION)
       }
