@@ -1,3 +1,11 @@
+/*
+SQLite language reference:
+https://sqlite.org/lang.html
+
+Node SQLite language reference:
+https://github.com/mapbox/node-sqlite3/wiki/API
+ */
+
 import dayjs from 'dayjs'
 import config from '../electron-store'
 
