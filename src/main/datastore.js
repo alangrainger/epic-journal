@@ -1,68 +1,89 @@
-import moment from 'dayjs'
+import dayjs from 'dayjs'
 import config from '../electron-store'
 
 const sqlite3 = require('@journeyapps/sqlcipher').verbose()
 
 const SCHEMA_VERSION = 8
 
-const DATE_SQL = 'YYYY-MM-DD HH:mm:ss'
-const DATE_DAY = 'YYYY-MM-DD'
+const Datastore = (function () {
+  'use strict'
 
-const now = function () {
-  return moment().format(DATE_SQL)
-}
+  const publicFunc = {}
+  const DATE_SQL = 'YYYY-MM-DD HH:mm:ss'
+  const DATE_DAY = 'YYYY-MM-DD'
 
-function Datastore () {
-  this.DATE_DAY = DATE_DAY
-  this.DATE_SQL = DATE_SQL
-  this.table = {
+  publicFunc.DATE_DAY = DATE_DAY
+  publicFunc.DATE_SQL = DATE_SQL
+  publicFunc.table = {
     entries: 'entries',
     tags: 'tags'
   }
-  this.connected = false
-  this.dbHandle = false
+  publicFunc.connected = false
 
-  const datastore = this
+  /**
+   * Return the current date/time as a SQL-formatted string
+   * @returns {string}
+   */
+  const now = function () {
+    return dayjs().format(DATE_SQL)
+  }
+  publicFunc.now = now
 
-  this.openDatabase = async (password) => {
+  // Raw SQLite handle
+  let __dbHandle // will be set after connecting/creating the database
+
+  /**
+   * Open or create the database, and perform any housekeeping tasks.
+   * Database filename comes from electron-store config.
+   *
+   * @param {string} password - Password to decrypt the database
+   * @returns {Promise<boolean>}
+   */
+  publicFunc.openDatabase = async (password) => {
     const filename = config.get('journal')
     password = password.replace(/'/g, '\'\'') // escape single quotes with two single quotes
 
     // Create/connect database
     try {
-      datastore.dbHandle = await datastore.connect(filename)
-      await datastore.run('PRAGMA cipher_compatibility = 3')
-      await datastore.run('PRAGMA KEY = \'' + password + '\'')
-      await datastore.run('PRAGMA CIPHER = \'aes-256-cbc\'')
+      __dbHandle = await __connect(filename)
+      await publicFunc.run('PRAGMA cipher_compatibility = 3')
+      await publicFunc.run('PRAGMA KEY = \'' + password + '\'')
+      await publicFunc.run('PRAGMA CIPHER = \'aes-256-cbc\'')
       // Test DB read/write
-      await datastore.run('CREATE TABLE IF NOT EXISTS test (id INTEGER)')
-      await datastore.run('DROP TABLE test')
+      await publicFunc.run('CREATE TABLE IF NOT EXISTS test (id INTEGER)')
+      await publicFunc.run('DROP TABLE test')
       // Check database schema version
-      let row = await datastore.get('PRAGMA user_version;')
+      let row = await publicFunc.get('PRAGMA user_version;')
       let version = row.user_version
       if (!version || version < SCHEMA_VERSION) {
         // Database is new or out of date
-        await createTables()
-        await updateTables()
+        await __createTables()
+        await __updateTables()
       }
       // Create default data if needed
-      await createDefaultData()
+      await __createDefaultData()
       // All complete
-      datastore.connected = true
+      publicFunc.connected = true
     } catch (e) {
-      if (datastore.dbHandle) datastore.dbHandle.close()
+      console.log(e)
+      if (__dbHandle) {
+        __dbHandle.close()
+        __dbHandle = null
+      }
       console.log('Fatal error: Database not writeable. Please check your password, check if your database file is locked, and restart the app.')
       throw new Error(e)
     }
+    return publicFunc.connected
   }
 
   /**
    * Open an existing database file or create a new one, and return the database instance
    *
    * @param {string} filename - The full path to the database file to open or create
-   * @returns {Promise<unknown>}
+   * @returns {Promise<Object>}
+   * @private
    */
-  this.connect = function (filename) {
+  const __connect = function (filename) {
     return new Promise((resolve, reject) => {
       const instance = new sqlite3.Database(filename, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
         if (err) {
@@ -73,12 +94,30 @@ function Datastore () {
       })
     })
   }
+
+  /**
+   * Parse the result of an UPDATE or DELETE database call, and return
+   * the number of rows changed
+   *
+   * @param {object} dbResult - The database result object
+   * @returns {number}
+   * @private
+   */
+  const __numChanges = function (dbResult) {
+    if (dbResult && typeof dbResult === 'object' && dbResult.hasOwnProperty('changes')) {
+      const changes = parseInt(dbResult.changes)
+      if (!isNaN(changes)) return changes
+    }
+    return 0
+  }
+
   /*
    *
    * Promise wrappers for built-in Sqlite3 functions
    * https://github.com/mapbox/node-sqlite3/wiki/API
    *
    */
+
   /**
    * Execute a prepared SQL query with optional array of placeholder parameters
    * https://github.com/mapbox/node-sqlite3/wiki/API#databaserunsql-param--callback
@@ -98,10 +137,10 @@ function Datastore () {
    * @returns {Promise<unknown>}
    * Returns false on failure, otherwise an object with 'lastID' and 'changes' properties.
    */
-  this.run = (query, parameters = []) => {
+  publicFunc.run = (query, parameters = []) => {
     return new Promise(function (resolve, reject) {
-      if (!datastore.dbHandle) { reject(new Error('run: Database object not created')) }
-      datastore.dbHandle.run(query, parameters, function (error) {
+      if (!__dbHandle) { reject(new Error('run: Database object not created')) }
+      __dbHandle.run(query, parameters, function (error) {
         if (error) {
           resolve(false)
         } else {
@@ -119,10 +158,10 @@ function Datastore () {
    * @returns {Promise<unknown>}
    * Returns 'undefined' if no matching row is found
    */
-  this.get = function (query, parameters = []) {
+  publicFunc.get = function (query, parameters = []) {
     return new Promise(function (resolve, reject) {
-      if (!datastore.dbHandle) { reject(new Error('get: Database object not created')) }
-      datastore.dbHandle.get(query, parameters, function (err, row) {
+      if (!__dbHandle) { reject(new Error('get: Database object not created')) }
+      __dbHandle.get(query, parameters, function (err, row) {
         if (err) {
           resolve(false)
         } else {
@@ -131,10 +170,10 @@ function Datastore () {
       })
     })
   }
-  this.all = function (query, parameters = []) {
+  publicFunc.getAll = function (query, parameters = []) {
     return new Promise(function (resolve, reject) {
-      if (!datastore.dbHandle) { reject(new Error('all: Database object not created')) }
-      datastore.dbHandle.all(query, parameters, function (err, rows) {
+      if (!__dbHandle) { reject(new Error('all: Database object not created')) }
+      __dbHandle.all(query, parameters, function (err, rows) {
         if (err) {
           resolve(false)
         } else {
@@ -143,7 +182,16 @@ function Datastore () {
       })
     })
   }
-  this.insert = async (table, data) => {
+  publicFunc.all = publicFunc.getAll // for backwards compatibility
+
+  /**
+   * Insert a row from a data object of columns => values
+   *
+   * @param {string} table - Table name
+   * @param {object} data - Data object of columns => values
+   * @returns {Promise<boolean|number>}
+   */
+  publicFunc.insert = async (table, data) => {
     try {
       if (table.match(/\W/)) return false // invalid characters in table name
       let columns = []
@@ -156,7 +204,7 @@ function Datastore () {
         placeholders.push('?')
       }
       // Insert the row
-      let result = await datastore.run('INSERT INTO ' + table + ' (' + columns.join(', ') + ') VALUES (' + placeholders.join(', ') + ')', values)
+      let result = await publicFunc.run('INSERT INTO ' + table + ' (' + columns.join(', ') + ') VALUES (' + placeholders.join(', ') + ')', values)
       return result ? result.lastID : false
     } catch (e) {
       console.log(e)
@@ -188,19 +236,18 @@ function Datastore () {
    * @returns {Promise<Number>}
    * Returns the number of rows changed
    */
-  this.update = async (table, data, id) => {
+  publicFunc.update = async (table, data, id) => {
     if (table && data && id) {
       try {
         let columns = []
         let values = []
         for (let key of Object.keys(data)) {
-          columns.push(key + ' = ?')
+          columns.push('`' + key + '` = ?')
           values.push(data[key])
         }
         values.push(id)
-        const result = await datastore.run('UPDATE ' + table + ' SET ' + columns.join(', ') + ' WHERE id = ?', values)
-        const changes = parseInt(result.changes)
-        if (!isNaN(changes)) return changes
+        const result = await publicFunc.run('UPDATE ' + table + ' SET ' + columns.join(', ') + ' WHERE id = ?', values)
+        return __numChanges(result)
       } catch (e) {
         console.log(e)
       }
@@ -215,29 +262,28 @@ function Datastore () {
    * @param {Number} id - Row ID
    * @returns {Promise<number>}
    */
-  this.delete = async (table, id) => {
+  publicFunc.delete = async (table, id) => {
     // Reject if ID not an integer
     if (!Number.isInteger(id)) throw new Error('Invalid ID specified for delete')
     try {
-      const result = await datastore.run('DELETE FROM ' + table + ' WHERE id = ?', [id])
-      const changes = parseInt(result.changes)
-      if (!isNaN(changes)) return changes
+      const result = await publicFunc.run('DELETE FROM ' + table + ' WHERE id = ?', [id])
+      return __numChanges(result)
     } catch (e) {
       console.log(e)
     }
     return 0
   }
 
-  const createTables = async () => {
+  const __createTables = async () => {
     try {
       // Folders
-      await datastore.run(
+      await publicFunc.run(
         'CREATE TABLE IF NOT EXISTS folders(' +
         'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
         'name TEXT, ' +
         'type TEXT);')
       // Entries
-      await datastore.run(
+      await publicFunc.run(
         `CREATE TABLE IF NOT EXISTS entries(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         folder_id INTEGER,
@@ -247,32 +293,32 @@ function Datastore () {
         deleted TEXT,
         content TEXT,
         FOREIGN KEY (folder_id) REFERENCES folders (folder_id));`)
-      await datastore.run('CREATE INDEX IF NOT EXISTS index_date ON entries(`date`, folder_id)')
-      await datastore.run('CREATE INDEX entries_deleted ON entries(deleted)')
+      await publicFunc.run('CREATE INDEX IF NOT EXISTS index_date ON entries(`date`, folder_id)')
+      await publicFunc.run('CREATE INDEX entries_deleted ON entries(deleted)')
       // Tags
-      await datastore.run(
+      await publicFunc.run(
         'CREATE TABLE IF NOT EXISTS tags(' +
         'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
         'name TEXT, ' +
         'type TEXT, ' +
         'style TEXT);')
-      await datastore.run(
+      await publicFunc.run(
         'CREATE TABLE IF NOT EXISTS entry_tags(' +
         'entry_id INTEGER, ' +
         'tag_id INTEGER, ' +
         'FOREIGN KEY (entry_id) REFERENCES entries (entry_id), ' +
         'FOREIGN KEY (tag_id) REFERENCES tags (tag_id));')
-      await datastore.run(
+      await publicFunc.run(
         'CREATE TABLE IF NOT EXISTS options(' +
         'name TEXT PRIMARY KEY, ' +
         'value TEXT);')
-      await datastore.run(
+      await publicFunc.run(
         'CREATE TABLE IF NOT EXISTS attachments(' +
         'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
         'created TEXT, ' +
         'mime_type TEXT, ' +
         'data BLOB);')
-      await datastore.run(
+      await publicFunc.run(
         'CREATE TABLE IF NOT EXISTS styles(' +
         'id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
         'name TEXT, ' +
@@ -281,7 +327,7 @@ function Datastore () {
         'class_name TEXT, ' +
         'style TEXT);')
       // Templates
-      await datastore.run(
+      await publicFunc.run(
         `CREATE TABLE IF NOT EXISTS templates(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         \`name\` TEXT,
@@ -289,27 +335,27 @@ function Datastore () {
         modified TEXT,
         deleted TEXT,
         content TEXT)`)
-      await datastore.run('CREATE INDEX templates_deleted ON templates(deleted)')
+      await publicFunc.run('CREATE INDEX templates_deleted ON templates(deleted)')
     } catch (e) {
       throw new Error(e)
     }
   }
-  const updateTables = async () => {
+  const __updateTables = async () => {
     try {
       // Get DB version
-      let row = await datastore.get('PRAGMA user_version;')
+      let row = await publicFunc.get('PRAGMA user_version;')
       let version = row.user_version
       if (!version) {
         // New database
-        await datastore.run('PRAGMA user_version = ' + SCHEMA_VERSION)
+        await publicFunc.run('PRAGMA user_version = ' + SCHEMA_VERSION)
       } else if (version < SCHEMA_VERSION) {
         console.log('Outdated database schema, updating...')
         if (version < 5) {
           /*
           Tag table was updated to include style and a style-type of inline or block
            */
-          await datastore.run('DROP TABLE tags')
-          await datastore.run(
+          await publicFunc.run('DROP TABLE tags')
+          await publicFunc.run(
             `CREATE TABLE IF NOT EXISTS tags(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT,
@@ -320,30 +366,30 @@ function Datastore () {
           /*
           Multicolumn index_date added
            */
-          await datastore.run('DROP INDEX IF EXISTS index_date')
-          await datastore.run('CREATE INDEX index_date ON entries(`date`, folder_id)')
+          await publicFunc.run('DROP INDEX IF EXISTS index_date')
+          await publicFunc.run('CREATE INDEX index_date ON entries(`date`, folder_id)')
         }
         if (version < 7) {
           /*
           Updating all tables to have standard 'id' fields, instead of unique ones
            */
-          await datastore.run('ALTER TABLE attachments RENAME COLUMN attachment_id TO id;')
-          await datastore.run('ALTER TABLE entries RENAME COLUMN entry_id TO id;')
-          await datastore.run('ALTER TABLE folders RENAME COLUMN folder_id TO id;')
-          await datastore.run('ALTER TABLE styles RENAME COLUMN style_id TO id;')
-          await datastore.run('ALTER TABLE tags RENAME COLUMN tag_id TO id;')
-          await datastore.run('ALTER TABLE templates RENAME COLUMN template_id TO id;')
+          await publicFunc.run('ALTER TABLE attachments RENAME COLUMN attachment_id TO id;')
+          await publicFunc.run('ALTER TABLE entries RENAME COLUMN entry_id TO id;')
+          await publicFunc.run('ALTER TABLE folders RENAME COLUMN folder_id TO id;')
+          await publicFunc.run('ALTER TABLE styles RENAME COLUMN style_id TO id;')
+          await publicFunc.run('ALTER TABLE tags RENAME COLUMN tag_id TO id;')
+          await publicFunc.run('ALTER TABLE templates RENAME COLUMN template_id TO id;')
         }
         if (version < 8) {
           /*
           Add a deleted column to the entries table to soft-delete entries
            */
-          await datastore.run('ALTER TABLE entries ADD deleted TEXT;') // date YYYY-MM-DD
-          await datastore.run('CREATE INDEX entries_deleted ON entries(deleted)')
-          await datastore.run('ALTER TABLE templates ADD deleted TEXT;') // date YYYY-MM-DD
-          await datastore.run('CREATE INDEX templates_deleted ON templates(deleted)')
+          await publicFunc.run('ALTER TABLE entries ADD deleted TEXT;') // date YYYY-MM-DD
+          await publicFunc.run('CREATE INDEX entries_deleted ON entries(deleted)')
+          await publicFunc.run('ALTER TABLE templates ADD deleted TEXT;') // date YYYY-MM-DD
+          await publicFunc.run('CREATE INDEX templates_deleted ON templates(deleted)')
         }
-        await datastore.run('PRAGMA user_version = ' + SCHEMA_VERSION)
+        await publicFunc.run('PRAGMA user_version = ' + SCHEMA_VERSION)
       }
     } catch (e) {
       console.log('Error updating database schema')
@@ -351,14 +397,14 @@ function Datastore () {
     }
   }
 
-  const createDefaultData = async () => {
+  const __createDefaultData = async () => {
     try {
-      let result = await datastore.get('SELECT * FROM folders')
+      let result = await publicFunc.get('SELECT * FROM folders')
       if (result) {
         // Table exists, do nothing
       } else {
         // Create default data
-        await datastore.run('INSERT INTO folders (name, type) VALUES (?, ?)', ['Journal', 'journal'])
+        await publicFunc.run('INSERT INTO folders (name, type) VALUES (?, ?)', ['Journal', 'journal'])
       }
     } catch (err) {
       console.log('Error in createDefaultData', err)
@@ -377,10 +423,10 @@ function Datastore () {
    * @returns {Promise<boolean|number>}
    * Returns false on error, otherwise returns the ID of the newly created row
    */
-  this.createEntry = async (entry) => {
+  publicFunc.createEntry = async (entry) => {
     try {
       if (entry.table.match(/\W/)) return false // invalid characters in table name
-      let res = await datastore.run(`INSERT INTO ${entry.table} (folder_id, date, created, modified, content) VALUES (?, ?, ?, ?, ?)`,
+      let res = await publicFunc.run(`INSERT INTO ${entry.table} (folder_id, date, created, modified, content) VALUES (?, ?, ?, ?, ?)`,
         [entry.folder_id, entry.date, now(), now(), entry.content])
       return res && res.lastID ? res.lastID : false
     } catch (e) {
@@ -399,10 +445,10 @@ function Datastore () {
    *
    * @returns {Promise<boolean>}
    */
-  this.updateEntry = async (entry) => {
+  publicFunc.updateEntry = async (entry) => {
     try {
       if (entry.table.match(/\W/)) return false // invalid characters in table name
-      let res = await datastore.run(`UPDATE ${entry.table} SET modified = ?, content = ? WHERE id = ?`, [now(), entry.content, entry.id])
+      let res = await publicFunc.run(`UPDATE ${entry.table} SET modified = ?, content = ? WHERE id = ?`, [now(), entry.content, entry.id])
       // res.changes contains the number of rows deleted
       return res && res.changes
     } catch (e) {
@@ -411,12 +457,12 @@ function Datastore () {
     }
   }
 
-  this.deleteEntry = async (entry, onlyIfEmpty = false) => {
+  publicFunc.deleteEntry = async (entry, onlyIfEmpty = false) => {
     try {
       if (entry.table.match(/\W/)) return false // invalid characters in table name
       if (parseInt(entry.id, 10) !== entry.id) return false // invalid characters in ID
       let ifEmpty = onlyIfEmpty ? ' AND (content = "" OR content IS NULL)' : ''
-      let res = await datastore.run(`DELETE FROM ${entry.table} WHERE id = ? ${ifEmpty}`, [entry.id])
+      let res = await publicFunc.run(`DELETE FROM ${entry.table} WHERE id = ? ${ifEmpty}`, [entry.id])
       // res.changes contains the number of rows deleted
       return res && res.changes
     } catch (e) {
@@ -432,10 +478,10 @@ function Datastore () {
    * @returns {Promise<unknown|boolean>}
    * Returns the matching row, or 'undefined' if no row found
    */
-  this.getEntryByDate = async (date) => {
+  publicFunc.getEntryByDate = async (date) => {
     if (!date) throw new Error('No date specified')
     try {
-      return datastore.get('SELECT * FROM entries WHERE date = ?', [date])
+      return publicFunc.get('SELECT * FROM entries WHERE date = ?', [date])
     } catch (e) {
       console.log(e)
     }
@@ -449,11 +495,11 @@ function Datastore () {
    * @param {number|string} id - Entry ID
    * @returns {Promise<unknown>}
    */
-  this.getById = function (table, id) {
+  publicFunc.getById = function (table, id) {
     return new Promise(function (resolve, reject) {
       if (!table) reject(new Error('No table specified'))
       table = table.replace(/\W/g, '')
-      datastore.get('SELECT * FROM ' + table + ' WHERE id = ?', [id])
+      publicFunc.get('SELECT * FROM ' + table + ' WHERE id = ?', [id])
         .then((row) => {
           resolve(row)
         })
@@ -463,19 +509,19 @@ function Datastore () {
     })
   }
 
-  this.getAll = function (table, options) {
+  publicFunc.getAll = function (table, options) {
     return new Promise((resolve, reject) => {
       let orderBy = (options && options.orderBy) ? ' ORDER BY ' + options.orderBy : ''
-      datastore.all('SELECT * FROM ' + table + orderBy)
+      publicFunc.all('SELECT * FROM ' + table + orderBy)
         .then(rows => { resolve(rows) })
         .catch(err => { reject(err) })
     })
   }
 
-  this.getEntryTree = function () {
+  publicFunc.getEntryTree = function () {
     return new Promise(function (resolve, reject) {
       let tree = {}
-      datastore.all('SELECT id, date FROM entries ORDER BY date ASC')
+      publicFunc.all('SELECT id, date FROM entries ORDER BY date ASC')
         .then((rows) => {
           for (let i = 0; i < rows.length; i++) {
             /*
@@ -483,8 +529,8 @@ function Datastore () {
              */
             let row = rows[i]
             let year = row.date.substr(0, 4)
-            let month = moment(row.date, 'YYYY-MM-DD').format('MMMM')
-            let day = moment(row.date, 'YYYY-MM-DD').format('DD - dddd')
+            let month = dayjs(row.date, DATE_DAY).format('MMMM')
+            let day = dayjs(row.date, DATE_DAY).format('DD - dddd')
 
             if (!tree[year]) { tree[year] = {} }
             if (!tree[year]['months']) { tree[year]['months'] = {} }
@@ -503,11 +549,11 @@ function Datastore () {
     })
   }
 
-  this.getOption = function (name) {
+  publicFunc.getOption = function (name) {
     return new Promise(function (resolve, reject) {
       if (!name) { reject(new Error('No option specified')) }
 
-      datastore.get('SELECT * FROM options WHERE name = ?', [name])
+      publicFunc.get('SELECT * FROM options WHERE name = ?', [name])
         .then((row) => {
           resolve((row && row.value) ? row.value : null)
         })
@@ -517,11 +563,11 @@ function Datastore () {
     })
   }
 
-  this.setOption = function (name, value) {
+  publicFunc.setOption = function (name, value) {
     return new Promise(function (resolve, reject) {
       if (!name) { reject(new Error('No option specified')) }
 
-      datastore.run('INSERT OR REPLACE INTO options VALUES (?, ?)', [name, value])
+      publicFunc.run('INSERT OR REPLACE INTO options VALUES (?, ?)', [name, value])
         .catch((error) => {
           reject(error)
         })
@@ -535,10 +581,9 @@ function Datastore () {
    * @param {buffer} data - Attachment data stream
    * @returns {Promise<Number>}
    */
-  this.addAttachment = function (mimetype, data) {
+  publicFunc.addAttachment = function (mimetype, data) {
     return new Promise(function (resolve, reject) {
-      let created = moment().format(DATE_SQL)
-      datastore.run('INSERT INTO attachments (created, mime_type, data) VALUES (?, ?, ?)', [created, mimetype, data])
+      publicFunc.run('INSERT INTO attachments (created, mime_type, data) VALUES (?, ?, ?)', [now(), mimetype, data])
         .then((ret) => {
           if (ret.lastID) {
             resolve(ret.lastID)
@@ -552,9 +597,9 @@ function Datastore () {
     })
   }
 
-  this.getAttachment = function (id) {
+  publicFunc.getAttachment = function (id) {
     return new Promise(function (resolve, reject) {
-      datastore.get('SELECT * FROM attachments WHERE id = ?', [id])
+      publicFunc.get('SELECT * FROM attachments WHERE id = ?', [id])
         .then((row) => {
           resolve(row)
         })
@@ -563,6 +608,8 @@ function Datastore () {
         })
     })
   }
-}
 
-export default new Datastore()
+  return publicFunc
+})()
+
+export default Datastore
