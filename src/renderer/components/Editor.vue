@@ -482,32 +482,32 @@ export default {
 </script>
 
 <style>
-    body {
-        background: #FDFDFD;
-    }
+  body {
+    background: #FDFDFD;
+  }
 
-    #editorContainer {
-        display: flex;
-        flex-direction: column;
-        flex-grow: 1;
-        background: white;
-    }
+  #editorContainer {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    background: white;
+  }
 
-    /* Styles to force TinyMCE to flex */
+  /* Styles to force TinyMCE to flex */
 
-    .mce-tinymce,
-    .mce-tinymce > .mce-stack-layout,
-    .mce-tinymce > .mce-stack-layout > .mce-edit-area,
-    #editor_ifr {
-        display: flex !important;
-        flex-direction: column;
-        flex-grow: 1;
-    }
+  .mce-tinymce,
+  .mce-tinymce > .mce-stack-layout,
+  .mce-tinymce > .mce-stack-layout > .mce-edit-area,
+  #editor_ifr {
+    display: flex !important;
+    flex-direction: column;
+    flex-grow: 1;
+  }
 
-    #statusbar {
-        font-size: 12px;
-        background: #f0f0f0;
-        padding: 3px 6px;
-        color: #404040;
-    }
+  #statusbar {
+    font-size: 12px;
+    background: #f0f0f0;
+    padding: 3px 6px;
+    color: #404040;
+  }
 </style>

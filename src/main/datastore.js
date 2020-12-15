@@ -146,8 +146,8 @@ const Datastore = (function () {
    * Returns false on failure, otherwise an object with 'lastID' and 'changes' properties.
    */
   publicFunc.run = (query, parameters = []) => {
-    return new Promise(function (resolve, reject) {
-      if (!__dbHandle) { reject(new Error('run: Database object not created')) }
+    return new Promise(function (resolve) {
+      if (!__dbHandle) resolve(false)
       __dbHandle.run(query, parameters, function (error) {
         if (error) {
           resolve(false)
@@ -167,8 +167,8 @@ const Datastore = (function () {
    * Returns 'undefined' if no matching row is found
    */
   publicFunc.get = function (query, parameters = []) {
-    return new Promise(function (resolve, reject) {
-      if (!__dbHandle) { reject(new Error('get: Database object not created')) }
+    return new Promise(function (resolve) {
+      if (!__dbHandle) resolve(false)
       __dbHandle.get(query, parameters, function (err, row) {
         if (err) {
           resolve(false)
@@ -178,19 +178,25 @@ const Datastore = (function () {
       })
     })
   }
-  publicFunc.getAll = function (query, parameters = []) {
-    return new Promise(function (resolve, reject) {
-      if (!__dbHandle) { reject(new Error('all: Database object not created')) }
+  /**
+   * Runs a query and returns all result rows, using a prepared statement SQL format and its parameters
+   *
+   * @param {string} query - SQL query
+   * @param {array} parameters - Parameters for the prepared statement
+   * @returns {Promise<array>}
+   */
+  publicFunc.all = function (query, parameters = []) {
+    return new Promise(function (resolve) {
+      if (!__dbHandle) resolve([])
       __dbHandle.all(query, parameters, function (err, rows) {
         if (err) {
-          resolve(false)
+          resolve([])
         } else {
           resolve(rows)
         }
       })
     })
   }
-  publicFunc.all = publicFunc.getAll // for backwards compatibility
 
   /**
    * Insert a row from a data object of columns => values

@@ -12,49 +12,11 @@
           @close="onClose"
         />
       </div>
-      <div style="display:none" v-html="'<style>' + calendarStyle + '</style>'" />
-      <div style="display:none" v-html="'<style>' + customStyles + '</style>'" />
+      <!-- Inject calendar CSS to style the days with entries -->
+      <div v-html="'<style>' + calendarStyle + '</style>'" />
     </div>
   </div>
 </template>
-
-<style scoped>
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-    }
-
-    #main {
-        height: 100%;
-    }
-
-    #wrapper {
-        display: flex;
-        height: 100%;
-        justify-content: stretch;
-    }
-
-    .flatpickr-input {
-        display: none;
-    }
-
-    .flatpickr-calendar {
-        margin-bottom: 20px;
-    }
-
-    #sidebar {
-        display: flex;
-        flex-direction: column;
-        margin-right: 40px;
-    }
-
-    #content {
-        display: flex;
-        flex-direction: column;
-        flex-grow: 1;
-    }
-</style>
 
 <script>
 import flatPickr from 'vue-flatpickr-component'
@@ -87,7 +49,6 @@ export default {
           this.updateCalendarEntries(instance.currentYear, instance.currentMonth + 1)
         }
       },
-      customStyles: '',
       tree: [],
       editor: null
     }
@@ -207,22 +168,65 @@ export default {
           }
         })
     },
-    updateCalendarEntries (year, month) {
+    /**
+     * Mark all dates with entries on the calendar. To do this we style the aria-labels of affected entries
+     * with a custom background colour.
+     *
+     * @param {number} year
+     * @param {number} month
+     */
+    async updateCalendarEntries (year, month) {
       /*
         Mark all dates with entries on the calendar
        */
       let start = this.$moment(year + '-' + month, 'YYYY-M').startOf('month').format(this.$db.DATE_DAY)
       let end = this.$moment(year + '-' + month, 'YYYY-M').endOf('month').format(this.$db.DATE_DAY)
-      this.$db.all(`SELECT date FROM ${this.table} WHERE DATE(date) BETWEEN DATE('${start}') AND date('${end}') AND folder_id = 1 ORDER BY date ASC`)
-        .then(rows => {
-          let styles = []
-          for (let i = 0; i < rows.length; i++) {
-            let flatpickrDate = this.$moment(rows[i].date).format('MMMM D, YYYY')
-            styles.push('span[aria-label="' + flatpickrDate + '"]')
-          }
-          this.calendarStyle = styles.join(', ') + ' { background-color: #D0E4F8; }'
-        })
+      let rows = await this.$db.all('SELECT `date` FROM ' + this.table + ' WHERE DATE(date) BETWEEN DATE(?) AND DATE(?) AND folder_id = ? ORDER BY date ASC', [start, end, 1])
+      let styles = []
+      for (let i = 0; i < rows.length; i++) {
+        let flatpickrDate = this.$moment(rows[i].date).format('MMMM D, YYYY')
+        styles.push('span[aria-label="' + flatpickrDate + '"]')
+      }
+      this.calendarStyle = styles.join(', ') + ' { background-color: #D0E4F8; }'
     }
   }
 }
 </script>
+
+<style scoped>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  #main {
+    height: 100%;
+  }
+
+  #wrapper {
+    display: flex;
+    height: 100%;
+    justify-content: stretch;
+  }
+
+  .flatpickr-input {
+    display: none;
+  }
+
+  .flatpickr-calendar {
+    margin-bottom: 20px;
+  }
+
+  #sidebar {
+    display: flex;
+    flex-direction: column;
+    margin-right: 40px;
+  }
+
+  #content {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+</style>

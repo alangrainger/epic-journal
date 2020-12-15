@@ -87,7 +87,6 @@ export default {
       templates: [],
       entry: this.newEntry(),
       autosaveTimer: '',
-      customStyles: '',
       editor: null
     }
   },
