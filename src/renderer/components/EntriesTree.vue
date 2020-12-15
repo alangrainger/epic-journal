@@ -154,7 +154,7 @@ export default {
             label: label,
             type: 'entry',
             parent: monthObj,
-            icon: 'file-text-o',
+            icon: 'far fa-file-alt',
             action: () => {
               if (this.$route.params.date !== row.date) this.$router.push({ name: 'home', params: { date: row.date } })
             }
@@ -183,7 +183,7 @@ export default {
           id: 'date' + year,
           year: year,
           label: year.toString(),
-          icon: 'archive',
+          icon: 'fas fa-archive',
           children: [],
           isOpen: false,
           update: function () { vm.updateYear(this) },
@@ -222,7 +222,7 @@ export default {
           id: 'date' + yearObj.year + month,
           month: month,
           label: this.$moment(month, 'M').format('MMMM'), // convert month to word format,
-          icon: 'calendar',
+          icon: 'fas fa-calendar',
           children: [],
           update: function () { vm.updateMonth(this) },
           open: function () { vm.open(this) },

@@ -1,16 +1,18 @@
 import electron from 'electron'
 import Vue from 'vue'
-
 import App from './App'
 import router from './router'
 import config from '../electron-store'
+import Buefy from 'buefy'
 import moment from 'dayjs'
+import 'buefy/dist/buefy.css'
 
 const advancedFormat = require('dayjs/plugin/advancedFormat')
 moment.extend(advancedFormat)
 
 let db = electron.remote.getGlobal('db')
 
+Vue.use(Buefy)
 Vue.prototype.$db = db
 Vue.prototype.$config = config
 Vue.prototype.$moment = moment

@@ -3,8 +3,8 @@
   <div class="branch">
     <div class="item" @click="click">
       <span :class="isSelected" @contextmenu.prevent="contextMenu">
-        <i v-if="isFolder" :class="{ 'fa-minus-square-o': open, 'fa-plus-square-o': !open }" class="fa plus" />
-        <i :class="icon" :style="colour" class="fa icon" />
+        <i v-if="isFolder" :class="{ 'fa-minus-square': open, 'fa-plus-square': !open }" class="far plus" />
+        <i :class="model.icon" :style="colour" class="icon" />
         {{ model.label }}</span>
     </div>
     <div v-if="isFolder">
@@ -102,9 +102,6 @@ export default {
       } else {
         return ''
       }
-    },
-    icon () {
-      return this.model.icon ? 'fa-' + this.model.icon : ''
     },
     colour () {
       return this.model.colour ? `color:${this.model.colour};` : ''
