@@ -1,11 +1,15 @@
 <template>
-    <div id="container">
-        <div id="inner">
-            <div id="title">password</div>
-            <input id="password" type="password" v-model="password" v-on:keydown.enter="submit">
-            <div id="message">{{ message }}</div>
-        </div>
+  <div id="container">
+    <div id="inner">
+      <div id="title">
+        password
+      </div>
+      <input id="password" v-model="password" type="password" @keydown.enter="submit">
+      <div id="message">
+        {{ message }}
+      </div>
     </div>
+  </div>
 </template>
 
 <style scoped>
@@ -55,39 +59,46 @@
 </style>
 
 <script>
-  import { remote } from 'electron'
-  import router from '../router'
+import { remote } from 'electron'
 
-  let db = remote.getGlobal('db')
+let db = remote.getGlobal('db')
 
-  export default {
-    data () {
-      return {
-        message: '',
-        password: ''
-      }
-    },
-    mounted: function () {
-      document.getElementById('password').focus()
-    },
-    methods: {
-      submit () {
-        let password = this.password
-        this.password = ''
-        this.message = 'loading...'
-        db.openDatabase(password)
-          .then(() => {
-            router.push('home')
-          })
-          .catch((error) => {
-            let vm = this
-            vm.message = 'Incorrect password. Please try again.'
-            setTimeout(function () {
-              vm.message = ''
-            }, 3500)
-            console.error(error)
-          })
+export default {
+  data () {
+    return {
+      message: '',
+      password: ''
+    }
+  },
+  mounted () {
+    document.getElementById('password').focus()
+    if (process.env.NODE_ENV === 'development') {
+      this.password = 'test'
+      this.submit()
+    }
+  },
+  methods: {
+    async submit () {
+      let password = this.password
+      this.password = ''
+      this.message = 'loading...'
+      try {
+        await db.openDatabase(password)
+        await this.$router.push({
+          name: 'home',
+          params: {
+            date: this.$moment().format(this.$db.DATE_DAY)
+          }
+        })
+      } catch (e) {
+        let vm = this
+        vm.message = 'Incorrect password. Please try again.'
+        setTimeout(function () {
+          vm.message = ''
+        }, 3500)
+        console.log(e)
       }
     }
   }
+}
 </script>

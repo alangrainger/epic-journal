@@ -1,13 +1,18 @@
 import electron from 'electron'
 import Vue from 'vue'
-
 import App from './App'
 import router from './router'
-import moment from 'moment'
 import config from '../electron-store'
+import Buefy from 'buefy'
+import moment from 'dayjs'
+import 'buefy/dist/buefy.css'
+
+const advancedFormat = require('dayjs/plugin/advancedFormat')
+moment.extend(advancedFormat)
 
 let db = electron.remote.getGlobal('db')
 
+Vue.use(Buefy)
 Vue.prototype.$db = db
 Vue.prototype.$config = config
 Vue.prototype.$moment = moment
@@ -17,14 +22,22 @@ Vue.config.productionTip = false
 
 /* eslint-disable no-new */
 let vm = new Vue({
-  components: {App},
+  components: { App },
   router,
+  data: {
+    date: moment().format(db.DATE_DAY), // default to today's date
+    entryId: null, // entry ID
+    editor: {
+      id: null,
+      table: null
+    }
+  },
   template: '<App/>'
 }).$mount('#app')
 
 // Set up routing
-electron.ipcRenderer.on('route', (event, arg) => {
-  if (db.connected) router.push({name: arg})
+electron.ipcRenderer.on('route', async (event, arg) => {
+  if (db.connected) await router.push(arg)
 })
 
 // Listen for goto commands from main menu
@@ -33,11 +46,7 @@ electron.ipcRenderer.on('goto', async (event, arg) => {
   let component = router.currentRoute.matched[0].instances.default
 
   if (arg === 'today') {
-    if (router.currentRoute.name !== 'home') {
-      await router.push({name: 'home'})
-    } else {
-      component.date = moment().format(db.DATE_DAY)
-    }
+    await router.push({ name: 'home', params: { date: moment().format(db.DATE_DAY) } })
   } else if (arg === 'previous') {
     if (router.currentRoute.name !== 'home') return
     let row = await db.get('SELECT date FROM entries WHERE DATE(date) < DATE(?) ORDER BY date DESC LIMIT 1', component.date)
@@ -47,11 +56,11 @@ electron.ipcRenderer.on('goto', async (event, arg) => {
     let row = await db.get('SELECT COUNT(*) AS count FROM entries WHERE folder_id = 1')
     if (row.count >= 2) {
       // Loop through until we find an entry that's not the current entry
-      let rows = await db.all('SELECT entry_id FROM entries WHERE folder_id = 1 ORDER BY RANDOM() LIMIT 2')
+      let rows = await db.all('SELECT id FROM entries WHERE folder_id = 1 ORDER BY RANDOM() LIMIT 2')
       for (let row of rows) {
         // Loop through and route to the entry which ISN'T the current entry
-        if (row.entry_id !== vm.$route.params.id) {
-          router.push({name: 'home', params: {id: row.entry_id}})
+        if (row.id !== vm.$root.entryId) {
+          await router.push({ name: 'home', params: { id: row.id } })
           return
         }
       }
@@ -67,10 +76,10 @@ electron.ipcRenderer.on('goto', async (event, arg) => {
 
 if (!config.get('journal')) {
   // No existing journal, send them to the intro screen
-  router.push('intro')
+  router.push({ name: 'intro' })
 } else if (vm.$route.name !== 'password') {
   // Send them to the login screen
-  router.push('password')
+  router.push({ name: 'password' })
 }
 
 function goFullscreen () {

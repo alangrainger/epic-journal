@@ -1,19 +1,27 @@
 <template>
-    <div id="main">
-        <div id="wrapper">
-            <div id="sidebar">
-                <p>Current templates:</p>
-                <button @click="clearEntry">Add New</button>
-                <div class="row" v-for="item in templates" @click="load(item.template_id)" :class="{ selected: item.template_id === entry.id }">
-                    {{ item.name }}
-                </div>
-            </div>
-            <div id="content">
-                <input id="name" v-model="entry.name" placeholder="Template name" @keyup="entry.nameChanged = true"/>
-                <Editor ref="editor" :entry="entry"></Editor>
-            </div>
+  <div id="main">
+    <div id="wrapper">
+      <div id="sidebar">
+        <p>Current templates:</p>
+        <button @click="clearEntry">
+          Add New
+        </button>
+        <div
+          v-for="item in templates"
+          :key="'template'+item.template_id"
+          class="row"
+          :class="{ selected: item.template_id === entry.id }"
+          @click="load(item.template_id)"
+        >
+          {{ item.name }}
         </div>
+      </div>
+      <div id="content">
+        <input id="name" v-model="entry.name" placeholder="Template name" @keyup="entry.nameChanged = true">
+        <Editor ref="editor" :entry="entry" />
+      </div>
     </div>
+  </div>
 </template>
 
 <style scoped>
@@ -66,140 +74,140 @@
 </style>
 
 <script>
-  import Editor from './Editor.vue'
+import Editor from './Editor.vue'
 
-  export default {
-    name: 'templates',
-    components: {
-      Editor
+export default {
+  name: 'Templates',
+  components: {
+    Editor
+  },
+  data () {
+    return {
+      name: 'templates',
+      templates: [],
+      entry: this.newEntry(),
+      autosaveTimer: '',
+      customStyles: '',
+      editor: null
+    }
+  },
+  mounted () {
+    this.updateList()
+
+    // Autosave entry
+    this.autosaveTimer = setInterval(() => {
+      this.save()
+    }, 5000) // every 5 seconds
+
+    // Save entry on close
+    window.addEventListener('unload', this.save)
+  },
+  beforeDestroy () {
+    this.save()
+    window.removeEventListener('unload', this.save)
+    clearInterval(this.autosaveTimer)
+  },
+  methods: {
+    getContent () {
+      return this.$refs.editor.getContent()
     },
-    data () {
+    setContent (content) {
+      this.entry.content = content
+      this.$refs.editor.setContent(content)
+    },
+    newEntry () {
       return {
-        name: 'templates',
-        templates: [],
-        entry: this.newEntry(),
-        autosaveTimer: '',
-        customStyles: '',
-        editor: null
+        id: null,
+        name: '',
+        content: null
       }
     },
-    mounted: function () {
-      this.updateList()
-
-      // Autosave entry
-      this.autosaveTimer = setInterval(() => {
-        this.save()
-      }, 5000) // every 5 seconds
-
-      // Save entry on close
-      window.addEventListener('unload', this.save)
+    clearEntry () {
+      this.entry = this.newEntry()
+      this.setContent(null)
+      document.getElementById('name').focus()
     },
-    methods: {
-      getContent () {
-        return this.$refs.editor.getContent()
-      },
-      setContent (content) {
-        this.entry.content = content
-        this.$refs.editor.setContent(content)
-      },
-      newEntry () {
-        return {
-          id: null,
-          name: '',
-          content: null
-        }
-      },
-      clearEntry () {
-        this.entry = this.newEntry()
-        this.setContent(null)
-        document.getElementById('name').focus()
-      },
-      updateList () {
-        // Get list of existing templates
-        this.$db.all('SELECT * FROM templates ORDER BY name ASC')
-          .then(rows => {
-            this.templates = rows
-          })
-          .catch((err) => { console.error(err) })
-      },
-      load (id) {
-        // Check if we need to save the current entry
-        this.save()
+    updateList () {
+      // Get list of existing templates
+      this.$db.all('SELECT * FROM templates ORDER BY name ASC')
+        .then(rows => {
+          this.templates = rows
+        })
+        .catch((err) => { console.error(err) })
+    },
+    load (id) {
+      // Check if we need to save the current entry
+      this.save()
 
-        // Get template from DB
-        this.$db.getById('templates', id)
-          .then((row) => {
-            if (row) {
-              this.entry.id = row.template_id
-              this.entry.name = row.name
-              this.setContent(row.content)
-            } else {
-              this.clearEntry()
-            }
-          })
-          .catch((error) => {
-            console.error(error)
-          })
-      },
-      save () {
-        if (!this.$refs.editor.editor) return // editor hasn't loaded
-        if (this.getContent() === this.entry.content && !this.entry.nameChanged) {
-          return // entry has not changed
-        }
-        if (!this.entry.name) return // no name
+      // Get template from DB
+      this.$db.getById('templates', id)
+        .then((row) => {
+          if (row) {
+            this.entry.id = row.template_id
+            this.entry.name = row.name
+            this.setContent(row.content)
+          } else {
+            this.clearEntry()
+          }
+        })
+        .catch((error) => {
+          console.error(error)
+        })
+    },
+    save () {
+      if (!this.$refs.editor.editor) return // editor hasn't loaded
+      if (this.getContent() === this.entry.content && !this.entry.nameChanged) {
+        return // entry has not changed
+      }
+      if (!this.entry.name) return // no name
 
-        // Get latest content from TinyMCE
-        this.entry.content = this.getContent()
+      // Get latest content from TinyMCE
+      this.entry.content = this.getContent()
 
-        if (!this.entry.content || this.entry.content === '<p><br></p>') {
-          /* Entry is empty
+      if (!this.entry.content || this.entry.content === '<p><br></p>') {
+        /* Entry is empty
              If it exists, then prune it from DB
              '<p><br></p>' is the minimum content for an empty Quill editor */
-          if (this.entry.id) {
-            this.$db.delete('templates', this.entry.id)
-              .then(() => {
-                this.entry.id = null
-              })
-              .catch((error) => {
-                console.error(error)
-              })
-          }
-        } else if (this.entry.id) {
-          // Entry ID already exists, update existing entry
-          let data = {
-            name: this.entry.name,
-            content: this.entry.content
-          }
-          this.$db.update('templates', data, this.entry.id)
+        if (this.entry.id) {
+          this.$db.delete('templates', this.entry.id)
             .then(() => {
-              console.log(this.$moment().format('HH:mm:ss') + ' saved entry', 'ID: ' + this.entry.id)
+              this.entry.id = null
             })
-            .catch(() => {
-              console.error('FAILED TO SAVE ENTRY')
+            .catch((error) => {
+              console.error(error)
             })
-        } else {
-          // No existing entry, so create new entry
-          let date = this.$moment().format(this.$db.DATE_SQL)
-          this.$db.insert('templates', {
-            name: this.entry.name,
-            content: this.entry.content,
-            created: date,
-            modified: date
-          })
-            .then(id => {
-              this.entry.id = id
-              console.info(this.$moment().format('HH:mm:ss') + ' created new entry', 'ID: ' + this.entry.id)
-            })
-            .catch(err => { console.error(err) })
         }
-        this.entry.nameChanged = false
-        this.updateList()
+      } else if (this.entry.id) {
+        // Entry ID already exists, update existing entry
+        let data = {
+          name: this.entry.name,
+          content: this.entry.content
+        }
+        this.$db.update('templates', data, this.entry.id)
+          .then(() => {
+            console.log(this.$moment().format('HH:mm:ss') + ' saved entry', 'ID: ' + this.entry.id)
+          })
+          .catch(() => {
+            console.error('FAILED TO SAVE ENTRY')
+          })
+      } else {
+        // No existing entry, so create new entry
+        let date = this.$moment().format(this.$db.DATE_SQL)
+        this.$db.insert('templates', {
+          name: this.entry.name,
+          content: this.entry.content,
+          created: date,
+          modified: date
+        })
+          .then(id => {
+            this.entry.id = id
+            console.info(this.$moment().format('HH:mm:ss') + ' created new entry', 'ID: ' + this.entry.id)
+          })
+          .catch(err => { console.error(err) })
       }
-    },
-    beforeDestroy: function () {
-      this.save()
-      window.removeEventListener('unload', this.save)
-      clearInterval(this.autosaveTimer)
+      this.entry.nameChanged = false
+      this.updateList()
     }
   }
+}
 </script>

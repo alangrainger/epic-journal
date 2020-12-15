@@ -13,3 +13,4 @@ yarn.lock
 .idea/workspace.xml
 src/main/index old version.js
 src/main/index.dev (2).js
+.idea/*
