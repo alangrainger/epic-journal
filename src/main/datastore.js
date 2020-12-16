@@ -166,7 +166,7 @@ const Datastore = (function () {
    * @returns {Promise<unknown>}
    * Returns 'undefined' if no matching row is found
    */
-  publicFunc.get = function (query, parameters = []) {
+  const get = function (query, parameters = []) {
     return new Promise(function (resolve) {
       if (!__dbHandle) resolve(false)
       __dbHandle.get(query, parameters, function (err, row) {
@@ -178,6 +178,8 @@ const Datastore = (function () {
       })
     })
   }
+  publicFunc.get = get
+
   /**
    * Runs a query and returns all result rows, using a prepared statement SQL format and its parameters
    *
@@ -185,7 +187,7 @@ const Datastore = (function () {
    * @param {array} parameters - Parameters for the prepared statement
    * @returns {Promise<array>}
    */
-  publicFunc.all = function (query, parameters = []) {
+  const all = function (query, parameters = []) {
     return new Promise(function (resolve) {
       if (!__dbHandle) resolve([])
       __dbHandle.all(query, parameters, function (err, rows) {
@@ -197,6 +199,7 @@ const Datastore = (function () {
       })
     })
   }
+  publicFunc.all = all
 
   /**
    * Insert a row from a data object of columns => values
@@ -621,6 +624,14 @@ const Datastore = (function () {
           reject(error)
         })
     })
+  }
+
+  /**
+   * Fetch an array of all folders
+   * @returns {Promise<Array>}
+   */
+  publicFunc.getFolders = async () => {
+    return all('SELECT * FROM folders')
   }
 
   return publicFunc

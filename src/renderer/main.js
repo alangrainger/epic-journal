@@ -12,7 +12,9 @@ moment.extend(advancedFormat)
 
 let db = electron.remote.getGlobal('db')
 
-Vue.use(Buefy)
+Vue.use(Buefy, {
+  defaultIconPack: 'fas'
+})
 Vue.prototype.$db = db
 Vue.prototype.$config = config
 Vue.prototype.$moment = moment

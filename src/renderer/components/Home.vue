@@ -6,6 +6,20 @@
         <EntriesTree ref="entriesTree" :selected="$route.params.date" />
       </div>
       <div id="content">
+        <b-tabs
+          size="is-small"
+          type="is-boxed"
+          style="margin-bottom: 0; padding-bottom: 0"
+          @input="changeFolder"
+        >
+          <b-tab-item
+            v-for="folder in folders"
+            :key="folder.name"
+            :label="folder.name"
+            :value="folder.id.toString()"
+            icon="book"
+          />
+        </b-tabs>
         <Editor
           ref="editor"
           @update="updateTree"
@@ -50,6 +64,7 @@ export default {
         }
       },
       tree: [],
+      folders: [],
       editor: null
     }
   },
@@ -76,9 +91,10 @@ export default {
       immediate: true
     }
   },
-  mounted () {
+  async mounted () {
     // Update calendar
     this.updateCalendarEntries(this.date.substring(0, 4), this.date.substring(5, 7))
+    this.folders = await this.$db.getFolders()
   },
   beforeDestroy: function () {
     // this.save()
@@ -86,6 +102,9 @@ export default {
     clearInterval(this.autosaveTimer)
   },
   methods: {
+    changeFolder (folder) {
+      this.folder = folder
+    },
     async onClose (data) {
       // Prune empty current entry from the database on entry change
       if (await this.$db.deleteEntry({ id: data.id, table: this.table }, true)) {
@@ -110,7 +129,7 @@ export default {
     },
     async getEntryByDate (date) {
       if (!date) date = this.$moment().format(this.$db.DATE_DAY)
-      let entry = await this.$db.getEntryByDate(date)
+      let entry = await this.$db.getEntryByDate(date, 1)
       if (entry) {
         await this.$refs.editor.load(this.table, entry.id)
       } else {
