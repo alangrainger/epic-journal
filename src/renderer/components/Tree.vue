@@ -1,24 +1,24 @@
 <template>
-    <div class="branch">
-        <div @click="click" class="item">
-            <span :class="isSelected" @contextmenu.prevent="contextMenu"><i v-if="isFolder"
-                                                                            :class="{ 'fa-minus-square-o': open, 'fa-plus-square-o': !open }"
-                                                                            class="fa plus"></i>
-            <i :class="icon" :style="colour" class="fa icon"></i>
-            {{model.label}}</span>
-        </div>
-        <Tree
-                v-if="isFolder"
-                v-show="open"
-                v-for="model in model.children"
-                :key="model.id"
-                :model="model"
-                :selected="selected"
-                @bus="bus"
-                @scrollHeight="updateScroll"
-        >
-        </Tree>
+  <!-- A recursive tree child component -->
+  <div class="branch">
+    <div class="item" @click="click">
+      <span :class="isSelected" @contextmenu.prevent="contextMenu">
+        <i v-if="isFolder" :class="{ 'fa-minus-square-o': open, 'fa-plus-square-o': !open }" class="fa plus" />
+        <i :class="icon" :style="colour" class="fa icon" />
+        {{ model.label }}</span>
     </div>
+    <div v-if="isFolder">
+      <Tree
+        v-for="child in model.children"
+        v-show="open"
+        :key="child.id"
+        :model="child"
+        :selected="selected"
+        @bus="bus"
+        @scrollHeight="updateScroll"
+      />
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -66,18 +66,19 @@
 <script>
 export default {
   name: 'Tree',
+  props: {
+    model: {
+      type: Object,
+      required: true
+    },
+    selected: {
+      type: String,
+      required: true
+    }
+  },
   data () {
     return {
       highlight: false
-    }
-  },
-  props: {
-    model: Object,
-    selected: String
-  },
-  watch: {
-    'model.isOpen': function () {
-      this.open = this.model.isOpen
     }
   },
   computed: {
@@ -87,29 +88,31 @@ export default {
       },
       set: function () { }
     },
-    isFolder: function () {
+    isFolder () {
       return this.model.hasOwnProperty('children')
     },
-    isSelected: function () {
+    isSelected () {
       if (this.selected === this.model.date) {
         if (this.$el) {
           this.updateScroll(this.$el.getBoundingClientRect())
-        } else {
-          setTimeout(() => {
-            if (this.$el) this.updateScroll(this.$el.getBoundingClientRect())
-          }, 100) // cleanup in case tree isn't updated in that time
-          // TODO this needs to be changed to promises
         }
         return 'selected'
       } else if (this.highlight) {
         return 'selected'
+      } else {
+        return ''
       }
     },
-    icon: function () {
-      return (this.model.icon) ? 'fa-' + this.model.icon : ''
+    icon () {
+      return this.model.icon ? 'fa-' + this.model.icon : ''
     },
-    colour: function () {
-      if (this.model.colour) return {color: this.model.colour}
+    colour () {
+      return this.model.colour ? `color:${this.model.colour};` : ''
+    }
+  },
+  watch: {
+    'model.isOpen': function () {
+      this.open = this.model.isOpen
     }
   },
   methods: {
@@ -131,7 +134,7 @@ export default {
       this.$emit('bus', model)
     },
     contextMenu: function () {
-      this.$emit('bus', {contextMenu: this})
+      this.$emit('bus', { contextMenu: this })
     },
     select: function () {
       this.highlight = true

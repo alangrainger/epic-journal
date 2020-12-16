@@ -59,10 +59,10 @@ let template = [
   {
     label: 'View',
     submenu: [
-      {role: 'reload'},
-      {role: 'forcereload'},
-      {role: 'toggledevtools'},
-      {type: 'separator'},
+      { role: 'reload' },
+      { role: 'forcereload' },
+      { role: 'toggledevtools' },
+      { type: 'separator' },
       {
         label: 'Fullscreen Mode',
         accelerator: 'F11',
@@ -95,27 +95,27 @@ let template = [
       },
       {
         label: 'Go to Journal',
-        click: () => { mainWindow.webContents.send('route', {name: 'main'}) }
+        click: () => { mainWindow.webContents.send('route', { name: 'main' }) }
       },
       {
         label: 'Edit Templates',
-        click: () => { mainWindow.webContents.send('route', {name: 'templates'}) }
+        click: () => { mainWindow.webContents.send('route', { name: 'templates' }) }
       },
       {
         label: 'Edit Tags',
-        click: () => { mainWindow.webContents.send('route', {name: 'tags'}) }
+        click: () => { mainWindow.webContents.send('route', { name: 'tags' }) }
       },
       {
         label: 'Edit Styles',
-        click: () => { mainWindow.webContents.send('route', {name: 'styles'}) }
+        click: () => { mainWindow.webContents.send('route', { name: 'styles' }) }
       }
     ]
   },
   {
     role: 'window',
     submenu: [
-      {role: 'minimize'},
-      {role: 'close'}
+      { role: 'minimize' },
+      { role: 'close' }
     ]
   },
   {
@@ -145,25 +145,25 @@ if (process.platform === 'darwin') {
   template.unshift({
     label: app.getName(),
     submenu: [
-      {role: 'about'},
-      {type: 'separator'},
-      {role: 'services', submenu: []},
-      {type: 'separator'},
-      {role: 'hide'},
-      {role: 'hideothers'},
-      {role: 'unhide'},
-      {type: 'separator'},
-      {role: 'quit'}
+      { role: 'about' },
+      { type: 'separator' },
+      { role: 'services', submenu: [] },
+      { type: 'separator' },
+      { role: 'hide' },
+      { role: 'hideothers' },
+      { role: 'unhide' },
+      { type: 'separator' },
+      { role: 'quit' }
     ]
   })
 
   // Window menu
   template[4].submenu = [
-    {role: 'close'},
-    {role: 'minimize'},
-    {role: 'zoom'},
-    {type: 'separator'},
-    {role: 'front'}
+    { role: 'close' },
+    { role: 'minimize' },
+    { role: 'zoom' },
+    { type: 'separator' },
+    { role: 'front' }
   ]
 }
 
@@ -177,7 +177,7 @@ if (process.env.NODE_ENV !== 'development') {
 
 let mainWindow
 const winURL = process.env.NODE_ENV === 'development'
-  ? `http://localhost:9080`
+  ? 'http://localhost:9080'
   : `file://${__dirname}/index.html`
 
 function createWindow () {
@@ -220,12 +220,20 @@ app.on('ready', () => {
   })
 
   /*
-   * Register custom protocol for entry navigation
+   * Register custom protocol for entry navigation.
+   * When a user clicks on an entry://n custom URL, it will navigate to the entry with ID n.
    */
-  protocol.registerHttpProtocol('entry', (request) => {
+  protocol.registerHttpProtocol('entry', async (request) => {
+    // Get the entry ID
     let matches = request.url.match(/entry:\/\/(\d+)/)
     if (matches && matches.length) {
-      mainWindow.webContents.send('route', {name: 'home', params: {id: matches[1]}})
+      // Find the date for that entry
+      try {
+        let entry = await db.getById('entries', matches[1])
+        mainWindow.webContents.send('route', { name: 'home', params: { date: entry.date } })
+      } catch (e) {
+        console.log(e)
+      }
     }
   }, (error) => {
     if (error) console.error(error)
@@ -274,7 +282,7 @@ function openFile () {
   return new Promise(function (resolve, reject) {
     dialog.showOpenDialog({
       filters: [
-        {name: 'Epic Journal', extensions: ['epic']}
+        { name: 'Epic Journal', extensions: ['epic'] }
       ],
       properties: ['openFile', 'promptToCreate', 'createDirecotry']
     }, function (filenames) {
@@ -292,7 +300,7 @@ function saveFile () {
   return new Promise(function (resolve, reject) {
     dialog.showSaveDialog({
       filters: [
-        {name: 'Epic Journal', extensions: ['epic']}
+        { name: 'Epic Journal', extensions: ['epic'] }
       ]
     }, function (filename) {
       if (filename === undefined) {

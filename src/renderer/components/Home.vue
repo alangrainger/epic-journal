@@ -1,21 +1,22 @@
 <template>
-    <div id="main">
-        <div id="wrapper">
-            <div id="sidebar">
-                <pre>{{date}}</pre>
-                <flat-pickr v-model="date" :config="calConfig"></flat-pickr>
-                <pre>{{entryId}}</pre>
-                <EntriesTree ref="entriesTree" :selected="$route.params.date"></EntriesTree>
-            </div>
-            <div id="content">
-                <Editor ref="editor"
-                        @update="updateTree"
-                        @close="onClose"></Editor>
-            </div>
-            <div v-html="'<style>' + calendarStyle + '</style>'" style="display:none"></div>
-            <div v-html="'<style>' + customStyles + '</style>'" style="display:none"></div>
-        </div>
+  <div id="main">
+    <div id="wrapper">
+      <div id="sidebar">
+        <flat-pickr v-model="date" :config="calConfig" />
+        <pre>{{ entryId }}</pre>
+        <EntriesTree ref="entriesTree" :selected="$route.params.date" />
+      </div>
+      <div id="content">
+        <Editor
+          ref="editor"
+          @update="updateTree"
+          @close="onClose"
+        />
+      </div>
+      <div style="display:none" v-html="'<style>' + calendarStyle + '</style>'" />
+      <div style="display:none" v-html="'<style>' + customStyles + '</style>'" />
     </div>
+  </div>
 </template>
 
 <style scoped>
@@ -63,7 +64,7 @@ import Editor from './Editor.vue'
 import EntriesTree from './EntriesTree.vue'
 
 export default {
-  name: 'home',
+  name: 'Home',
   components: {
     flatPickr,
     Editor,
@@ -104,10 +105,6 @@ export default {
       }
     }
   },
-  mounted () {
-    // Update calendar
-    this.updateCalendarEntries(this.date.substring(0, 4), this.date.substring(5, 7))
-  },
   watch: {
     date () {
       this.goToDate(this.date)
@@ -119,10 +116,19 @@ export default {
       immediate: true
     }
   },
+  mounted () {
+    // Update calendar
+    this.updateCalendarEntries(this.date.substring(0, 4), this.date.substring(5, 7))
+  },
+  beforeDestroy: function () {
+    // this.save()
+    window.removeEventListener('unload', this.save)
+    clearInterval(this.autosaveTimer)
+  },
   methods: {
     async onClose (data) {
       // Prune empty current entry from the database on entry change
-      if (await this.$db.deleteEntry({id: data.id, table: this.table}, true)) {
+      if (await this.$db.deleteEntry({ id: data.id, table: this.table }, true)) {
         console.log(`Pruned empty entry ${data.id}`)
         this.updateTree()
       }
@@ -132,7 +138,7 @@ export default {
         this.$moment(date).format(this.$db.DATE_DAY) === date && // valid date format
         this.$route.params.date !== date // not the current route
       ) {
-        this.$router.push({name: 'home', params: {date: date}})
+        this.$router.push({ name: 'home', params: { date: date } })
       }
     },
     updateTree () {
@@ -218,11 +224,6 @@ export default {
           this.calendarStyle = styles.join(', ') + ' { background-color: #D0E4F8; }'
         })
     }
-  },
-  beforeDestroy: function () {
-    // this.save()
-    window.removeEventListener('unload', this.save)
-    clearInterval(this.autosaveTimer)
   }
 }
 </script>
