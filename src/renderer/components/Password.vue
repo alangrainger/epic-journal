@@ -87,7 +87,7 @@ export default {
         await this.$router.push({
           name: 'home',
           params: {
-            date: this.$moment().format(this.$db.DATE_DAY)
+            date: this.$moment().format(db.DATE_DAY)
           }
         })
       } catch (e) {

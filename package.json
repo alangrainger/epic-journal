@@ -62,7 +62,7 @@
     "buefy": "^0.9.4",
     "dayjs": "^1.9.7",
     "os-locale": "^2.1.0",
-    "tinymce": "^4.9.4",
+    "tinymce": "^4.9.11",
     "vue-flatpickr-component": "^4.0.0"
   },
   "devDependencies": {
